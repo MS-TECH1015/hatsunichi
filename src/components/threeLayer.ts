@@ -11,7 +11,8 @@ const M_PER_DEG_LAT = 111320;
 // 原点からのメートル差。three の +X が東、+Z が北、+Y が上
 function toLocal(lon: number, lat: number): [number, number] {
   const x = (lon - ORIGIN[0]) * M_PER_DEG_LAT * Math.cos((ORIGIN[1] * Math.PI) / 180);
-  const z = (lat - ORIGIN[1]) * M_PER_DEG_LAT;
+  // MapLibre の例と同じ行列を使うので、local の +Z は南。北は -Z
+  const z = -(lat - ORIGIN[1]) * M_PER_DEG_LAT;
   return [x, z];
 }
 
@@ -20,6 +21,7 @@ function zoomScale(zoom: number): number {
   return 2 ** (16 - zoom) * 4;
 }
 const STOP_EXTRA = 3;
+const BUS_EXTRA = 2;
 
 export class ThreeLayer implements maplibregl.CustomLayerInterface {
   id = "three-models";
@@ -82,8 +84,8 @@ export class ThreeLayer implements maplibregl.CustomLayerInterface {
       const o = this.busTemplate.clone();
       const [x, z] = toLocal(b.lon, b.lat);
       o.position.set(x, 0, z);
-      // Blender の +Y 前 は glTF で -Z 前。北を +Z としたので、方位 b に向けるには b + 180°
-      o.rotation.y = ((b.bearing + 180) * Math.PI) / 180;
+      // Blender の +Y 前 は glTF で -Z 前 = 北。方位 b（北から時計回り）は Y 軸回りの -b
+      o.rotation.y = (-b.bearing * Math.PI) / 180;
       this.busGroup.add(o);
     }
     this.map?.triggerRepaint();
@@ -95,7 +97,7 @@ export class ThreeLayer implements maplibregl.CustomLayerInterface {
     const unit = origin.meterInMercatorCoordinateUnits();
     const s = zoomScale(this.map.getZoom());
     for (const o of this.stopGroup.children) o.scale.setScalar(s * STOP_EXTRA);
-    for (const o of this.busGroup.children) o.scale.setScalar(s);
+    for (const o of this.busGroup.children) o.scale.setScalar(s * BUS_EXTRA);
     const model = new THREE.Matrix4()
       .makeTranslation(origin.x, origin.y, origin.z)
       .scale(new THREE.Vector3(unit, -unit, unit))

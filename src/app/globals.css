@@ -65,3 +65,27 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .clock-card { position: absolute; z-index: 10; left: 50%; transform: translateX(-50%); bottom: 28px; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); width: 320px; }
 .clock-card label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .clock-card input { width: 100%; }
+
+.sheet { padding: 12px; border-top: 2px solid var(--ink); background: var(--paper); }
+.sheet h3 { margin: 8px 0; font-size: 14px; }
+.tabs { display: flex; gap: 4px; }
+.tab { border: 1px solid var(--line); background: #fff; border-radius: 6px 6px 0 0; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+.tab.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.field { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; font-size: 12px; }
+.field textarea, .field input[type="text"], .field input:not([type]) { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+.field.stray textarea { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(217,72,15,0.15); }
+.warn { color: var(--accent); font-size: 11px; }
+.removed-list { display: flex; flex-wrap: wrap; gap: 4px; min-height: 24px; }
+.pill { background: #fff4e6; border: 1px solid #ffd8a8; border-radius: 10px; padding: 1px 8px; font-size: 11px; }
+.btn.submit { width: 100%; padding: 8px; font-size: 13px; background: var(--ink); color: #fff; border-color: var(--ink); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.notes { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.note { padding: 8px 10px; border-radius: 4px; font-size: 12px; box-shadow: 1px 2px 4px rgba(0,0,0,0.12); }
+.note b { display: block; font-size: 10px; margin-bottom: 2px; opacity: 0.7; }
+.note.good { background: #ebfbee; }
+.note.gap { background: #fff9db; }
+.note.question { background: #e7f5ff; }
+.small { font-size: 11px; }
+.diff { margin-top: 8px; font-size: 12px; padding: 6px 8px; border-left: 3px solid var(--lit); background: #fff; }
+.voice { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; font-size: 12px; }
+.agree { display: block; margin: 4px 0 6px; }

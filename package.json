@@ -14,7 +14,8 @@
     "check:sources": "node scripts/check-sources.mjs data/town.json",
     "postinstall": "node scripts/copy-worker.mjs",
     "prebuild": "node scripts/copy-worker.mjs",
-    "predev": "node scripts/copy-worker.mjs"
+    "predev": "node scripts/copy-worker.mjs",
+    "demo": "node scripts/copy-worker.mjs && next build && next start"
   },
   "repository": {
     "type": "git",
@@ -29,6 +30,7 @@
   },
   "homepage": "https://github.com/MS-TECH1015/hatsunichi#readme",
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.4.0",
     "maplibre-gl": "^6.16.0",
     "next": "^16.4.4",
     "react": "^19.3.1",

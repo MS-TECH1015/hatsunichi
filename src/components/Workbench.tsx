@@ -5,6 +5,7 @@ import type { Ticket } from "@/lib/ticket";
 import { busesAt } from "@/lib/busPosition";
 import { SourceChip, type SourceMeta } from "./SourceChip";
 import { TownMap } from "./TownMap";
+import { SubmissionForm } from "./SubmissionForm";
 
 type Meta = { built_at: string; sources: SourceMeta[]; counts: Record<string, number> };
 
@@ -110,6 +111,13 @@ export function Workbench({ town, meta, ticket }: { town: Town; meta: Meta; tick
               })}
             </tbody>
           </table>
+          <SubmissionForm
+            town={town}
+            removedTrips={town.trips.filter((t) => removed.has(t.trip_id))}
+            impact={impact}
+            load={load}
+            source={source("pop_2026_09")}
+          />
         </aside>
       </main>
 
