@@ -15,10 +15,11 @@ function toLocal(lon: number, lat: number): [number, number] {
   return [x, z];
 }
 
-// 遠いズームでも見えるように、ズーム 15 を実寸として引くほど大きくする
+// 画面上で同じくらいの大きさに見えるように、引くほど大きくする。実寸ではない
 function zoomScale(zoom: number): number {
-  return Math.max(1, 2 ** (15 - zoom)) * 1.6;
+  return 2 ** (16 - zoom) * 4;
 }
+const STOP_EXTRA = 3;
 
 export class ThreeLayer implements maplibregl.CustomLayerInterface {
   id = "three-models";
@@ -93,9 +94,8 @@ export class ThreeLayer implements maplibregl.CustomLayerInterface {
     const origin = maplibregl.MercatorCoordinate.fromLngLat(ORIGIN, 0);
     const unit = origin.meterInMercatorCoordinateUnits();
     const s = zoomScale(this.map.getZoom());
-    for (const g of [this.stopGroup, this.busGroup]) {
-      for (const o of g.children) o.scale.setScalar(s);
-    }
+    for (const o of this.stopGroup.children) o.scale.setScalar(s * STOP_EXTRA);
+    for (const o of this.busGroup.children) o.scale.setScalar(s);
     const model = new THREE.Matrix4()
       .makeTranslation(origin.x, origin.y, origin.z)
       .scale(new THREE.Vector3(unit, -unit, unit))
