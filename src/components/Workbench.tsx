@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { impactOf, residentState, ridersOfTrip, type Resident, type ResidentState, type Town, type Trip } from "@/lib/impact";
 import type { Ticket } from "@/lib/ticket";
+import { busesAt } from "@/lib/busPosition";
 import { SourceChip, type SourceMeta } from "./SourceChip";
 import { TownMap } from "./TownMap";
 
@@ -13,8 +14,11 @@ export function Workbench({ town, meta, ticket }: { town: Town; meta: Meta; tick
   const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [load, setLoad] = useState(town.assumptions.load_factor_default);
   const [spoken, setSpoken] = useState<Resident | null>(null);
+  const [clock, setClock] = useState(9 * 60 + 5);
 
   const impact = useMemo(() => impactOf(town, removed, load), [town, removed, load]);
+  const buses = useMemo(() => busesAt(town, removed, clock), [town, removed, clock]);
+  const clockLabel = `${String(Math.floor(clock / 60)).padStart(2, "0")}:${String(clock % 60).padStart(2, "0")}`;
   const riders = useMemo(() => Object.fromEntries(town.trips.map((t) => [t.trip_id, ridersOfTrip(town, t, load)])), [town, load]);
   const residentStates = useMemo(
     () => Object.fromEntries(town.residents.map((r) => [r.id, residentState(town, removed, r)])) as Record<string, ResidentState>,
@@ -40,7 +44,13 @@ export function Workbench({ town, meta, ticket }: { town: Town; meta: Meta; tick
 
       <main className="main">
         <section className="map-area">
-          <TownMap town={town} affected={impact.dots} residentStates={residentStates} onResidentClick={setSpoken} />
+          <TownMap town={town} affected={impact.dots} buses={buses} residentStates={residentStates} onResidentClick={setSpoken} />
+          <div className="clock-card">
+            <label>
+              <span className="mono">{clockLabel}</span> 走っているバス {buses.length}台
+              <input type="range" min={5 * 60} max={21 * 60} step={1} value={clock} onChange={(e) => setClock(Number(e.target.value))} />
+            </label>
+          </div>
           <div className="ticket-card">
             <div className="ticket-title">依頼票 <span className="chip chip-assumed">架空</span></div>
             <dl>

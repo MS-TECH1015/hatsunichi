@@ -11,3 +11,4 @@ data/raw/
 next-env.d.ts
 .DS_Store
 public/maplibre-gl-worker.mjs
+!public/models/*.glb

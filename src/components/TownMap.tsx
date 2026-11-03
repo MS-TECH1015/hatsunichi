@@ -4,6 +4,8 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef } from "react";
 import type { Dot, Resident, Town } from "@/lib/impact";
 import type { ResidentState } from "@/lib/impact";
+import type { BusPose } from "@/lib/busPosition";
+import { ThreeLayer } from "./threeLayer";
 
 const GSI_PALE = "https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png";
 // Turbopack が MapLibre の worker を束ねられないので、public/ に置いた worker を直接指す（scripts/copy-worker.mjs）
@@ -12,6 +14,7 @@ const WORKER_URL = "/maplibre-gl-worker.mjs";
 type Props = {
   town: Town;
   affected: Dot[];
+  buses: BusPose[];
   residentStates: Record<string, ResidentState>;
   onResidentClick?: (r: Resident) => void;
 };
@@ -55,10 +58,11 @@ function routesGeoJson(town: Town) {
   };
 }
 
-export function TownMap({ town, affected, residentStates, onResidentClick }: Props) {
+export function TownMap({ town, affected, buses, residentStates, onResidentClick }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markers = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const three = useRef<ThreeLayer | null>(null);
 
   useEffect(() => {
     if (!container.current || map.current) return;
@@ -74,6 +78,7 @@ export function TownMap({ town, affected, residentStates, onResidentClick }: Pro
       },
       center: [134.225, 35.49],
       zoom: 12.3,
+      pitch: 45,
       attributionControl: { compact: false },
     });
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
@@ -101,6 +106,10 @@ export function TownMap({ town, affected, residentStates, onResidentClick }: Pro
         layout: { "text-field": ["get", "name"], "text-size": 11, "text-offset": [0, 1.1], "text-anchor": "top" },
         paint: { "text-halo-color": "#fff", "text-halo-width": 1.2 },
       });
+      const layer = new ThreeLayer(town.stops);
+      m.addLayer(layer);
+      three.current = layer;
+      layer.setBuses(buses);
       for (const r of town.residents) {
         const el = document.createElement("button");
         el.className = "resident-pin";
@@ -127,6 +136,10 @@ export function TownMap({ town, affected, residentStates, onResidentClick }: Pro
     if (!src) return;
     src.setData(dotsGeoJson(town, new Set(affected.map((d) => d.dot_id))));
   }, [town, affected]);
+
+  useEffect(() => {
+    three.current?.setBuses(buses);
+  }, [buses]);
 
   useEffect(() => {
     for (const [id, marker] of markers.current) {
