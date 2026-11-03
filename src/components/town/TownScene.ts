@@ -16,7 +16,8 @@ const ACCENT = "#ffc23d";
 const INK = "#2b2622";
 const OUTLINE: [number, number, number] = [0.17, 0.14, 0.12];
 const WALK_SPEED = 6; // m/s
-const CAMERA_OFFSET = new THREE.Vector3(0, 12, 14);
+const CAMERA_OFFSET = new THREE.Vector3(0, 15, 12.5);
+const PEOPLE_SCALE = 1.35; // 人は建物より大きめにして、表情と動きを見せる
 const LOOK_RANGE = 6; // 住民がこちらを向く距離
 const BUS_SPEED = 7;
 const NO_OUTLINE = { visible: false };
@@ -114,6 +115,12 @@ export class TownScene {
   markTalked(npcId: string) {
     const b = this.bubbles.get(npcId);
     if (b) b.visible = false;
+  }
+
+  /** 話しかけた相手のほうへ向く。at はメートル */
+  faceTo(at: Vec2) {
+    this.heading = Math.atan2(at[0] - this.playerPos[0], at[1] - this.playerPos[1]);
+    this.player.rotation.y = this.heading;
   }
 
   setTouchDir(dir: Vec2) {
@@ -265,12 +272,12 @@ export class TownScene {
     }
     this.bus = this.place("bus", [this.busState.x, -1.2], 0);
     for (const n of this.world.npcs) {
-      const o = this.place(n.kind, n.at, n.face);
+      const o = this.place(n.kind, n.at, n.face, PEOPLE_SCALE);
       if (n.body) this.tint(o, "person_body", n.body);
       if (n.hair) this.tint(o, "person_hair", n.hair);
       this.obstacles.push({ at: n.at, radius: 0.8 });
       this.walkers.push({ obj: o, npc: n, phase: n.at[0] + n.at[1] });
-      this.bubbles.set(n.id, this.addBubble(n.at, n.kind === "rabbit" ? 2.1 : 2.3));
+      this.bubbles.set(n.id, this.addBubble(n.at, n.kind === "rabbit" ? 2.6 : 2.8));
     }
   }
 
@@ -401,6 +408,7 @@ export class TownScene {
 
   private buildPlayer() {
     this.player.add(this.models.get("player")!.clone());
+    this.player.scale.setScalar(PEOPLE_SCALE);
     this.scene.add(this.player);
     this.player.position.set(this.playerPos[0], 0, this.playerPos[1]);
   }
@@ -534,7 +542,7 @@ export class TownScene {
     this.ring.visible = target !== null && !this.paused;
     if (!target) return;
     const at = target.type === "spot" ? target.spot.at : target.npc.at;
-    const r = target.type === "spot" ? target.spot.radius + 0.4 : 0.9;
+    const r = target.type === "spot" ? target.spot.radius + 0.4 : 1.1;
     this.ring.position.set(at[0], 0.12, at[1]);
     this.ring.scale.setScalar(r * (1 + Math.sin(now / 160) * 0.04));
   }
