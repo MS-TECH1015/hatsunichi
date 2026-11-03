@@ -130,6 +130,10 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .hud-day > span { display: block; height: 100%; background: var(--accent); }
 .hud-stamps { margin-left: auto; display: flex; gap: 6px; background: var(--paper); border: 3px solid var(--ink); border-radius: 999px; padding: 5px 8px; box-shadow: 0 3px 0 var(--ink); }
 .hud-sound { width: 44px; height: 44px; display: grid; place-items: center; background: var(--paper); border: 3px solid var(--ink); border-radius: 50%; box-shadow: 0 3px 0 var(--ink); cursor: pointer; }
+/* 町に入ったときの町名の帯。key が変わるたびに出て、3 秒で消える */
+.place-banner { position: absolute; z-index: 4; top: 74px; left: 50%; transform: translateX(-50%); pointer-events: none; background: var(--paper); border: 3px solid var(--ink); border-radius: 12px; padding: 6px 26px 8px; font-size: 24px; font-weight: 900; letter-spacing: 0.08em; box-shadow: 0 3px 0 var(--ink), inset 0 -6px 0 var(--accent); animation: place-banner 3.2s ease forwards; }
+.place-banner[hidden] { display: none; }
+@keyframes place-banner { 0% { opacity: 0; transform: translate(-50%, -10px); } 12% { opacity: 1; transform: translate(-50%, 0); } 78% { opacity: 1; } 100% { opacity: 0; } }
 
 .stamp { width: 30px; height: 30px; display: inline-grid; place-items: center; border-radius: 50%; border: 2px dashed #b9ad97; font-weight: 900; font-size: 16px; background: transparent; }
 .stamp.on { border: 3px solid var(--ink); background: var(--accent); }

@@ -23,8 +23,12 @@ import {
   type Vec2,
   type World,
 } from "@/lib/world";
+import { Scatter } from "./scatter";
+import { cityLooks, clock } from "./surfaces";
+import { Towns, type TownData } from "./townMesh";
 
-export type SceneState = { minutes: number; target: Target | null };
+/** place はいま入っている町の名前。町の外とバスの中では null */
+export type SceneState = { minutes: number; target: Target | null; place: string | null };
 
 type CityData = {
   grid: { x0: number; z0: number; cell: number; w: number; h: number };
@@ -32,6 +36,7 @@ type CityData = {
   trees: [number, number, number, number][];
   labels: { name: string; at: Vec2; kind: string }[];
   routes: Record<string, Route>;
+  towns: Record<string, TownData>;
 };
 type Item = { x: number; z: number; rot: number; scale: number; tint?: (material: string) => THREE.Color | null };
 type Walker = { obj: THREE.Object3D; npc: Npc; phase: number };
@@ -97,6 +102,10 @@ export class TownScene {
   private raf = 0;
   private lastTarget: Target | null = null;
   private world: Placed;
+  private towns: Towns | null = null;
+  private scatter: Scatter | null = null;
+  private flow: THREE.Texture | null = null;
+  private placeName: string | null = null;
 
   constructor(private canvas: HTMLCanvasElement, world: World, private onChange: (s: SceneState) => void) {
     this.world = placeWorld(world);
@@ -121,9 +130,11 @@ export class TownScene {
     this.addLights();
     await this.loadCity();
     await Promise.all([this.loadModels(), this.loadTerrain()]);
+    this.buildTowns();
     this.buildPlaces();
     this.buildForest();
     this.buildHouses();
+    this.buildScatter();
     this.buildLabels();
     this.buildBus();
     this.buildPlayer();
@@ -205,7 +216,7 @@ export class TownScene {
         t: 0,
         heading: 0,
         done: () => {
-          this.playerPos = [dest.at[0], dest.at[1] + 1.8];
+          this.playerPos = [dest.at[0] + 1.2, dest.at[1]]; // 標識の横の歩道
           this.heading = 0;
           this.player.rotation.y = 0;
           this.player.position.set(this.playerPos[0], this.groundY(this.playerPos), this.playerPos[1]);
@@ -266,21 +277,15 @@ export class TownScene {
     this.center.set(x0 + (w * cell) / 2, 0, z0 + (h * cell) / 2);
   }
 
-  /** Blender で作った地形。色は頂点に入っている。面の向きごとに陰を付けて、角ばった模型に見せる */
+  /** Blender で作った地形。色は頂点に入っている。模様と波は surfaces.ts のシェーダで足す */
   private async loadTerrain() {
     const draco = new DRACOLoader();
     draco.setDecoderPath(withBase("/draco/"));
     const loader = new GLTFLoader();
     loader.setDRACOLoader(draco);
     const gltf = await loader.loadAsync(withBase("/models/city.glb"));
-    const looks: Record<string, () => THREE.Material> = {
-      terrain: () => flat(new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: this.gradient })),
-      skirt: () => flat(new THREE.MeshToonMaterial({ color: 0x8a6446, gradientMap: this.gradient })),
-      water: () => flat(new THREE.MeshToonMaterial({ color: 0x6fb1d4, gradientMap: this.gradient })),
-      water_side: () => flat(new THREE.MeshToonMaterial({ color: 0x447fa6, gradientMap: this.gradient })),
-      river: () => overlay(new THREE.MeshToonMaterial({ color: 0x74b6db, gradientMap: this.gradient })),
-      road: () => overlay(new THREE.MeshToonMaterial({ color: 0xf3e6c8, gradientMap: this.gradient })),
-    };
+    const { looks, flow } = cityLooks(this.ground, this.gradient);
+    this.flow = flow;
     gltf.scene.traverse((o) => {
       if (!(o instanceof THREE.Mesh)) return;
       const name = (o.material as THREE.Material).name;
@@ -295,8 +300,9 @@ export class TownScene {
 
   private async loadModels() {
     const loader = new GLTFLoader();
-    const kinds = new Set<string>(["person", "player", "rabbit", "bus", "bus_sign", "tree_cone", "tree_round", "house_lo"]);
+    const kinds = new Set<string>(["person", "player", "rabbit", "bus", "tree_cone", "tree_round", "house_lo", "grass_tuft", "flower_tuft", "dune_grass"]);
     for (const p of this.world.props) kinds.add(p.kind);
+    for (const t of Object.values(this.city.towns)) for (const p of t.props) kinds.add(p[0]);
     for (const s of this.world.spots) kinds.add(s.kind);
     await Promise.all(
       [...kinds].map(async (kind) => {
@@ -322,8 +328,23 @@ export class TownScene {
     return t;
   }
 
+  /** 足もとの高さ。町の中では歩道や舗装の厚みを足す */
   private groundY(at: Vec2) {
-    return heightAt(this.ground, at[0], at[1]);
+    return heightAt(this.ground, at[0], at[1]) + (this.towns?.liftAt(at[0], at[1]) ?? 0);
+  }
+
+  /** 町の通り・歩道・飾り（scripts/towns.py の配置）と、そのぶつかる円 */
+  private buildTowns() {
+    this.towns = new Towns(this.city.towns, this.world.places, (x, z) => heightAt(this.ground, x, z), this.models, this.gradient);
+    this.scene.add(this.towns.group);
+    this.obstacles.push(...this.towns.obstacles);
+  }
+
+  /** 足もとの草花。家や飾りのぶつかる円がそろってから作る */
+  private buildScatter() {
+    const towns = this.towns!;
+    this.scatter = new Scatter(this.models, this.ground, this.obstacles, (x, z) => heightAt(this.ground, x, z), (x, z) => towns.liftAt(x, z) > 0);
+    this.scene.add(this.scatter.group);
   }
 
   private place(kind: string, at: Vec2, face: number, scale = 1): THREE.Group {
@@ -337,14 +358,13 @@ export class TownScene {
     return o;
   }
 
-  /** 物語を置いた町ごとの部品・依頼の場所・住民・バスの標識 */
+  /** 物語の目印の物・依頼の場所・住民。バス停は町の飾り（townMesh.ts）が置く */
   private buildPlaces() {
     for (const p of this.world.props) {
       this.place(p.kind, p.at, p.face, p.scale);
       const r = PROP_RADIUS[p.kind];
       if (r) this.obstacles.push({ at: p.at, radius: r * (p.scale ?? 1) });
     }
-    this.buildWires();
     for (const s of this.world.spots) {
       const o = this.place(s.kind, s.at, s.face);
       this.obstacles.push({ at: s.at, radius: s.radius });
@@ -358,37 +378,6 @@ export class TownScene {
       this.obstacles.push({ at: n.at, radius: 0.8 });
       this.walkers.push({ obj: o, npc: n, phase: n.at[0] + n.at[1] });
       this.bubbles.set(n.id, this.addBubble(n.at, this.groundY(n.at) + (n.kind === "rabbit" ? 2.6 : 2.8)));
-    }
-    for (const s of this.world.stops) {
-      this.place("bus_sign", s.at, 0);
-      this.obstacles.push({ at: s.at, radius: 0.4 });
-      const icon = this.textSprite("バス", { fill: "#4d8c6b", color: "#fffaf0", width: 160 });
-      icon.position.set(s.at[0], this.groundY(s.at) + 4.4, s.at[1]);
-      icon.scale.set(2.4, 0.96, 1);
-    }
-  }
-
-  /** 同じ場所で同じ列に並ぶ電柱どうしを、たるんだ電線でつなぐ */
-  private buildWires() {
-    const rows = new Map<string, Vec2[]>();
-    for (const p of this.world.props) {
-      if (p.kind !== "pole") continue;
-      const key = `${p.place}:${p.at[1]}`;
-      rows.set(key, [...(rows.get(key) ?? []), p.at]);
-    }
-    const mat = new THREE.LineBasicMaterial({ color: INK });
-    for (const row of rows.values()) {
-      row.sort((a, b) => a[0] - b[0]);
-      for (let i = 0; i + 1 < row.length; i++) {
-        for (const dz of [-0.6, 0.6]) {
-          const a = new THREE.Vector3(row[i][0], this.groundY(row[i]) + 6.75, row[i][1] + dz);
-          const b = new THREE.Vector3(row[i + 1][0], this.groundY(row[i + 1]) + 6.75, row[i + 1][1] + dz);
-          const mid = a.clone().lerp(b, 0.5);
-          mid.y -= 0.65;
-          const points = new THREE.QuadraticBezierCurve3(a, mid, b).getPoints(16);
-          this.scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), mat));
-        }
-      }
     }
   }
 
@@ -666,6 +655,8 @@ export class TownScene {
     const now = performance.now();
     const dt = Math.min((now - this.last) / 1000, 0.1);
     this.last = now;
+    clock.value = now / 1000;
+    if (this.flow) this.flow.offset.y = -clock.value * 0.25;
 
     if (this.ride) this.driveRide(dt);
     else if (this.playing && !this.paused) this.walk(dt, now);
@@ -699,7 +690,8 @@ export class TownScene {
     body.scale.set(1 + Math.abs(step) * 0.04, 1 - Math.abs(step) * 0.04, 1);
     body.rotation.z = step * 0.06;
     body.rotation.x = running ? 0.18 : 0;
-    this.player.position.set(this.playerPos[0], this.groundY(this.playerPos), this.playerPos[1]);
+    const y = THREE.MathUtils.damp(this.player.position.y, this.groundY(this.playerPos), 20, dt); // 歩道の段差をなめらかに
+    this.player.position.set(this.playerPos[0], y, this.playerPos[1]);
   }
 
   /** 乗ったバスを道に沿って走らせる */
@@ -736,6 +728,10 @@ export class TownScene {
     for (const c of this.clouds) c.position.x = c.userData.baseX + Math.sin(now / 9000 + c.userData.baseX) * 30;
     this.driveBus(dt);
     this.updateSun();
+    if (this.playing && this.scatter) {
+      const f = this.ride ? this.rideBus!.position : this.player.position;
+      this.scatter.update(f.x, f.z);
+    }
   }
 
   /** 駅と雲山のあいだを往復し、端で少し止まる */
@@ -805,10 +801,12 @@ export class TownScene {
   private report(now: number, dt: number) {
     const target = this.paused || this.ride ? this.lastTarget : nearestTarget(this.playerPos, this.world);
     this.showRing(target, now);
+    const place = this.ride ? null : (this.towns?.placeAt(this.playerPos[0], this.playerPos[1]) ?? null);
     const id = (t: Target | null) => (!t ? null : t.type === "spot" ? t.spot.id : t.type === "npc" ? t.npc.id : `bus:${t.place.id}`);
-    if (id(target) !== id(this.lastTarget) || Math.floor(now / 500) !== Math.floor((now - dt * 1000) / 500)) {
+    if (id(target) !== id(this.lastTarget) || place !== this.placeName || Math.floor(now / 500) !== Math.floor((now - dt * 1000) / 500)) {
       this.lastTarget = target;
-      this.onChange({ minutes: this.minutes, target });
+      this.placeName = place;
+      this.onChange({ minutes: this.minutes, target, place });
     }
   }
 
@@ -905,20 +903,6 @@ function toonMat(color: THREE.ColorRepresentation, gradientMap: THREE.Texture, o
   const m = new THREE.MeshToonMaterial({ color, gradientMap });
   if (!outline) m.userData.outlineParameters = NO_OUTLINE;
   return m;
-}
-
-/** 面ごとに陰を付ける。three.js は flatShading が true の材質を面の向きで塗る */
-function flat<T extends THREE.Material>(m: T): T {
-  (m as T & { flatShading: boolean }).flatShading = true;
-  return m;
-}
-
-/** 川と道は地面に重ねて描くので、奥行きを少し手前にずらしてちらつきを防ぐ */
-function overlay<T extends THREE.Material>(m: T): T {
-  m.polygonOffset = true;
-  m.polygonOffsetFactor = -2;
-  m.polygonOffsetUnits = -2;
-  return flat(m);
 }
 
 function skyTexture(): THREE.CanvasTexture {

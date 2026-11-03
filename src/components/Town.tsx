@@ -28,6 +28,7 @@ export function Town({ world }: Props) {
   const [started, setStarted] = useState(false);
   const [minutes, setMinutes] = useState(world.meta.clock.start_hour * 60);
   const [target, setTarget] = useState<Target | null>(null);
+  const [placeName, setPlaceName] = useState<string | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [talked, setTalked] = useState<string[]>([]);
@@ -48,6 +49,7 @@ export function Town({ world }: Props) {
       scene = new TownScene(canvasRef.current, world, (s) => {
         setMinutes(s.minutes);
         setTarget(s.target);
+        setPlaceName(s.place);
       });
       sceneRef.current = scene;
       if (location.search.includes("debug")) (window as unknown as { __town: TownScene }).__town = scene;
@@ -198,6 +200,12 @@ export function Town({ world }: Props) {
             <br />
             地形: 国土地理院 標高タイルを加工 ・ 市の境: 国土数値情報（行政区域）を加工
           </p>
+        </div>
+      )}
+
+      {started && (
+        <div className="place-banner" key={placeName ?? ""} hidden={!placeName || panel !== null}>
+          {placeName}
         </div>
       )}
 
