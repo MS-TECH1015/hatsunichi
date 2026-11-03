@@ -38,6 +38,12 @@ npm run check:sources        # town.json の数字に出典が付いているか
 npm run eval                 # 確認役の測定。docs/eval/<モデル>.md に書く
 ```
 
+### 公開と確認役
+
+- 公開先は GitHub Pages: https://ms-tech1015.github.io/hatsunichi/ 。静的書き出し（`output: "export"`）なので、Pages 上の確認役は鍵なしの demo の付箋を画面側で作る
+- 配備は `npm run deploy`。`out/` を gh-pages ブランチへ push する。`.github/workflows/pages.yml` の Actions 配備も用意してあるが、push には gh の `workflow` スコープが要る
+- 本物の確認役は手元で動かす。`.env` に `ANTHROPIC_API_KEY` を書き、`npm run review` で http://localhost:8787/review を立て、`NEXT_PUBLIC_REVIEW_URL=http://localhost:8787/review npm run dev` で画面を向ける。このとき提出文は Anthropic の API に送られる（学習には使われず、既定で 30 日以内に消える）
+
 ## 数字の出し方
 
 - 停留所から 400m 以内の町の人口を、20人 = 1点にして町の代表点のまわりに散らす
