@@ -18,6 +18,8 @@ export type Spot = {
   hint: string;
   /** 依頼を口にする人の名前 */
   asker: string;
+  /** 案を出したときに押す判子の1字 */
+  stamp: string;
   why: string;
   facts: Fact[];
   quest: { ask: string; options: Option[] };
@@ -34,6 +36,7 @@ export type Npc = {
   name: string;
   role: string;
   body?: [number, number, number];
+  hair?: [number, number, number];
   lines: string[];
 };
 
@@ -52,7 +55,7 @@ export type World = {
 export type Target = { type: "spot"; spot: Spot } | { type: "npc"; npc: Npc };
 
 export const TALK_RANGE = 2.2;
-export const PROP_RADIUS: Record<string, number> = { house: 2.4, house_b: 2.4, pear_tree: 0.6, field: 4.2, school: 5.2, tree: 0.9, pole: 0.3, vending: 0.7, bench: 0.8 };
+export const PROP_RADIUS: Record<string, number> = { house: 2.4, house_b: 2.4, pear_tree: 0.6, field: 4.2, school: 5.2, tree: 0.9, pole: 0.3, vending: 0.7, bench: 0.8, hill: 9 };
 
 /** 道のタイルの中心座標。from と to は格子の座標（タイル単位） */
 export function roadTiles(roads: Road[]): Vec2[] {
