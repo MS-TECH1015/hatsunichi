@@ -1,7 +1,11 @@
 "use client";
 import { useState } from "react";
 import type { Impact, Town, Trip } from "@/lib/impact";
-import { CLOCK_DIGITS, digitsOf, type Note, type Submission } from "@/lib/review";
+import { CLOCK_DIGITS, demoNote, digitsOf, type Facts, type Note, type Submission } from "@/lib/review";
+import { residentState } from "@/lib/impact";
+
+// Pages は静的なので確認役は手元のサーバー（scripts/review-server.ts）。無ければ demo の付箋を画面側で作る
+const REVIEW_URL = process.env.NEXT_PUBLIC_REVIEW_URL;
 import { SourceChip, type SourceMeta } from "./SourceChip";
 
 type Round = { submission: Submission; note: Note; persons: Impact["persons"] };
@@ -29,6 +33,23 @@ export function SubmissionForm({ town, removedTrips, impact, load, source }: Pro
   const known = digitsOf(`${impact.persons.low} ${impact.persons.mid} ${impact.persons.high} ${impact.dots.length} ${load} ${town.assumptions.persons_per_dot} ${removedTrips.map((t) => t.departure).join(" ")} ${CLOCK_DIGITS.join(" ")}`);
   const strayNumbers = [...digitsOf(affected)].filter((n) => !known.has(n));
 
+  function factsOf(): Facts {
+    const removed = new Set(removedTrips.map((t) => t.trip_id));
+    return {
+      persons: impact.persons,
+      dots: impact.dots.length,
+      load_factor: load,
+      residents: town.residents.map((r) => ({ name: r.name, role: r.role, hour_band: r.hour_band, state: residentState(town, removed, r) })),
+      weekday_trips: town.trips.length,
+    };
+  }
+
+  async function askReviewer(submission: Submission): Promise<Note> {
+    const res = await fetch(REVIEW_URL!, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ submission, load_factor: load }) });
+    if (!res.ok) throw new Error((await res.json()).error ?? res.statusText);
+    return ((await res.json()) as { note: Note }).note;
+  }
+
   async function submit() {
     setBusy(true);
     setError(null);
@@ -39,10 +60,8 @@ export function SubmissionForm({ town, removedTrips, impact, load, source }: Pro
       alternative,
     };
     try {
-      const res = await fetch("/api/review", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ submission, load_factor: load }) });
-      if (!res.ok) throw new Error((await res.json()).error ?? res.statusText);
-      const data = (await res.json()) as { note: Note };
-      setRounds((prev) => [...prev, { submission, note: data.note, persons: impact.persons }]);
+      const note = REVIEW_URL ? await askReviewer(submission) : demoNote(factsOf(), submission);
+      setRounds((prev) => [...prev, { submission, note, persons: impact.persons }]);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

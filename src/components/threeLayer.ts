@@ -1,5 +1,6 @@
 // MapLibre のカスタムレイヤーで three.js を描く。Blender で作った glb（public/models/）を停留所とバスに置く。
 import * as maplibregl from "maplibre-gl";
+import { withBase } from "@/lib/base";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type { BusPose } from "@/lib/busPosition";
@@ -51,7 +52,7 @@ export class ThreeLayer implements maplibregl.CustomLayerInterface {
     this.scene.add(this.stopGroup, this.busGroup);
 
     const loader = new GLTFLoader();
-    loader.load("/models/stop.glb", (gltf) => {
+    loader.load(withBase("/models/stop.glb"), (gltf) => {
       for (const s of this.stops) {
         const o = gltf.scene.clone();
         const [x, z] = toLocal(s.lon, s.lat);
@@ -60,7 +61,7 @@ export class ThreeLayer implements maplibregl.CustomLayerInterface {
       }
       map.triggerRepaint();
     });
-    loader.load("/models/bus.glb", (gltf) => {
+    loader.load(withBase("/models/bus.glb"), (gltf) => {
       this.busTemplate = gltf.scene;
       this.setBuses(this.buses);
     });
