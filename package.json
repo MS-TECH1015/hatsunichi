@@ -11,7 +11,10 @@
     "start": "next start",
     "test": "vitest run",
     "build:town": "node scripts/build-town.mjs && node scripts/check-sources.mjs data/town.json",
-    "check:sources": "node scripts/check-sources.mjs data/town.json"
+    "check:sources": "node scripts/check-sources.mjs data/town.json",
+    "postinstall": "node scripts/copy-worker.mjs",
+    "prebuild": "node scripts/copy-worker.mjs",
+    "predev": "node scripts/copy-worker.mjs"
   },
   "repository": {
     "type": "git",

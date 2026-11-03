@@ -6,6 +6,8 @@ import type { Dot, Resident, Town } from "@/lib/impact";
 import type { ResidentState } from "@/lib/impact";
 
 const GSI_PALE = "https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png";
+// Turbopack が MapLibre の worker を束ねられないので、public/ に置いた worker を直接指す（scripts/copy-worker.mjs）
+const WORKER_URL = "/maplibre-gl-worker.mjs";
 
 type Props = {
   town: Town;
@@ -60,6 +62,7 @@ export function TownMap({ town, affected, residentStates, onResidentClick }: Pro
 
   useEffect(() => {
     if (!container.current || map.current) return;
+    maplibregl.setWorkerUrl(WORKER_URL);
     const m = new maplibregl.Map({
       container: container.current,
       style: {

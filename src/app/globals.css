@@ -14,7 +14,7 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .band-sub { font-weight: 400; font-size: 12px; opacity: 0.8; }
 .main { flex: 1; display: grid; grid-template-columns: 1fr 380px; min-height: 0; }
 .map-area { position: relative; min-height: 0; }
-.map { position: absolute; inset: 0; }
+.map-area > .map { position: absolute; inset: 0; }
 .ticket-card, .impact-card, .resident-card { position: absolute; z-index: 10; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-size: 13px; }
 .ticket-card { left: 12px; top: 12px; width: 300px; }
 .ticket-title { font-weight: 600; margin-bottom: 6px; }
@@ -59,3 +59,5 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
   .ticket-card, .resident-card { width: calc(100% - 24px); }
   .resident-card { top: auto; bottom: 90px; }
 }
+
+.impact-card .chip-pop { top: auto; bottom: 20px; }

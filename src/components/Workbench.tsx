@@ -93,7 +93,7 @@ export function Workbench({ town, meta, ticket }: { town: Town; meta: Meta; tick
                   <tr key={t.trip_id} className={off ? "off" : ""}>
                     <td className="mono">{t.departure}</td>
                     <td>{t.family}<span className="muted"> → {t.headsign}</span></td>
-                    <td className="mono">{r.low}〜{r.high}</td>
+                    <td className="mono">{r.high === 0 ? <span className="muted">代替あり</span> : `${r.low}〜${r.high}`}</td>
                     <td><button type="button" className={off ? "btn on" : "btn"} onClick={() => toggle(t)}>{off ? "戻す" : "外す"}</button></td>
                   </tr>
                 );
