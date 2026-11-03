@@ -2,7 +2,8 @@
 export type Vec2 = [number, number];
 
 export type Note = { good: string; gap: string; question: string };
-export type Option = { text: string; note: Note };
+/** label は画面の選択肢に出す短い言い方。text は詳細と記録に残す言い方 */
+export type Option = { text: string; label: string; note: Note };
 export type Fact = { text: string; source: string };
 export type Window = { name: string; url: string; checked: string; note: string };
 
@@ -13,6 +14,10 @@ export type Spot = {
   face: number;
   radius: number;
   title: string;
+  /** 近づいて調べたときに出す一言 */
+  hint: string;
+  /** 依頼を口にする人の名前 */
+  asker: string;
   why: string;
   facts: Fact[];
   quest: { ask: string; options: Option[] };
@@ -32,11 +37,11 @@ export type Npc = {
   lines: string[];
 };
 
-export type Prop = { kind: string; at: Vec2; face: number };
+export type Prop = { kind: string; at: Vec2; face: number; scale?: number };
 export type Road = { from: Vec2; to: Vec2 };
 
 export type World = {
-  meta: { tile: number; start: Vec2; clock: { start_hour: number; end_hour: number; minutes_per_second: number; minutes_per_talk: number } };
+  meta: { tile: number; start: Vec2; island: { min: Vec2; max: Vec2 }; clock: { start_hour: number; end_hour: number; minutes_per_second: number; minutes_per_talk: number } };
   roads: Road[];
   props: Prop[];
   spots: Spot[];
@@ -47,7 +52,7 @@ export type World = {
 export type Target = { type: "spot"; spot: Spot } | { type: "npc"; npc: Npc };
 
 export const TALK_RANGE = 2.2;
-export const PROP_RADIUS: Record<string, number> = { house: 2.4, pear_tree: 0.6, field: 4.2, school: 5.2 };
+export const PROP_RADIUS: Record<string, number> = { house: 2.4, house_b: 2.4, pear_tree: 0.6, field: 4.2, school: 5.2, tree: 0.9, pole: 0.3, vending: 0.7, bench: 0.8 };
 
 /** 道のタイルの中心座標。from と to は格子の座標（タイル単位） */
 export function roadTiles(roads: Road[]): Vec2[] {
@@ -102,11 +107,18 @@ export function inMeters(world: World): World {
   const m = (v: Vec2): Vec2 => [v[0] * t, v[1] * t];
   return {
     ...world,
-    meta: { ...world.meta, start: m(world.meta.start) },
+    meta: { ...world.meta, start: m(world.meta.start), island: { min: m(world.meta.island.min), max: m(world.meta.island.max) } },
     props: world.props.map((p) => ({ ...p, at: m(p.at) })),
     spots: world.spots.map((s) => ({ ...s, at: m(s.at) })),
     npcs: world.npcs.map((n) => ({ ...n, at: m(n.at) })),
   };
+}
+
+/** 島の縁から落ちないよう、内側 margin メートルに収める */
+export function clampToIsland(pos: Vec2, island: { min: Vec2; max: Vec2 }, margin = 2): Vec2 {
+  const x = Math.min(Math.max(pos[0], island.min[0] + margin), island.max[0] - margin);
+  const z = Math.min(Math.max(pos[1], island.min[1] + margin), island.max[1] - margin);
+  return [x, z];
 }
 
 export const clockText = (minutes: number) => `${Math.floor(minutes / 60)}:${String(Math.floor(minutes % 60)).padStart(2, "0")}`;

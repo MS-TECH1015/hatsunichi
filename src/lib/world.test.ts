@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import world from "../../data/world.json";
-import { clockText, inMeters, nearestTarget, pushOut, roadTiles, type World } from "./world";
+import { clampToIsland, clockText, inMeters, nearestTarget, pushOut, roadTiles, type World } from "./world";
 
 const w = inMeters(world as unknown as World);
 
@@ -30,6 +30,19 @@ describe("world", () => {
       const known = s.facts.map((f) => f.text).join(" ");
       for (const d of digits) if (!/^[0-9]{1,2}$/.test(d) || Number(d) > 23) expect(known).toContain(d);
     }
+  });
+
+  it("画面に出す言葉は短い。調べた一言は 20 字まで、選択肢は 10 字まで", () => {
+    for (const s of w.spots) {
+      expect(s.hint.length).toBeLessThanOrEqual(20);
+      for (const o of s.quest.options) expect(o.label.length).toBeLessThanOrEqual(10);
+    }
+  });
+
+  it("島の外へは出られない。始まりの位置と依頼の場所は島の中", () => {
+    const { min, max } = w.meta.island;
+    expect(clampToIsland([min[0] - 50, max[1] + 50], w.meta.island)).toEqual([min[0] + 2, max[1] - 2]);
+    for (const at of [w.meta.start, ...w.spots.map((s) => s.at)]) expect(clampToIsland(at, w.meta.island)).toEqual(at);
   });
 
   it("時計の表示", () => {
