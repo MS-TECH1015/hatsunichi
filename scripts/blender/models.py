@@ -572,14 +572,15 @@ def build_rabbit():
     export("rabbit")
 
 
-for build in (
-    build_houses, build_shop, build_empty_house, build_school, build_workshop,
-    build_trees, build_pear_trellis, build_field, build_ginger_cave, build_hill,
-    build_fence, build_flowers, build_pole, build_vending, build_bench, build_road,
-    build_bus, build_stop, build_person, build_player, build_rabbit, build_bus_sign, build_city_parts,
-):
-    # blender ... -- build_city_parts のように名前を渡すと、その部品だけ作り直す
-    only = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-    if not only or build.__name__ in only:
-        build()
-print("done")
+if __name__ == "__main__":  # town_parts.py から部品の道具だけ読むときは作らない
+    for build in (
+        build_houses, build_shop, build_empty_house, build_school, build_workshop,
+        build_trees, build_pear_trellis, build_field, build_ginger_cave, build_hill,
+        build_fence, build_flowers, build_pole, build_vending, build_bench, build_road,
+        build_bus, build_stop, build_person, build_player, build_rabbit, build_bus_sign, build_city_parts,
+    ):
+        # blender ... -- build_city_parts のように名前を渡すと、その部品だけ作り直す
+        only = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+        if not only or build.__name__ in only:
+            build()
+    print("done")

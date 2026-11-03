@@ -25,7 +25,7 @@ RADIUS = {
     "block_wall": 1.0, "hedge": 1.0, "fence": 1.0, "guardrail": 1.1, "dune_fence": 1.1,
     "tree_round": 0.9, "tree_cone": 0.9, "shrub": 0.5, "rock": 0.5, "dune_grass": 0.4,
     "planter": 0.35, "vending": 0.7, "bicycle": 0.5, "kei_car": 0.9, "pole": 0.3, "street_lamp": 0.3,
-    "curve_mirror": 0.3, "guide_board": 0.6, "bench": 0.8, "flowers": 0.9, "bus_shelter": 1.4, "lookout": 2.6,
+    "curve_mirror": 0.3, "guide_board": 0.6, "bench": 0.8, "flowers": 0.9, "bus_shelter": 1.4, "lookout": 2.6, "hill": 9.0,
 }
 # 細長い物の長さ。塀や柵は模型の X 方向、車と自転車は正面の向きに長い
 LONG_X = {"block_wall": 2.2, "hedge": 2.2, "fence": 2.0, "guardrail": 2.4, "dune_fence": 2.4, "bench": 1.6}
@@ -202,7 +202,8 @@ class Town:
         if self.style == "dune":
             return self.dune()
         sx, sz = SHELTER
-        self.put("bus_shelter", sx, sz, 0, on_paving=True)
+        if not self.put("bus_shelter", sx, sz, 0, on_paving=True):
+            raise SystemExit(f"バス停の屋根が置けない: {self.pid}")
         self.put("guide_board", sx - 2.6, sz - 0.3, 0, on_paving=True)
         # 電柱は本通りの北側。続く 2 本を電線でつなぐ
         pz = -(self.half + (1.5 if not self.rural else 0.9))
@@ -247,7 +248,8 @@ class Town:
 
     def dune(self):
         sx, sz = SHELTER
-        self.put("bus_shelter", sx, sz, 0, on_paving=True)
+        if not self.put("bus_shelter", sx, sz, 0, on_paving=True):
+            raise SystemExit(f"バス停の屋根が置けない: {self.pid}")
         self.put("guide_board", -2.4, -3.0, 0, on_paving=True)
         for x in (3.5, 6.0):
             self.put("bench", x, -2.7, 0, on_paving=True)

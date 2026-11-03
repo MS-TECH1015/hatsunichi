@@ -6,7 +6,7 @@
       "place": "eki",
       "at": [
         0,
-        7
+        -5.5
       ]
     },
     "clock": {
@@ -26,8 +26,8 @@
       ],
       "hub": true,
       "stop": [
-        -5,
-        3
+        -4.2,
+        -2.4
       ],
       "geo_source": "GTFS 停留所「鳥取駅」",
       "at": [
@@ -44,8 +44,8 @@
       ],
       "hub": true,
       "stop": [
-        -4.5,
-        0.6
+        -4.2,
+        -2.4
       ],
       "geo_source": "GTFS 停留所「雲山南団地」",
       "at": [
@@ -62,8 +62,8 @@
       ],
       "hub": true,
       "stop": [
-        -6,
-        3
+        -4.2,
+        -2.4
       ],
       "geo_source": "位置参照情報「湖山町東一丁目」",
       "at": [
@@ -80,8 +80,8 @@
       ],
       "hub": true,
       "stop": [
-        -7,
-        4
+        -4.2,
+        -2.4
       ],
       "geo_source": "位置参照情報「福部町細川」",
       "at": [
@@ -98,8 +98,8 @@
       ],
       "hub": true,
       "stop": [
-        -6,
-        3
+        -4.2,
+        -2.4
       ],
       "geo_source": "位置参照情報「気高町日光」",
       "at": [
@@ -116,8 +116,8 @@
       ],
       "hub": true,
       "stop": [
-        -6,
-        3
+        -4.2,
+        -2.4
       ],
       "geo_source": "位置参照情報「用瀬町用瀬」",
       "at": [
@@ -134,8 +134,8 @@
       ],
       "hub": true,
       "stop": [
-        0,
-        2
+        -4.2,
+        -2.4
       ],
       "geo_source": "GTFS 停留所「砂丘センター展望台」",
       "at": [
@@ -146,284 +146,14 @@
   ],
   "props": [
     {
-      "place": "eki",
-      "kind": "shop",
-      "at": [
-        -6,
-        -3
-      ],
-      "face": 0
-    },
-    {
-      "place": "eki",
-      "kind": "house",
-      "at": [
-        -11,
-        -3
-      ],
-      "face": 0
-    },
-    {
-      "place": "eki",
-      "kind": "house_b",
-      "at": [
-        11,
-        -3
-      ],
-      "face": 0
-    },
-    {
-      "place": "eki",
-      "kind": "vending",
-      "at": [
-        9.5,
-        0
-      ],
-      "face": 3
-    },
-    {
-      "place": "eki",
-      "kind": "bench",
-      "at": [
-        -1.5,
-        0.5
-      ],
-      "face": 0
-    },
-    {
-      "place": "eki",
-      "kind": "flowers",
-      "at": [
-        2.5,
-        3
-      ],
-      "face": 0
-    },
-    {
-      "place": "eki",
-      "kind": "flowers",
-      "at": [
-        -2.5,
-        3
-      ],
-      "face": 0
-    },
-    {
-      "place": "eki",
-      "kind": "pole",
-      "at": [
-        -8.5,
-        1.5
-      ],
-      "face": 1
-    },
-    {
-      "place": "eki",
-      "kind": "pole",
-      "at": [
-        8.5,
-        1.5
-      ],
-      "face": 1
-    },
-    {
-      "place": "eki",
-      "kind": "tree",
-      "at": [
-        -9,
-        6
-      ],
-      "face": 0
-    },
-    {
-      "place": "kumoyama",
-      "kind": "house",
-      "at": [
-        -6,
-        -5
-      ],
-      "face": 0
-    },
-    {
-      "place": "kumoyama",
-      "kind": "house_b",
-      "at": [
-        5,
-        -5.5
-      ],
-      "face": 0
-    },
-    {
-      "place": "kumoyama",
-      "kind": "bench",
-      "at": [
-        2.8,
-        -0.6
-      ],
-      "face": 0
-    },
-    {
-      "place": "kumoyama",
-      "kind": "tree",
-      "at": [
-        7,
-        1
-      ],
-      "face": 0
-    },
-    {
-      "place": "koyama",
-      "kind": "fence",
-      "at": [
-        -4,
-        -0.5
-      ],
-      "face": 0
-    },
-    {
-      "place": "koyama",
-      "kind": "fence",
-      "at": [
-        4,
-        -0.5
-      ],
-      "face": 0
-    },
-    {
-      "place": "koyama",
-      "kind": "pole",
-      "at": [
-        6,
-        2
-      ],
-      "face": 1
-    },
-    {
-      "place": "koyama",
-      "kind": "tree",
-      "at": [
-        -7,
-        -3
-      ],
-      "face": 0
-    },
-    {
-      "place": "fukube",
-      "kind": "house",
-      "at": [
-        7,
-        -7
-      ],
-      "face": 0
-    },
-    {
-      "place": "fukube",
-      "kind": "tree",
-      "at": [
-        -7,
-        -6
-      ],
-      "face": 0
-    },
-    {
-      "place": "fukube",
-      "kind": "tree",
-      "at": [
-        8,
-        2
-      ],
-      "face": 0
-    },
-    {
-      "place": "fukube",
-      "kind": "fence",
-      "at": [
-        0,
-        3.5
-      ],
-      "face": 0
-    },
-    {
       "place": "ketaka",
       "kind": "hill",
       "at": [
-        0,
-        -9
+        9.5,
+        -15.5
       ],
       "face": 0,
       "scale": 0.6
-    },
-    {
-      "place": "ketaka",
-      "kind": "tree",
-      "at": [
-        -5,
-        -5
-      ],
-      "face": 0
-    },
-    {
-      "place": "ketaka",
-      "kind": "tree",
-      "at": [
-        5,
-        -6
-      ],
-      "face": 0
-    },
-    {
-      "place": "ketaka",
-      "kind": "pole",
-      "at": [
-        6,
-        2
-      ],
-      "face": 1
-    },
-    {
-      "place": "mochigase",
-      "kind": "house",
-      "at": [
-        8,
-        -3
-      ],
-      "face": 0
-    },
-    {
-      "place": "mochigase",
-      "kind": "fence",
-      "at": [
-        0,
-        1.5
-      ],
-      "face": 0
-    },
-    {
-      "place": "mochigase",
-      "kind": "tree",
-      "at": [
-        -6,
-        -4
-      ],
-      "face": 0
-    },
-    {
-      "place": "mochigase",
-      "kind": "tree",
-      "at": [
-        4.5,
-        -6
-      ],
-      "face": 0
-    },
-    {
-      "place": "sakyu",
-      "kind": "bench",
-      "at": [
-        2.5,
-        2
-      ],
-      "face": 0
     }
   ],
   "spots": [
@@ -431,10 +161,10 @@
       "id": "stop",
       "kind": "stop",
       "at": [
-        0,
-        0
+        8.0,
+        2.9
       ],
-      "face": 0,
+      "face": 2,
       "radius": 1.2,
       "title": "雲山のバス停",
       "why": "雲山の辺りを通る 2 つの系統（6 路線）の平日の便は、合わせて 63 本。朝 7 時台の便で高校生が駅へ出て、9 時台の便でお年寄りが病院へ行く。ここからは架空の相談。運転士が足りず便を減らすとしたら、どれを外す？",
@@ -495,10 +225,10 @@
       "id": "empty1",
       "kind": "empty_house",
       "at": [
-        0,
-        -2
+        8.5,
+        7.4
       ],
-      "face": 0,
+      "face": 2,
       "radius": 2.5,
       "title": "雨戸の閉まった家",
       "why": "持ち主は市外の息子さん。相続したまま、片付けにも貸すにも手が回らない。庭の草だけが伸びていく。町にはこういう家が増えていて、空き家バンクに載っていないものも多い。",
@@ -550,10 +280,10 @@
       "id": "shop1",
       "kind": "shop_closed",
       "at": [
-        6,
-        -3
+        5.8,
+        7.2
       ],
-      "face": 0,
+      "face": 2,
       "radius": 2.8,
       "title": "シャッターの下りた八百屋",
       "why": "店主の田淵さんが腰を痛めて、先月から閉めている。配達を頼んでいたお年寄りは、いまはバスで隣町のスーパーまで行っている。店を継ぐ人はいない。",
@@ -605,10 +335,10 @@
       "id": "field1",
       "kind": "field",
       "at": [
-        0,
-        -2
+        9.5,
+        7.6
       ],
-      "face": 0,
+      "face": 2,
       "radius": 4.5,
       "radius_shape": "box",
       "title": "昼間に人のいない畑",
@@ -661,8 +391,8 @@
       "id": "cave",
       "kind": "ginger_cave",
       "at": [
-        0,
-        -3
+        9.5,
+        -7.5
       ],
       "face": 0,
       "radius": 3.5,
@@ -721,8 +451,8 @@
       "id": "workshop",
       "kind": "workshop",
       "at": [
-        0,
-        -2
+        9.5,
+        -8.2
       ],
       "face": 0,
       "radius": 4.5,
@@ -778,8 +508,8 @@
       "id": "rabbit",
       "kind": "rabbit",
       "at": [
-        1.2,
-        5.2
+        1.6,
+        -6.5
       ],
       "face": 3,
       "name": "白兎",
@@ -796,8 +526,8 @@
       "id": "hina",
       "kind": "person",
       "at": [
-        0,
-        1.6
+        10.2,
+        3.1
       ],
       "face": 2,
       "name": "佐伯 ひな",
@@ -822,10 +552,10 @@
       "id": "kiyoshi",
       "kind": "person",
       "at": [
-        1.6,
-        0.4
+        5.8,
+        3.1
       ],
-      "face": 1,
+      "face": 2,
       "name": "岡本 清",
       "role": "通院",
       "body": [
@@ -848,8 +578,8 @@
       "id": "tabuchi",
       "kind": "person",
       "at": [
-        4.5,
-        -1.5
+        8.6,
+        3.2
       ],
       "face": 2,
       "name": "田淵",
@@ -874,10 +604,10 @@
       "id": "kishimoto",
       "kind": "person",
       "at": [
-        5,
-        0.5
+        5.0,
+        3.0
       ],
-      "face": 1,
+      "face": 2,
       "name": "岸本",
       "role": "畑",
       "body": [
@@ -900,10 +630,10 @@
       "id": "yamane",
       "kind": "person",
       "at": [
-        3,
-        -1
+        13.2,
+        -3.0
       ],
-      "face": 3,
+      "face": 0,
       "name": "山根",
       "role": "生姜穴の持ち主",
       "body": [
@@ -926,10 +656,10 @@
       "id": "kotani",
       "kind": "person",
       "at": [
-        3,
-        0.5
+        12.6,
+        -3.0
       ],
-      "face": 1,
+      "face": 0,
       "name": "小谷",
       "role": "町工場の社長",
       "body": [
@@ -952,10 +682,10 @@
       "id": "student",
       "kind": "person",
       "at": [
-        -9.5,
-        5.5
+        -8.8,
+        3.0
       ],
-      "face": 3,
+      "face": 2,
       "name": "同級生",
       "role": "大学生",
       "body": [
@@ -978,10 +708,10 @@
       "id": "mio",
       "kind": "person",
       "at": [
-        3,
-        0.5
+        3.0,
+        -6.0
       ],
-      "face": 0,
+      "face": 3,
       "name": "みお",
       "role": "旅の人",
       "body": [

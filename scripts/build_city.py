@@ -8,7 +8,7 @@
 出力
   data/build/city.npz, data/build/city_lines.json  Blender（scripts/blender/city.py）に渡す
   public/city/city.json  実行時の配置（木・家・地名・バスの経路）
-  public/city/mask.bin   格子点ごとの印 1 バイト（1 歩ける / 2 市内 / 4 水）
+  public/city/mask.bin   格子点ごとの印 1 バイト（1 歩ける / 2 市内 / 4 水 / 8 道 / 16 砂）
   public/city/map.png    小さな地図の下絵
   data/world.json        places[].at を緯度経度から求めて書き戻す
 座標は鳥取駅が原点、1 単位 = 50 m、+x が東、+z が南。
@@ -19,12 +19,15 @@ import heapq
 import json
 import math
 import pathlib
+import itertools
 import random
 from collections import defaultdict
 
 import numpy as np
 import openpyxl
 from PIL import Image, ImageDraw
+
+import towns
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw"
@@ -44,9 +47,12 @@ KZ = 110950 / M_PER_UNIT
 BBOX = (133.9456, 35.262, 134.452, 35.582)  # 鳥取市の外枠（N03）に約 1 km の余白。西は標高タイルの端で止める
 DEM_Z = 11
 RIVER_CELLS = 600  # 集水域 6 km² 以上を川として描く。少ないと平地に細い川が網のように出る
-RIVER_CLEAR = 10  # 場所の広場には川を通さない（単位）。標高から求めた川で、実在の川筋ではないため
+RIVER_CLEAR = towns.R_RING + 1  # 町の中には川を通さない（単位）。標高から求めた川で、実在の川筋ではないため
 PEOPLE_PER_HOUSE = 250  # 見た目の密度。1 軒 = 250 人
-PLACE_CLEAR = 12  # 場所の周りは家と木を置かない（単位）
+PLACE_CLEAR = 23  # 町の周りは市じゅうの家と木を置かない（単位）。町の中は scripts/towns.py が置く
+FLAT_R = 23  # 町を平らにする半径
+FLAT_BLEND = 8  # そこから元の地形へ戻す幅
+CORNER = 3.0  # バスの道の角を丸める長さ
 
 rng = random.Random(7)
 
@@ -287,7 +293,7 @@ def shortest(edges, src):
 
 
 # ---------- 人口と町丁目の代表点 ----------
-def towns():
+def population():
     wb = openpyxl.load_workbook(RAW / "population_2026-09.xlsx", read_only=True, data_only=True)
     rows = list(wb[wb.sheetnames[0]].iter_rows(values_only=True))
     pop = {}
@@ -343,13 +349,181 @@ def flat_spot(p, walk, slope):
     return [round(best[1], 1), round(best[2], 1)]
 
 
-def bus_routes(world, nodes, edges):
-    hubs = [p for p in world["places"] if p.get("hub")]
-    hub_node = {p["id"]: min(range(len(nodes)), key=lambda n: math.dist(nodes[n][:2], p["at"])) for p in hubs}
+# ---------- 町と、町へ入るバスの道 ----------
+def flatten(y, land, centers):
+    """場所のまわりを平らにする。通りと家を水平に置くため。外側はなめらかに元の地形へ戻す"""
+    for cx, cz in centers:
+        d = np.hypot(GX - cx, GZ - cz)
+        y0 = float(np.median(y[(d < 6) & land]))
+        t = np.clip((d - FLAT_R) / FLAT_BLEND, 0, 1)
+        t = t * t * (3 - 2 * t)
+        sel = land & (d < FLAT_R + FLAT_BLEND)
+        y[sel] = y0 * (1 - t[sel]) + y[sel] * t[sel]
+
+
+def build_towns(world, walk):
+    """場所ごとに通りと飾りを組む。物語の人・依頼の場所・目印の物には重ねない"""
+    layouts = {}
+    for p in world["places"]:
+        cx, cz = p["at"]
+
+        def ok(x, z, cx=cx, cz=cz):
+            r, q = cell_of(cx + x, cz + z)
+            return inside(r, q) and bool(walk[r, q])
+
+        def mine(items, pid=p["id"]):
+            return [i for i in items if i["place"] == pid]
+
+        reserved = [(s["at"][0], s["at"][1], s["radius"] + 0.6) for s in mine(world["spots"])]
+        reserved += [(n["at"][0], n["at"][1], 1.0) for n in mine(world["npcs"])]
+        reserved += [(o["at"][0], o["at"][1], towns.RADIUS[o["kind"]] * o.get("scale", 1)) for o in mine(world["props"])]
+        if world["meta"]["start"]["place"] == p["id"]:
+            reserved.append((*world["meta"]["start"]["at"], 1.5))
+        layouts[p["id"]] = towns.build(p["id"], reserved, ok)
+    return layouts
+
+
+def chains(edges):
+    """停留所のつながりを、分かれ道から分かれ道までの線に分ける"""
+    seen, out = set(), []
+
+    def follow(a, b):
+        line = [a, b]
+        seen.update({(a, b), (b, a)})
+        while len(edges[b]) == 2:
+            nxt = next(n for n in edges[b] if n != line[-2])
+            if (b, nxt) in seen:
+                break
+            seen.update({(b, nxt), (nxt, b)})
+            line.append(nxt)
+            b = nxt
+        return line
+
+    for a in list(edges):
+        if len(edges[a]) != 2:
+            out += [follow(a, b) for b in list(edges[a]) if (a, b) not in seen]
+    for a in list(edges):  # 分かれ道の無い輪
+        out += [follow(a, b) for b in list(edges[a]) if (a, b) not in seen]
+    return out
+
+
+def round_corners(pts, r=CORNER):
+    """折れ線の角を丸める。角から r 以内を 2 次の曲線に置き換える"""
+    out = [tuple(pts[0])]
+    for a, v, b in zip(pts, pts[1:], pts[2:]):
+        da, db = math.dist(a, v), math.dist(v, b)
+        if da < 1e-6 or db < 1e-6:
+            continue
+        ka, kb = min(r, da / 3) / da, min(r, db / 3) / db
+        p = (v[0] + (a[0] - v[0]) * ka, v[1] + (a[1] - v[1]) * ka)
+        q = (v[0] + (b[0] - v[0]) * kb, v[1] + (b[1] - v[1]) * kb)
+        for t in (0, 0.25, 0.5, 0.75, 1):
+            out.append(tuple((1 - t) ** 2 * p[i] + 2 * (1 - t) * t * v[i] + t * t * q[i] for i in range(2)))
+    out.append(tuple(pts[-1]))
+    return out
+
+
+def densify(pts, step=1.0):
+    out = [tuple(pts[0])]
+    for a, b in zip(pts, pts[1:]):
+        n = max(1, int(math.dist(a, b) / step))
+        out += [(a[0] + (b[0] - a[0]) * t / n, a[1] + (b[1] - a[1]) * t / n) for t in range(1, n + 1)]
+    return out
+
+
+def simplify(pts, tol=0.05):
+    """ほぼまっすぐな所の点を間引く（Ramer-Douglas-Peucker）"""
+    keep = [False] * len(pts)
+    keep[0] = keep[-1] = True
+    stack = [(0, len(pts) - 1)]
+    while stack:
+        i, j = stack.pop()
+        (ax, az), (bx, bz) = pts[i], pts[j]
+        ln = math.hypot(bx - ax, bz - az) or 1e-9
+        best, k = 0.0, None
+        for m in range(i + 1, j):
+            d = abs((bx - ax) * (az - pts[m][1]) - (ax - pts[m][0]) * (bz - az)) / ln
+            if d > best:
+                best, k = d, m
+        if k is not None and best > tol:
+            keep[k] = True
+            stack += [(i, k), (k, j)]
+    return [p for p, k in zip(pts, keep) if k]
+
+
+def town_of(pt, hubs):
+    """点が入っている町の番号。どこにも入っていなければ -1"""
+    return next((i for i, (c, _) in enumerate(hubs) if math.dist(pt, c) < towns.R_CUT), -1)
+
+
+def arc(c, a1, a2):
+    """町の外周（半径 R_CUT）を a1 から a2 へ、短い向きに回る点"""
+    diff = (a2 - a1 + math.pi) % math.tau - math.pi
+    n = max(1, int(abs(diff) * towns.R_CUT / 1.5))
+    return [(c[0] + towns.R_CUT * math.cos(a1 + diff * i / n), c[1] + towns.R_CUT * math.sin(a1 + diff * i / n)) for i in range(n + 1)]
+
+
+def shift(c, pts):
+    return [(c[0] + x, c[1] + z) for x, z in pts]
+
+
+def outward(c, town, toward):
+    """toward にいちばん近い通りの端と、そこから外周を回って toward の向きまでの点"""
+    ang = math.atan2(toward[1] - c[1], toward[0] - c[0])
+    end = min(town.ends, key=lambda e: abs((math.atan2(e[1], e[0]) - ang + math.pi) % math.tau - math.pi))
+    return end, shift(c, [end]) + arc(c, math.atan2(end[1], end[0]), ang)
+
+
+def road_network(nodes, edges, hubs):
+    """バスの道の線。角を丸め、町の中は消して、町の外周から通りの端へつなぐ"""
+    out = []
+    for chain in chains(edges):
+        line = densify(round_corners([nodes[n][:2] for n in chain]))
+        groups = [(k, list(g)) for k, g in itertools.groupby(line, key=lambda pt: town_of(pt, hubs))]
+        for i, (k, piece) in enumerate(groups):
+            if k >= 0:
+                continue
+            if i > 0:
+                c, town = hubs[groups[i - 1][0]]
+                piece = outward(c, town, piece[0])[1] + piece
+            if i + 1 < len(groups):
+                c, town = hubs[groups[i + 1][0]]
+                piece = piece + outward(c, town, piece[-1])[1][::-1]
+            if len(piece) >= 2:
+                out.append([[round(x, 2), round(z, 2)] for x, z in densify(piece)])
+    return out
+
+
+def town_route(pts, hubs):
+    """バスの経路。乗り場の前から通りを走って町を出て、外の道を通り、途中の町は通りを抜ける"""
+    groups = [(k, list(g)) for k, g in itertools.groupby(pts, key=lambda pt: town_of(pt, hubs))]
+    out = []
+    for i, (k, g) in enumerate(groups):
+        if k < 0:
+            out += g
+            continue
+        c, town = hubs[k]
+        nxt = groups[i + 1][1][0] if i + 1 < len(groups) else None
+        if i == 0:
+            end, ring = outward(c, town, nxt)
+            out += shift(c, town.leg(end)) + ring[1:]
+        elif nxt is None:
+            end, ring = outward(c, town, out[-1])
+            out += ring[1:][::-1] + shift(c, town.leg(end)[::-1])
+        else:
+            e_in, ring_in = outward(c, town, out[-1])
+            e_out, ring_out = outward(c, town, nxt)
+            out += ring_in[1:][::-1] + shift(c, town.through(e_in, e_out)) + ring_out[1:]
+    return simplify(out)
+
+
+def bus_routes(world, nodes, edges, hubs):
+    places = [p for p in world["places"] if p.get("hub")]
+    hub_node = {p["id"]: min(range(len(nodes)), key=lambda n: math.dist(nodes[n][:2], p["at"])) for p in places}
     routes = {}
-    for a in hubs:
+    for a in places:
         dist, prev = shortest(edges, hub_node[a["id"]])
-        for b in hubs:
+        for b in places:
             if a["id"] >= b["id"]:
                 continue
             t = hub_node[b["id"]]
@@ -362,14 +536,27 @@ def bus_routes(world, nodes, edges):
                 c = prev[c]
             path.append(nodes[c][:2])
             path.reverse()
-            pts = [a["at"]] + [list(v) for v in path] + [b["at"]]
+            pts = town_route(densify(round_corners([a["at"]] + [list(v) for v in path] + [b["at"]])), hubs)
             km = sum(math.dist(u, v) for u, v in zip(pts, pts[1:])) * M_PER_UNIT / 1000
-            routes[f"{a['id']}|{b['id']}"] = {"km": round(km, 1), "path": [[round(v, 1) for v in pt] for pt in pts]}
+            routes[f"{a['id']}|{b['id']}"] = {"km": round(km, 1), "path": [[round(v, 2) for v in pt] for pt in pts]}
     return routes
 
 
+def road_cells(lines):
+    """道の通る格子点。足もとの草を道の上に生やさないため"""
+    m = np.zeros((H, W), bool)
+    for line in lines:
+        for x, z in line:
+            r, q = cell_of(x, z)
+            for dr in (-1, 0, 1):
+                for dq in (-1, 0, 1):
+                    if inside(r + dr, q + dq) and math.hypot(X0 + (q + dq) * CELL - x, Z0 + (r + dr) * CELL - z) < 2.0:
+                        m[r + dr, q + dq] = True
+    return m
+
+
 def place_houses(walk, slope, occ):
-    pop, points = towns()
+    pop, points = population()
     houses, matched = [], 0
     for name, n_people in pop.items():
         if name not in points:
@@ -419,13 +606,14 @@ def colors(hm, land, sea, water, slope, city, near_sea):
     for lo, c in bands:
         col[hm >= lo] = c
     dune = (LAT > 35.528) & (LAT < 35.552) & (LON > 134.215) & (LON < 134.275) & (hm < 70) & land
-    col[(near_sea & (hm < 12)) | dune] = (0.93, 0.85, 0.62)
+    sand = (near_sea & (hm < 12)) | dune
+    col[sand] = (0.93, 0.85, 0.62)
     col[sea | water] = (0.36, 0.55, 0.68)
     col *= (1 + (np.random.default_rng(3).random((H, W, 1)) - 0.5) * 0.08).astype(np.float32)
     col[slope > 0.9] *= 0.85
     out = ~city & land
     col[out] = col[out] * 0.45 + np.array((0.93, 0.91, 0.84), np.float32) * 0.55
-    return np.clip(col, 0, 1)
+    return np.clip(col, 0, 1), sand & land
 
 
 def draw_map(col, sea, water, river_lines, road_lines):
@@ -435,8 +623,8 @@ def draw_map(col, sea, water, river_lines, road_lines):
     d = ImageDraw.Draw(img)
     for line in river_lines:
         d.line([((x - X0) / CELL, (z - Z0) / CELL) for x, z, _ in line], fill=(111, 177, 212), width=1)
-    for (xa, za), (xb, zb) in road_lines:
-        d.line([((xa - X0) / CELL, (za - Z0) / CELL), ((xb - X0) / CELL, (zb - Z0) / CELL)], fill=(255, 250, 235), width=1)
+    for line in road_lines:
+        d.line([((x - X0) / CELL, (z - Z0) / CELL) for x, z in line], fill=(255, 250, 235), width=1)
     img.save(PUB / "map.png", optimize=True)
 
 
@@ -465,30 +653,36 @@ def main():
     near_sea = grow(sea, 3) & land
     print(f"grid {W}x{H}  land {land.mean():.2f} city {city.mean():.2f} lakes {[(n, round(x), round(z)) for n, x, z in lakes[:4]]}")
 
-    river_lines = rivers(y, land)
-    nodes, edges = bus_graph()
-    roads = sorted({(min(a, b), max(a, b)) for a in edges for b in edges[a]})
-    road_lines = [[list(nodes[a][:2]), list(nodes[b][:2])] for a, b in roads]
-    print(f"rivers {len(river_lines)}  bus stops {len(nodes)}  road segments {len(roads)}")
-
-    occ = Occupancy()
-    for (xa, za), (xb, zb) in road_lines:
-        n = max(1, int(math.dist((xa, za), (xb, zb)) / 0.7))
-        for t in range(n + 1):
-            occ.mark(xa + (xb - xa) * t / n, za + (zb - za) * t / n, 1)
-    for line in river_lines:
-        for x, z, w in line:
-            occ.mark(x, z, w / 2 + 0.5)
-
+    river_lines = rivers(y, land)  # 平らにする前の地形で流れを求める
     world_path = ROOT / "data" / "world.json"
     world = json.loads(world_path.read_text(encoding="utf-8"))
     for p in world["places"]:
         p["at"] = flat_spot(p, walk, slope)
-        occ.mark(p["at"][0], p["at"][1], PLACE_CLEAR)
-    river_lines = cut_near(river_lines, [p["at"] for p in world["places"]], RIVER_CLEAR)
+        if p.get("hub"):
+            p["stop"] = towns.STOP
     world_path.write_text(json.dumps(world, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    centers = [p["at"] for p in world["places"]]
+    flatten(y, land, centers)
+    gz, gx = np.gradient(y, CELL)
+    slope = np.hypot(gx, gz)
+    layouts = build_towns(world, walk)
+    hubs = [(p["at"], layouts[p["id"]]) for p in world["places"]]
+    river_lines = cut_near(river_lines, centers, RIVER_CLEAR)
 
-    routes = bus_routes(world, nodes, edges)
+    nodes, edges = bus_graph()
+    road_lines = road_network(nodes, edges, hubs)
+    print(f"rivers {len(river_lines)}  bus stops {len(nodes)}  road lines {len(road_lines)}  points {sum(map(len, road_lines))}")
+
+    occ = Occupancy()
+    for line in road_lines:
+        for x, z in line:
+            occ.mark(x, z, 2)
+    for line in river_lines:
+        for x, z, w in line:
+            occ.mark(x, z, w / 2 + 0.5)
+    for x, z in centers:
+        occ.mark(x, z, PLACE_CLEAR)
+    routes = bus_routes(world, nodes, edges, hubs)
     houses, points = place_houses(walk, slope, occ)
     trees = place_trees(land, hm, slope, city, near_sea, occ)
 
@@ -503,23 +697,24 @@ def main():
     if lakes:
         labels.append({"name": "湖山池", "at": [round(lakes[0][1], 1), round(lakes[0][2], 1)], "kind": "water"})
 
-    col = colors(hm, land, sea, water, slope, city, near_sea)
+    col, sand = colors(hm, land, sea, water, slope, city, near_sea)
     keep = grow(land, 3)  # 遠い海の底は描かない
     np.savez_compressed(BUILD / "city.npz", y=y.astype(np.float32), col=col, keep=keep,
                         grid=np.array([X0, Z0, CELL, W, H], np.float64))
     (BUILD / "city_lines.json").write_text(json.dumps({"rivers": river_lines, "roads": road_lines}), encoding="utf-8")
-    mask = (walk * 1 + city * 2 + (sea | water) * 4).astype(np.uint8)
+    mask = (walk * 1 + city * 2 + (sea | water) * 4 + road_cells(road_lines) * 8 + sand * 16).astype(np.uint8)
     (PUB / "mask.bin").write_bytes(mask.tobytes())
     draw_map(col, sea, water, river_lines, road_lines)
 
     city_json = {
-        "note": "鳥取市全域。地形は国土地理院の標高タイル、市の形は国土数値情報、道はバス停留所を順に結んだ線。家と木は人口と標高から置いた見た目で、実在の建物の位置ではない",
+        "note": "鳥取市全域。地形は国土地理院の標高タイル、市の形は国土数値情報、道はバス停留所を順に結んだ線の角を丸めたもの。町の通りと飾り（towns）と、人口と標高から置いた見た目で、実在の建物の位置ではない",
         "grid": {"x0": X0, "z0": Z0, "cell": CELL, "w": W, "h": H},
         "origin": {"lat": ORIGIN[0], "lon": ORIGIN[1], "m_per_unit": M_PER_UNIT, "exaggeration": EXAG},
         "houses": houses,
         "trees": trees,
         "labels": labels,
         "routes": routes,
+        "towns": {p["id"]: layouts[p["id"]].data() for p in world["places"]},
     }
     (PUB / "city.json").write_text(json.dumps(city_json, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print("routes", len(routes), "city.json bytes", (PUB / "city.json").stat().st_size)

@@ -16,7 +16,7 @@ from mathutils.bvhtree import BVHTree
 ROOT = os.getcwd()
 DECIMATE = 0.22  # 面の数を 22% まで減らす。平地と海はほとんど消え、山の形は残る
 BOTTOM = -6.0  # 模型の台の底
-ROAD_W = 0.9
+ROAD_W = 2.4  # 町の本通りより少し細い、2 車線の道
 LIFT = 0.14  # 川と道を地面から浮かせる量
 
 data = np.load(os.path.join(ROOT, "data", "build", "city.npz"))
@@ -129,28 +129,36 @@ class Ground:
         return hit[0].z if hit[0] is not None else fallback
 
 
-def ribbon(name, lines, mat, ground):
-    """線（川・道）を地面に沿う帯にする。横に 3 点並べ、1 点ずつ地面の高さを取る"""
-    verts, faces = [], []
+def ribbon(name, lines, mat, ground, tile):
+    """線（川・道）を地面に沿う帯にする。横に 3 点並べ、1 点ずつ地面の高さを取る。
+    UV は横が 0〜1、縦が線に沿った長さ / tile。three.js で白線や流れの模様を貼る"""
+    verts, faces, uvs = [], [], []
     for pts in lines:
         if len(pts) < 2:
             continue
         base = len(verts)
         n = len(pts)
+        s = 0.0
         for i, (x, z, w) in enumerate(pts):
+            if i:
+                s += ((x - pts[i - 1][0]) ** 2 + (z - pts[i - 1][1]) ** 2) ** 0.5
             a = pts[max(0, i - 1)]
             b = pts[min(n - 1, i + 1)]
             tx, ty = b[0] - a[0], -(b[1] - a[1])
             ln = max(1e-6, (tx * tx + ty * ty) ** 0.5)
             nx, ny = -ty / ln, tx / ln
-            for s in (-0.5, 0.0, 0.5):
-                vx, vy = x + nx * w * s, -z + ny * w * s
+            for side in (-0.5, 0.0, 0.5):
+                vx, vy = x + nx * w * side, -z + ny * w * side
                 verts.append((vx, vy, ground.height(vx, vy) + LIFT))
+                uvs.append((side + 0.5, s / tile))
         for i in range(n - 1):
             r0, r1 = base + i * 3, base + (i + 1) * 3
             faces.append((r0, r0 + 1, r1 + 1, r1))
             faces.append((r0 + 1, r0 + 2, r1 + 2, r1 + 1))
     o = new_object(name, verts, faces, [mat])
+    uv = o.data.uv_layers.new(name="UVMap")
+    for loop in o.data.loops:
+        uv.data[loop.index].uv = uvs[loop.vertex_index]
     bm = bmesh.new()
     bm.from_mesh(o.data)
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
@@ -163,12 +171,8 @@ def ribbon(name, lines, mat, ground):
 
 
 def road_lines():
-    """停留所を結ぶ直線を 1.2 単位ごとに区切る。山を越える区間も地面に沿わせるため"""
-    out = []
-    for (xa, za), (xb, zb) in LINES["roads"]:
-        n = max(1, int(((xb - xa) ** 2 + (zb - za) ** 2) ** 0.5 / 1.2))
-        out.append([(xa + (xb - xa) * t / n, za + (zb - za) * t / n, ROAD_W) for t in range(n + 1)])
-    return out
+    """build_city.py が 1 単位ごとに区切った道の折れ線に、幅を付ける"""
+    return [[(x, z, ROAD_W) for x, z in line] for line in LINES["roads"]]
 
 
 def height_map(ground):
@@ -187,7 +191,8 @@ def export(path):
     bpy.ops.object.select_all(action="SELECT")
     args = dict(filepath=path, export_format="GLB", use_selection=True, export_apply=True, export_normals=False,
                 export_draco_mesh_compression_enable=True, export_draco_mesh_compression_level=7,
-                export_draco_position_quantization=16, export_draco_color_quantization=8)
+                export_draco_position_quantization=16, export_draco_color_quantization=8,
+                export_draco_texcoord_quantization=16)
     try:
         bpy.ops.export_scene.gltf(**args, export_vertex_color="ACTIVE")
     except TypeError:
@@ -199,8 +204,8 @@ clear()
 land = terrain()
 ground = Ground(land)
 water()
-ribbon("rivers", LINES["rivers"], material("river", (0.43, 0.69, 0.85)), ground)
-ribbon("roads", road_lines(), material("road", (0.95, 0.90, 0.78)), ground)
+ribbon("rivers", LINES["rivers"], material("river", (0.43, 0.69, 0.85)), ground, 2.0)
+ribbon("roads", road_lines(), material("road", (0.42, 0.44, 0.47)), ground, ROAD_W)
 height_map(ground)
 export(os.path.join(ROOT, "public", "models", "city.glb"))
 print("done")
