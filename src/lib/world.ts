@@ -1,4 +1,5 @@
-// 模型の町の型と、歩き回りの計算。three.js に依存しないので vitest で試せる
+// 鳥取市の模型の型と、歩き回りの計算。three.js に依存しないので vitest で試せる。
+// 座標は鳥取駅が原点、1 単位 = 50 m、+x が東、+z が南（scripts/build_city.py と同じ）
 export type Vec2 = [number, number];
 
 export type Note = { good: string; gap: string; question: string };
@@ -7,8 +8,12 @@ export type Option = { text: string; label: string; note: Note };
 export type Fact = { text: string; source: string };
 export type Window = { name: string; url: string; checked: string; note: string };
 
+/** 物語を置く町。at は build_city.py が緯度経度から求めた位置。stop はバスに乗れる標識の位置（場所の中の座標） */
+export type Place = { id: string; name: string; geo: Vec2; at: Vec2; hub?: boolean; stop?: Vec2; geo_source: string };
+
 export type Spot = {
   id: string;
+  place: string;
   kind: string;
   at: Vec2;
   face: number;
@@ -30,6 +35,7 @@ export type Spot = {
 
 export type Npc = {
   id: string;
+  place: string;
   kind: "person" | "rabbit";
   at: Vec2;
   face: number;
@@ -40,41 +46,46 @@ export type Npc = {
   lines: string[];
 };
 
-export type Prop = { kind: string; at: Vec2; face: number; scale?: number };
-export type Road = { from: Vec2; to: Vec2 };
+export type Prop = { place: string; kind: string; at: Vec2; face: number; scale?: number };
 
 export type World = {
-  meta: { tile: number; start: Vec2; island: { min: Vec2; max: Vec2 }; clock: { start_hour: number; end_hour: number; minutes_per_second: number; minutes_per_talk: number } };
-  roads: Road[];
+  meta: { start: { place: string; at: Vec2 }; clock: { start_hour: number; end_hour: number; minutes_per_second: number; minutes_per_talk: number } };
+  places: Place[];
   props: Prop[];
   spots: Spot[];
   npcs: Npc[];
   sources: Record<string, { name: string; url: string; date: string; note: string }>;
 };
 
-export type Target = { type: "spot"; spot: Spot } | { type: "npc"; npc: Npc };
+/** 場所の中の座標を、市全体の座標に直したもの */
+export type Placed = World & { start: Vec2; stops: { place: Place; at: Vec2 }[] };
+
+export type Target = { type: "spot"; spot: Spot } | { type: "npc"; npc: Npc } | { type: "bus"; place: Place; at: Vec2 };
+
+/** 地形の格子。height は高さ×100 の整数、mask は 1 歩ける / 2 市内 / 4 水 */
+export type Ground = { x0: number; z0: number; cell: number; w: number; h: number; height: Int16Array; mask: Uint8Array };
+export type Route = { km: number; path: Vec2[] };
 
 export const TALK_RANGE = 2.2;
-export const PROP_RADIUS: Record<string, number> = { house: 2.4, house_b: 2.4, pear_tree: 0.6, field: 4.2, school: 5.2, tree: 0.9, pole: 0.3, vending: 0.7, bench: 0.8, hill: 9 };
+export const PROP_RADIUS: Record<string, number> = { house: 2.4, house_b: 2.4, shop: 2.4, pear_tree: 0.6, field: 4.2, school: 5.2, tree: 0.9, pole: 0.3, vending: 0.7, bench: 0.8, hill: 9 };
+/** 路線バスの平均の速さ [推定: 停車を含めて時速 25 km と置いた] */
+export const BUS_KMH = 25;
 
-/** 道のタイルの中心座標。from と to は格子の座標（タイル単位） */
-export function roadTiles(roads: Road[]): Vec2[] {
-  const seen = new Set<string>();
-  const tiles: Vec2[] = [];
-  for (const r of roads) {
-    const dx = Math.sign(r.to[0] - r.from[0]);
-    const dz = Math.sign(r.to[1] - r.from[1]);
-    const n = Math.max(Math.abs(r.to[0] - r.from[0]), Math.abs(r.to[1] - r.from[1]));
-    for (let i = 0; i <= n; i++) {
-      const x = r.from[0] + dx * i;
-      const z = r.from[1] + dz * i;
-      const key = `${x},${z}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      tiles.push([x, z]);
-    }
-  }
-  return tiles;
+export function placeWorld(world: World): Placed {
+  const at = new Map(world.places.map((p) => [p.id, p.at]));
+  const shift = (place: string, v: Vec2): Vec2 => {
+    const base = at.get(place);
+    if (!base) throw new Error(`場所が無い: ${place}`);
+    return [base[0] + v[0], base[1] + v[1]];
+  };
+  return {
+    ...world,
+    start: shift(world.meta.start.place, world.meta.start.at),
+    props: world.props.map((p) => ({ ...p, at: shift(p.place, p.at) })),
+    spots: world.spots.map((s) => ({ ...s, at: shift(s.place, s.at) })),
+    npcs: world.npcs.map((n) => ({ ...n, at: shift(n.place, n.at) })),
+    stops: world.places.filter((p) => p.hub && p.stop).map((p) => ({ place: p, at: shift(p.id, p.stop!) })),
+  };
 }
 
 /** 歩く人が物に入らないよう、円の外へ押し出す */
@@ -92,7 +103,7 @@ export function pushOut(pos: Vec2, obstacles: { at: Vec2; radius: number }[]): V
 }
 
 /** いちばん近い、話せる相手。範囲の外なら null */
-export function nearestTarget(pos: Vec2, world: World, range = TALK_RANGE): Target | null {
+export function nearestTarget(pos: Vec2, world: Placed, range = TALK_RANGE): Target | null {
   let best: { d: number; t: Target } | null = null;
   const consider = (at: Vec2, radius: number, t: Target) => {
     const d = Math.hypot(pos[0] - at[0], pos[1] - at[1]) - radius;
@@ -101,27 +112,50 @@ export function nearestTarget(pos: Vec2, world: World, range = TALK_RANGE): Targ
   };
   for (const npc of world.npcs) consider(npc.at, 0.5, { type: "npc", npc });
   for (const spot of world.spots) consider(spot.at, spot.radius, { type: "spot", spot });
+  for (const s of world.stops) consider(s.at, 0.4, { type: "bus", place: s.place, at: s.at });
   return best ? (best as { d: number; t: Target }).t : null;
 }
 
-/** JSON の座標はタイル単位。メートルに直した World を返す。道だけはタイル単位のまま */
-export function inMeters(world: World): World {
-  const t = world.meta.tile;
-  const m = (v: Vec2): Vec2 => [v[0] * t, v[1] * t];
-  return {
-    ...world,
-    meta: { ...world.meta, start: m(world.meta.start), island: { min: m(world.meta.island.min), max: m(world.meta.island.max) } },
-    props: world.props.map((p) => ({ ...p, at: m(p.at) })),
-    spots: world.spots.map((s) => ({ ...s, at: m(s.at) })),
-    npcs: world.npcs.map((n) => ({ ...n, at: m(n.at) })),
-  };
+export const targetAt = (t: Target): Vec2 => (t.type === "spot" ? t.spot.at : t.type === "npc" ? t.npc.at : t.at);
+
+/** 足もとの高さ。格子の4点から線形に補う */
+export function heightAt(g: Ground, x: number, z: number): number {
+  const fx = Math.min(Math.max((x - g.x0) / g.cell, 0), g.w - 1.001);
+  const fz = Math.min(Math.max((z - g.z0) / g.cell, 0), g.h - 1.001);
+  const q = Math.floor(fx);
+  const r = Math.floor(fz);
+  const tx = fx - q;
+  const tz = fz - r;
+  const h = (rr: number, qq: number) => g.height[rr * g.w + qq] / 100;
+  const top = h(r, q) * (1 - tx) + h(r, q + 1) * tx;
+  const bottom = h(r + 1, q) * (1 - tx) + h(r + 1, q + 1) * tx;
+  return top * (1 - tz) + bottom * tz;
 }
 
-/** 島の縁から落ちないよう、内側 margin メートルに収める */
-export function clampToIsland(pos: Vec2, island: { min: Vec2; max: Vec2 }, margin = 2): Vec2 {
-  const x = Math.min(Math.max(pos[0], island.min[0] + margin), island.max[0] - margin);
-  const z = Math.min(Math.max(pos[1], island.min[1] + margin), island.max[1] - margin);
-  return [x, z];
+/** 歩ける所か。市の外・海・湖は歩けない */
+export function walkable(g: Ground, x: number, z: number): boolean {
+  const q = Math.round((x - g.x0) / g.cell);
+  const r = Math.round((z - g.z0) / g.cell);
+  if (q < 0 || r < 0 || q >= g.w || r >= g.h) return false;
+  return (g.mask[r * g.w + q] & 1) === 1;
 }
+
+/** 歩けない所へは進まず、x か z の片方だけでも進めるなら壁に沿って滑る */
+export function stepWithin(g: Ground, from: Vec2, to: Vec2): Vec2 {
+  if (walkable(g, to[0], to[1])) return to;
+  if (walkable(g, to[0], from[1])) return [to[0], from[1]];
+  if (walkable(g, from[0], to[1])) return [from[0], to[1]];
+  return from;
+}
+
+/** 2 つの場所を結ぶバスの経路。キーは id を辞書順に並べた "a|b"。逆向きなら道を裏返す */
+export function routeBetween(routes: Record<string, Route>, from: string, to: string): Route | null {
+  const key = from < to ? `${from}|${to}` : `${to}|${from}`;
+  const r = routes[key];
+  if (!r) return null;
+  return from < to ? r : { km: r.km, path: [...r.path].reverse() };
+}
+
+export const busMinutes = (km: number) => Math.round((km / BUS_KMH) * 60);
 
 export const clockText = (minutes: number) => `${Math.floor(minutes / 60)}:${String(Math.floor(minutes % 60)).padStart(2, "0")}`;

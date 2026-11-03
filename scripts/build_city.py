@@ -43,7 +43,8 @@ KX = 111320 * math.cos(math.radians(ORIGIN[0])) / M_PER_UNIT
 KZ = 110950 / M_PER_UNIT
 BBOX = (133.9456, 35.262, 134.452, 35.582)  # 鳥取市の外枠（N03）に約 1 km の余白。西は標高タイルの端で止める
 DEM_Z = 11
-RIVER_CELLS = 300  # 集水域 3 km² 以上を川として描く
+RIVER_CELLS = 600  # 集水域 6 km² 以上を川として描く。少ないと平地に細い川が網のように出る
+RIVER_CLEAR = 10  # 場所の広場には川を通さない（単位）。標高から求めた川で、実在の川筋ではないため
 PEOPLE_PER_HOUSE = 250  # 見た目の密度。1 軒 = 250 人
 PLACE_CLEAR = 12  # 場所の周りは家と木を置かない（単位）
 
@@ -212,7 +213,22 @@ def rivers(y, land):
 
 
 def river_width(acc):
-    return min(3.6, 0.6 + 0.55 * math.log2(max(acc, RIVER_CELLS) / RIVER_CELLS))
+    return min(3.0, 0.5 + 0.5 * math.log2(max(acc, RIVER_CELLS) / RIVER_CELLS))
+
+
+def cut_near(lines, centers, r):
+    """中心から r 以内の点で線を切る。切れ端が 2 点未満なら捨てる"""
+    out = []
+    for line in lines:
+        part = []
+        for p in line:
+            if any(math.dist(p[:2], c) < r for c in centers):
+                out.append(part)
+                part = []
+                continue
+            part.append(p)
+        out.append(part)
+    return [part for part in out if len(part) >= 2]
 
 
 def smooth(pts, times=2):
@@ -469,6 +485,7 @@ def main():
     for p in world["places"]:
         p["at"] = flat_spot(p, walk, slope)
         occ.mark(p["at"][0], p["at"][1], PLACE_CLEAR)
+    river_lines = cut_near(river_lines, [p["at"] for p in world["places"]], RIVER_CLEAR)
     world_path.write_text(json.dumps(world, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     routes = bus_routes(world, nodes, edges)

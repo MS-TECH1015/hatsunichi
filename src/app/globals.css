@@ -200,3 +200,16 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .end-list a { font-size: 13px; color: var(--ink); text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
 .end-line { font-weight: 700; }
 .end-meta { margin: 0 0 16px; font-weight: 700; font-size: 14px; }
+
+/* 右上の地図。押すと大きくなる */
+.minimap { position: absolute; top: 68px; right: 12px; width: 200px; background: var(--paper); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); padding: 4px; transition: width .2s; z-index: 2; }
+.minimap canvas { display: block; width: 100%; aspect-ratio: 470 / 357; border-radius: 9px; cursor: zoom-in; }
+.minimap small { display: block; font-size: 9px; color: var(--ink); opacity: .7; text-align: right; padding: 2px 4px 0; }
+.minimap.big { top: 50%; right: 50%; transform: translate(50%, -50%); width: min(92vw, 820px); z-index: 5; }
+.minimap.big canvas { cursor: zoom-out; }
+@media (max-width: 640px) { .minimap { width: 132px; } }
+
+/* バス停の行き先と、乗っているあいだの札 */
+.choices.bus .choice small { margin-left: auto; font-size: 13px; font-weight: 700; opacity: .65; }
+.ride-sign { position: absolute; left: 50%; top: 76px; transform: translateX(-50%); background: #4d8c6b; color: var(--paper); border: 3px solid var(--ink); border-radius: 999px; padding: 10px 24px; font: 800 18px/1 var(--font-maru), sans-serif; box-shadow: 0 4px 0 var(--ink); animation: rise .2s ease-out both; }
+.ride-sign span { font-size: 22px; font-weight: 900; }

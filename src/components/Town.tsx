@@ -2,7 +2,7 @@
 // 町を歩く画面。描画は TownScene、ここはタイトル・HUD・会話・依頼の選択・判子・詳細の UI。
 // 画面に出す文字は一言ずつにし、理由・出典・付箋・窓口は「くわしく」の中に置く
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { clockText, type Note, type Option, type Spot, type Target, type World } from "@/lib/world";
+import { clockText, targetAt, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
 import { withBase } from "@/lib/base";
 import type { TownScene } from "./town/TownScene";
 import { play, setMuted } from "./town/sfx";
@@ -13,6 +13,8 @@ type Stage = "hint" | "ask" | "result";
 type Panel =
   | { type: "talk"; speaker: string; role?: string; lines: string[]; i: number }
   | { type: "spot"; spot: Spot; stage: Stage; detail?: boolean }
+  | { type: "bus"; from: Place }
+  | { type: "ride"; to: Place; minutes: number }
   | { type: "end" }
   | null;
 
@@ -20,6 +22,7 @@ const MUTE_KEY = "hatsunichi-muted";
 
 export function Town({ world }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mapRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<TownScene | null>(null);
   const [ready, setReady] = useState(false);
   const [started, setStarted] = useState(false);
@@ -30,6 +33,7 @@ export function Town({ world }: Props) {
   const [talked, setTalked] = useState<string[]>([]);
   const [muted, setMute] = useState(false);
   const [stampedId, setStampedId] = useState<string | null>(null);
+  const [bigMap, setBigMap] = useState(false);
   // 閉じた直後の Space で同じ相手をまた開かないように
   const closedAt = useRef(0);
   const { start_hour, end_hour } = world.meta.clock;
@@ -65,6 +69,10 @@ export function Town({ world }: Props) {
     }
   }, []);
 
+  useEffect(() => {
+    if (started) sceneRef.current?.attachMap(mapRef.current);
+  }, [started]);
+
   // 17 時を過ぎるか、案が 3 つそろって会話を閉じたら終業
   useEffect(() => {
     if (!started || panel) return;
@@ -91,8 +99,12 @@ export function Town({ world }: Props) {
 
   function open(t: Target) {
     sceneRef.current?.setPaused(true);
-    sceneRef.current?.faceTo(t.type === "npc" ? t.npc.at : t.spot.at);
+    sceneRef.current?.faceTo(targetAt(t));
     play("open");
+    if (t.type === "bus") {
+      setPanel({ type: "bus", from: t.place });
+      return;
+    }
     if (t.type === "npc") {
       sceneRef.current?.markTalked(t.npc.id);
       setTalked((prev) => (prev.includes(t.npc.id) ? prev : [...prev, t.npc.id]));
@@ -107,6 +119,17 @@ export function Town({ world }: Props) {
     closedAt.current = performance.now();
     setPanel(null);
     sceneRef.current?.setPaused(false);
+  }
+
+  /** バスで別の町へ。走っているあいだは行き先の札だけ出す */
+  async function ride(from: Place, to: Place) {
+    const info = sceneRef.current?.routeInfo(from.id, to.id);
+    if (!info) return;
+    play("choose");
+    setPanel({ type: "ride", to, minutes: info.minutes });
+    await sceneRef.current?.rideTo(from.id, to.id);
+    play("open");
+    close();
   }
 
   function choose(spot: Spot, o: Option) {
@@ -163,14 +186,18 @@ export function Town({ world }: Props) {
       {!started && (
         <div className="title">
           <h1 className="logo">はつにち</h1>
-          <p className="tagline">鳥取の町で、仕事の初日。</p>
+          <p className="tagline">鳥取市で、仕事の初日。</p>
           <button className="btn-game big" disabled={!ready} onClick={begin}>
             {ready ? "はじめる" : "よみこみ中…"}
           </button>
           <p className="title-keys">
-            <kbd>←↑↓→</kbd> 歩く　<kbd>Space</kbd> 話す
+            <kbd>←↑↓→</kbd> 歩く　<kbd>Shift</kbd> 走る　<kbd>Space</kbd> 話す
           </p>
-          <p className="title-note">町・人・店は架空。数字は公開データの出典つき</p>
+          <p className="title-note">
+            人・店・相談は架空。地名と地形は実在。数字は出典つき
+            <br />
+            地形: 国土地理院 標高タイルを加工 ・ 市の境: 国土数値情報（行政区域）を加工
+          </p>
         </div>
       )}
 
@@ -197,8 +224,15 @@ export function Town({ world }: Props) {
       {started && !panel && target && (
         <button className="prompt" onClick={() => open(target)}>
           <kbd>Space</kbd>
-          {target.type === "npc" ? `${target.npc.name}と話す` : "しらべる"}
+          {target.type === "npc" ? `${target.npc.name}と話す` : target.type === "bus" ? "バスに乗る" : "しらべる"}
         </button>
+      )}
+
+      {started && (
+        <div className={bigMap ? "minimap big" : "minimap"}>
+          <canvas ref={mapRef} onClick={() => setBigMap(!bigMap)} aria-label="鳥取市の地図" />
+          <small>国土地理院・国土数値情報を加工</small>
+        </div>
       )}
 
       {started && (
@@ -238,6 +272,22 @@ export function Town({ world }: Props) {
         />
       )}
 
+      {panel?.type === "bus" && (
+        <BusView
+          from={panel.from}
+          places={world.places.filter((p) => p.hub && p.id !== panel.from.id)}
+          minutesTo={(to) => sceneRef.current?.routeInfo(panel.from.id, to.id)?.minutes ?? null}
+          onRide={(to) => ride(panel.from, to)}
+          onClose={close}
+        />
+      )}
+
+      {panel?.type === "ride" && (
+        <div className="ride-sign">
+          <span>{panel.to.name}</span> 行き ・ {panel.minutes}分
+        </div>
+      )}
+
       {panel?.type === "end" && (
         <div className="end">
           <div className="end-card">
@@ -269,6 +319,37 @@ export function Town({ world }: Props) {
         </div>
       )}
     </div>
+  );
+}
+
+/** バス停で行き先を選ぶ。数字キーでも選べる */
+function BusView({ from, places, minutesTo, onRide, onClose }: { from: Place; places: Place[]; minutesTo: (to: Place) => number | null; onRide: (to: Place) => void; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      const p = places[Number(e.key) - 1];
+      if (p) onRide(p);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [places, onRide, onClose]);
+
+  return (
+    <>
+      <div className="choices bus">
+        {places.map((p, i) => (
+          <button key={p.id} className="choice" onClick={() => onRide(p)} onMouseEnter={() => play("select", 0.2)}>
+            <kbd>{i + 1}</kbd>
+            {p.name}
+            <small>{minutesTo(p)}分</small>
+          </button>
+        ))}
+        <button className="choice why" onClick={onClose}>
+          やめる
+        </button>
+      </div>
+      <Dialog speaker={`${from.name}のバス停`} text="どこへ行く？" />
+    </>
   );
 }
 
