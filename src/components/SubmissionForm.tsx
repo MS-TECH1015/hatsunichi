@@ -21,7 +21,6 @@ export function SubmissionForm({ town, removedTrips, impact, load, source }: Pro
   const [rounds, setRounds] = useState<Round[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [week, setWeek] = useState<1 | 2>(1);
   const [voice, setVoice] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [savedVoice, setSavedVoice] = useState<string | null>(null);
@@ -67,13 +66,7 @@ export function SubmissionForm({ town, removedTrips, impact, load, source }: Pro
 
   return (
     <section className="sheet">
-      <div className="tabs">
-        <button type="button" className={week === 1 ? "tab on" : "tab"} onClick={() => setWeek(1)}>第1週</button>
-        <button type="button" className={week === 2 ? "tab on" : "tab"} onClick={() => setWeek(2)}>第2週 先生の依頼票待ち</button>
-      </div>
-      {week === 2 && <p className="muted">先生が tickets/ に次の路線の依頼票を置くと、ここに出ます。</p>}
-      {week === 1 && (
-        <>
+      <>
           <h3>提出用紙 <span className="muted">{rounds.length === 0 ? "1回目" : `${rounds.length + 1}回目`}</span></h3>
           <label className="field">
             <span>減らす便</span>
@@ -131,8 +124,7 @@ export function SubmissionForm({ town, removedTrips, impact, load, source }: Pro
               {savedVoice && <span className="muted small"> 残した: 「{savedVoice}」</span>}
             </div>
           )}
-        </>
-      )}
+      </>
     </section>
   );
 }

@@ -89,3 +89,6 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .diff { margin-top: 8px; font-size: 12px; padding: 6px 8px; border-left: 3px solid var(--lit); background: #fff; }
 .voice { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; font-size: 12px; }
 .agree { display: block; margin: 4px 0 6px; }
+.tabs.inline { display: inline-flex; margin-left: 8px; vertical-align: middle; }
+.tabs.inline .tab { padding: 1px 8px; font-size: 11px; border-radius: 6px; }
+.sheet h3 { scroll-margin-top: 80px; }

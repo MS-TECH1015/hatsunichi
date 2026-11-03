@@ -11,7 +11,9 @@ type Meta = { built_at: string; sources: SourceMeta[]; counts: Record<string, nu
 
 const FORMULA = "停留所圏 400m の人口の点 × 時間帯の一致 × 乗車率";
 
-export function Workbench({ town, meta, ticket }: { town: Town; meta: Meta; ticket: Ticket }) {
+export function Workbench({ town, meta, tickets }: { town: Town; meta: Meta; tickets: Ticket[] }) {
+  const [week, setWeek] = useState(0);
+  const ticket = tickets[week] ?? tickets[0];
   const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [load, setLoad] = useState(town.assumptions.load_factor_default);
   const [spoken, setSpoken] = useState<Resident | null>(null);
@@ -53,7 +55,15 @@ export function Workbench({ town, meta, ticket }: { town: Town; meta: Meta; tick
             </label>
           </div>
           <div className="ticket-card">
-            <div className="ticket-title">依頼票 <span className="chip chip-assumed">架空</span></div>
+            <div className="ticket-title">
+              依頼票 <span className="chip chip-assumed">架空</span>
+              <span className="tabs inline">
+                {tickets.map((tk, i) => (
+                  <button key={tk.file} type="button" className={week === i ? "tab on" : "tab"} onClick={() => setWeek(i)}>第{i + 1}週</button>
+                ))}
+                {tickets.length < 2 && <span className="tab muted">第2週 先生の依頼票待ち</span>}
+              </span>
+            </div>
             <dl>
               <dt>路線</dt><dd>{ticket.route}</dd>
               <dt>依頼</dt><dd>{ticket.request}</dd>
@@ -112,6 +122,7 @@ export function Workbench({ town, meta, ticket }: { town: Town; meta: Meta; tick
             </tbody>
           </table>
           <SubmissionForm
+            key={ticket.file}
             town={town}
             removedTrips={town.trips.filter((t) => removed.has(t.trip_id))}
             impact={impact}
