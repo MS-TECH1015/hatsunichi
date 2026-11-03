@@ -41,7 +41,7 @@ LAKE_FLOOR = -0.6
 ORIGIN = (35.4949, 134.2249)  # GTFS の停留所「鳥取駅」7 か所のおよその平均
 KX = 111320 * math.cos(math.radians(ORIGIN[0])) / M_PER_UNIT
 KZ = 110950 / M_PER_UNIT
-BBOX = (133.935, 35.262, 134.452, 35.582)  # 鳥取市の外枠（N03）に約 1 km の余白
+BBOX = (133.9456, 35.262, 134.452, 35.582)  # 鳥取市の外枠（N03）に約 1 km の余白。西は標高タイルの端で止める
 DEM_Z = 11
 RIVER_CELLS = 300  # 集水域 3 km² 以上を川として描く
 PEOPLE_PER_HOUSE = 250  # 見た目の密度。1 軒 = 250 人
@@ -103,7 +103,8 @@ def sample_dem(dem, px0, py0):
     n = 2**DEM_Z * 256
     fx = (LON + 180) / 360 * n - px0 - 0.5
     fy = (1 - np.arcsinh(np.tan(np.radians(LAT))) / math.pi) / 2 * n - py0 - 0.5
-    i, j = np.floor(fx).astype(int), np.floor(fy).astype(int)
+    i = np.clip(np.floor(fx).astype(int), 0, dem.shape[1] - 2)
+    j = np.clip(np.floor(fy).astype(int), 0, dem.shape[0] - 2)
     tx, ty = fx - i, fy - j
     num = np.zeros_like(fx)
     den = np.zeros_like(fx)

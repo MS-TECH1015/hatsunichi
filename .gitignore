@@ -13,3 +13,5 @@ next-env.d.ts
 public/maplibre-gl-worker.mjs
 !public/models/*.glb
 out
+public/draco/
+data/build/

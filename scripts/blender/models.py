@@ -8,6 +8,7 @@
 """
 import math
 import os
+import sys
 
 import bmesh
 import bpy
@@ -470,6 +471,49 @@ def build_stop():
     export("stop")
 
 
+def build_bus_sign():
+    """バスに乗れる停留所の標識。場所ごとに1本"""
+    clear()
+    parts = [
+        cyl("pole", 0.07, 2.6, (0, 0, 1.3), mat("hub", (0.75, 0.75, 0.78)), verts=8),
+        cyl("base", 0.34, 0.14, (0, 0, 0.07), mat("concrete", (0.72, 0.72, 0.70)), verts=16),
+        cyl("sign_ring", 0.5, 0.1, (0, 0, 2.75), mat("yamabuki", YAMABUKI), rot=(math.pi / 2, 0, 0), verts=24),
+        cyl("sign_face", 0.4, 0.12, (0, 0, 2.75), mat("paper", WHITE), rot=(math.pi / 2, 0, 0), verts=24),
+        box("bus_mark", (0.42, 0.14, 0.24), (0, 0, 2.75), mat("bus_stripe", (0.30, 0.55, 0.42)), bevel=0.03),
+        box("timetable", (0.44, 0.06, 0.6), (0, -0.08, 1.55), mat("paper", WHITE), bevel=0.01),
+    ]
+    join(parts, "bus_sign")
+    export("bus_sign")
+
+
+def build_city_parts():
+    """市じゅうに何千も並べる木と家。数が多いので角を落とさず面を少なくする。色は three.js で1つずつ変える"""
+    clear()
+    parts = [
+        cyl("trunk", 0.18, 0.8, (0, 0, 0.4), mat("trunk", WOOD), verts=5, smooth=False),
+        cone("needle", 0.95, 2.6, (0, 0, 2.0), mat("leaf_dark", LEAF_DARK), verts=6),
+    ]
+    join(parts, "tree_cone")
+    export("tree_cone")
+
+    clear()
+    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1, radius=1.05, location=(0, 0, 1.75))
+    crown = _finish(bpy.context.active_object, "crown", mat("leaf", LEAF))
+    join([cyl("trunk", 0.18, 0.9, (0, 0, 0.45), mat("trunk", WOOD), verts=5, smooth=False), crown], "tree_round")
+    export("tree_round")
+
+    clear()
+    parts = [
+        box("wall", (2.2, 1.8, 1.3), (0, 0, 0.65), mat("wall", CREAM), bevel=0),
+        gable_wall("gable", 2.2, 1.8, 1.3, 0.7, mat("wall", CREAM)),
+        gable("roof", 2.7, 2.3, 0.8, 1.28, mat("roof", AKAGAWARA), thick=0.12),
+        box("door", (0.45, 0.06, 0.8), (0.5, -0.92, 0.4), mat("wood", WOOD), bevel=0),
+        box("window", (0.6, 0.06, 0.45), (-0.45, -0.92, 0.75), mat("glass", GLASS), bevel=0),
+    ]
+    join(parts, "house_lo")
+    export("house_lo")
+
+
 # ---- 人 ----
 
 def person_parts(body_rgb, hair_rgb=HAIR):
@@ -532,7 +576,10 @@ for build in (
     build_houses, build_shop, build_empty_house, build_school, build_workshop,
     build_trees, build_pear_trellis, build_field, build_ginger_cave, build_hill,
     build_fence, build_flowers, build_pole, build_vending, build_bench, build_road,
-    build_bus, build_stop, build_person, build_player, build_rabbit,
+    build_bus, build_stop, build_person, build_player, build_rabbit, build_bus_sign, build_city_parts,
 ):
-    build()
+    # blender ... -- build_city_parts のように名前を渡すと、その部品だけ作り直す
+    only = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    if not only or build.__name__ in only:
+        build()
 print("done")
