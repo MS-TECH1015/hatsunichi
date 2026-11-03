@@ -8,17 +8,20 @@ import type { TownScene } from "./town/TownScene";
 import { play, setMuted } from "./town/sfx";
 
 type Props = { world: World };
-type Answer = { spot: Spot; option: string; label: string; note: Note };
-type Stage = "hint" | "ask" | "result";
+/** own は自分で書いた一行。選んだ案と違い付箋が無いので、確かめる問いだけを出す */
+type Answer = { spot: Spot; option: string; label: string; note: Note; own?: boolean };
+type Voice = { name: string; role: string; view: string; heard: boolean };
+type Stage = "hint" | "ask" | "write" | "result";
 type Panel =
   | { type: "talk"; speaker: string; role?: string; lines: string[]; i: number }
-  | { type: "spot"; spot: Spot; stage: Stage; detail?: boolean }
+  | { type: "spot"; spot: Spot; stage: Stage; detail?: boolean; draft?: string }
   | { type: "bus"; from: Place }
   | { type: "ride"; to: Place; minutes: number }
   | { type: "end" }
   | null;
 
 const MUTE_KEY = "hatsunichi-muted";
+const LINE_MAX = 60; // 自分の一行の長さの上限。窓口に一文で伝わる長さ
 
 export function Town({ world }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -32,6 +35,7 @@ export function Town({ world }: Props) {
   const [panel, setPanel] = useState<Panel>(null);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [talked, setTalked] = useState<string[]>([]);
+  const [copied, setCopied] = useState(false);
   const [muted, setMute] = useState(false);
   const [stampedId, setStampedId] = useState<string | null>(null);
   const [bigMap, setBigMap] = useState(false);
@@ -134,9 +138,9 @@ export function Town({ world }: Props) {
     close();
   }
 
-  function choose(spot: Spot, o: Option) {
+  function choose(spot: Spot, o: Option, own = false) {
     play("choose");
-    setAnswers((prev) => [...prev.filter((x) => x.spot.id !== spot.id), { spot, option: o.text, label: o.label, note: o.note }]);
+    setAnswers((prev) => [...prev.filter((x) => x.spot.id !== spot.id), { spot, option: o.text, label: o.label, note: o.note, own }]);
     sceneRef.current?.markAnswered(spot.id);
     setStampedId(spot.id);
     window.setTimeout(() => play("stamp"), 300);
@@ -178,6 +182,14 @@ export function Town({ world }: Props) {
   });
 
   const answerOf = (spot: Spot) => answers.find((a) => a.spot.id === spot.id);
+  /** 同じ町の住民の立場。話していない人は役割だけ見せて、聞きに行く手がかりにする */
+  const voicesOf = (spot: Spot): Voice[] =>
+    world.npcs.filter((n) => n.place === spot.place && n.view).map((n) => ({ name: n.name, role: n.role, view: n.view ?? "", heard: talked.includes(n.id) }));
+
+  function copyAnswers() {
+    const body = answers.map((a) => `■ ${a.spot.title}\n案: ${a.option}\n持っていく先: ${a.spot.window.name} ${a.spot.window.url}`).join("\n\n");
+    void navigator.clipboard.writeText(`はつにち 初日の案\n\n${body}\n`).then(() => setCopied(true));
+  }
   const day = Math.min(Math.max((minutes - start_hour * 60) / ((end_hour - start_hour) * 60), 0), 1);
   const people = talked.filter((id) => world.npcs.some((n) => n.id === id)).length;
 
@@ -268,9 +280,11 @@ export function Town({ world }: Props) {
           stage={panel.stage}
           detail={panel.detail === true}
           answer={answerOf(panel.spot)}
+          voices={voicesOf(panel.spot)}
+          draft={panel.draft}
           guide={guide}
           world={world}
-          onStage={(stage) => setPanel({ ...panel, stage })}
+          onStage={(stage, draft) => setPanel({ ...panel, stage, draft })}
           onDetail={(detail) => {
             play(detail ? "open" : "talk");
             setPanel({ ...panel, detail });
@@ -305,14 +319,19 @@ export function Town({ world }: Props) {
                 <Stamp key={i} char={answers[i]?.spot.stamp} big />
               ))}
             </div>
-            {answers.length === 0 && <p className="end-line">{guide}「明日は一言でいいから、案を出してみよう」</p>}
+            <p className="end-line">
+              {guide}「{answers.length === 0 ? "明日は一言でいいから、案を出してみよう" : "持っていく先のページを、まず読んでみて"}」
+            </p>
             <ul className="end-list">
               {answers.map((a) => (
                 <li key={a.spot.id}>
                   <Stamp char={a.spot.stamp} />
-                  <span className="end-label">{a.label}</span>
+                  <span className="end-label">
+                    {a.label}
+                    <small>{a.spot.window.name}</small>
+                  </span>
                   <a href={a.spot.window.url} target="_blank" rel="noreferrer">
-                    届け先
+                    ひらく
                   </a>
                 </li>
               ))}
@@ -320,9 +339,16 @@ export function Town({ world }: Props) {
             <p className="end-meta">
               {clockText(minutes)} ・ 話した人 {people}
             </p>
-            <button className="btn-game" onClick={() => location.reload()}>
-              もう一度
-            </button>
+            <div className="end-actions">
+              {answers.length > 0 && (
+                <button className="btn-game ghost" onClick={copyAnswers}>
+                  {copied ? "写しました" : "書き写す"}
+                </button>
+              )}
+              <button className="btn-game" onClick={() => location.reload()}>
+                もう一度
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -385,6 +411,7 @@ function Dialog({ speaker, role, text, onNext, last, children }: { speaker?: str
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== " " && e.key !== "Enter") return;
+      if (e.target instanceof HTMLInputElement) return;
       e.preventDefault();
       advance();
     };
@@ -415,27 +442,42 @@ type SpotViewProps = {
   stage: Stage;
   detail: boolean;
   answer?: Answer;
+  voices: Voice[];
+  draft?: string;
   guide: string;
   world: World;
-  onStage: (s: Stage) => void;
+  onStage: (s: Stage, draft?: string) => void;
   onDetail: (open: boolean) => void;
-  onChoose: (s: Spot, o: Option) => void;
+  onChoose: (s: Spot, o: Option, own?: boolean) => void;
   onClose: () => void;
 };
 
-/** 調べる → 頼まれる → 選ぶ → 判子と問い。理由と出典は「くわしく」に */
-function SpotView({ spot, stage, detail, answer, guide, world, onStage, onDetail, onChoose, onClose }: SpotViewProps) {
+/** 調べる → 頼まれる → 町の人の声を見て、案を選ぶか自分で書く → 判子と問い。理由と出典は「くわしく」に。
+ * 3つの案は正解ではなく方向の違う出発点。考えるのは遊んでいる学生で、ゲームは材料と問いだけを渡す */
+function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, onStage, onDetail, onChoose, onClose }: SpotViewProps) {
   useEffect(() => {
     if (stage !== "ask" || detail) return;
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === String(spot.quest.options.length + 1)) onStage("write");
       const o = spot.quest.options[Number(e.key) - 1];
       if (o) onChoose(spot, o);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [stage, detail, spot, onChoose]);
+  }, [stage, detail, spot, onChoose, onStage]);
 
-  if (detail) return <Detail spot={spot} answer={answer} world={world} onClose={() => onDetail(false)} />;
+  if (detail) return <Detail spot={spot} answer={answer} voices={voices} world={world} onClose={() => onDetail(false)} />;
+
+  if (stage === "write")
+    return (
+      <WriteView
+        draft={draft}
+        prompt={spot.quest.write}
+        guide={guide}
+        onDone={(line) => onChoose(spot, { text: line, label: line, note: { good: "", gap: "", question: spot.checks[0] } }, true)}
+        onBack={() => onStage("ask")}
+      />
+    );
 
   if (stage === "hint") return <Dialog text={spot.hint} onNext={() => onStage("ask")} />;
 
@@ -443,12 +485,26 @@ function SpotView({ spot, stage, detail, answer, guide, world, onStage, onDetail
     return (
       <>
         <div className="choices">
+          {voices.length > 0 && (
+            <ul className="voices" aria-label="町の人の声">
+              {voices.map((v) => (
+                <li key={v.name} className={v.heard ? undefined : "unheard"}>
+                  <b>{v.heard ? v.name : "？"}</b>
+                  {v.heard ? v.view : `${v.role}の話は、まだ聞いていない`}
+                </li>
+              ))}
+            </ul>
+          )}
           {spot.quest.options.map((o, i) => (
             <button key={o.label} className="choice" onClick={() => onChoose(spot, o)} onMouseEnter={() => play("select", 0.2)}>
               <kbd>{i + 1}</kbd>
               {o.label}
             </button>
           ))}
+          <button className="choice own" onClick={() => onStage("write")} onMouseEnter={() => play("select", 0.2)}>
+            <kbd>{spot.quest.options.length + 1}</kbd>
+            自分で書く
+          </button>
           <button className="choice why" onClick={() => onDetail(true)}>
             なんで？
           </button>
@@ -464,8 +520,17 @@ function SpotView({ spot, stage, detail, answer, guide, world, onStage, onDetail
         <Stamp char={spot.stamp} big pop />
         <div className="result-label">{answer.label}</div>
       </div>
-      <Dialog speaker={guide} text={answer.note.question} onNext={onClose} last>
+      <Dialog speaker={guide} text={answer.own ? `持っていく前に、ひとつ考えてみて。${answer.note.question}` : answer.note.question} onNext={onClose} last>
         <div className="dialog-actions">
+          <button
+            className="btn-game small ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              onStage("write", answer.option);
+            }}
+          >
+            {answer.own ? "書き直す" : "自分の言葉に直す"}
+          </button>
           <button
             className="btn-game small ghost"
             onClick={(e) => {
@@ -490,8 +555,46 @@ function SpotView({ spot, stage, detail, answer, guide, world, onStage, onDetail
   );
 }
 
-/** くわしく。なんでこうなってるか、出典、付箋、窓口 */
-function Detail({ spot, answer, world, onClose }: { spot: Spot; answer?: Answer; world: World; onClose: () => void }) {
+/** 自分の一行を書く。Enter で出す。変換中の Enter は確定に使われるので出さない */
+function WriteView({ draft, prompt, guide, onDone, onBack }: { draft?: string; prompt: string; guide: string; onDone: (line: string) => void; onBack: () => void }) {
+  const [text, setText] = useState(draft ?? "");
+  const line = text.trim();
+  const submit = () => {
+    if (line) onDone(line);
+  };
+
+  return (
+    <>
+      <div className="write">
+        <input
+          autoFocus
+          maxLength={LINE_MAX}
+          value={text}
+          placeholder="だれが、いつ、なにをするか"
+          aria-label="自分の案"
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") onBack();
+            if (e.key === "Enter" && !e.nativeEvent.isComposing) submit();
+          }}
+        />
+        <small>
+          {line.length}/{LINE_MAX}
+        </small>
+        <button className="btn-game small" disabled={!line} onClick={submit}>
+          これで出す
+        </button>
+        <button className="btn-game small ghost" onClick={onBack}>
+          もどる
+        </button>
+      </div>
+      <Dialog speaker={guide} text={prompt} />
+    </>
+  );
+}
+
+/** くわしく。なんでこうなってるか、出典、町の人の声、付箋、確かめる問い、窓口 */
+function Detail({ spot, answer, voices, world, onClose }: { spot: Spot; answer?: Answer; voices: Voice[]; world: World; onClose: () => void }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -525,7 +628,29 @@ function Detail({ spot, answer, world, onClose }: { spot: Spot; answer?: Answer;
       )}
       {spot.facts.length === 0 && <p className="muted small">この話は架空。数字は出典が取れたものだけ書く。いまは無い</p>}
 
-      {answer && (
+      {voices.some((v) => v.heard) && (
+        <>
+          <h3>町の人の声</h3>
+          <ul className="facts">
+            {voices
+              .filter((v) => v.heard)
+              .map((v) => (
+                <li key={v.name}>
+                  <b>{v.name}</b> {v.view}
+                </li>
+              ))}
+          </ul>
+        </>
+      )}
+
+      {answer?.own && (
+        <>
+          <h3>あなたの一行</h3>
+          <p className="chosen">{answer.option}</p>
+        </>
+      )}
+
+      {answer && !answer.own && (
         <>
           <h3>あなたの案</h3>
           <p className="chosen">{answer.option}</p>
@@ -540,7 +665,18 @@ function Detail({ spot, answer, world, onClose }: { spot: Spot; answer?: Answer;
               <span className="pill">問い</span> {answer.note.question}
             </div>
           </div>
-          <p className="muted small">この付箋は、案ごとに Claude が事前に書いたもの。手元版では確認役が提出文を読んで書く</p>
+          <p className="muted small">この付箋は案ごとに事前に書いたもの。正解ではなく、考えるための材料</p>
+        </>
+      )}
+
+      {answer && spot.checks.length > 0 && (
+        <>
+          <h3>持っていく前に確かめること</h3>
+          <ul className="facts">
+            {spot.checks.map((c) => (
+              <li key={c}>{c}</li>
+            ))}
+          </ul>
         </>
       )}
 

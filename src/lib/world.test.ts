@@ -48,11 +48,32 @@ describe("world", () => {
     }
   });
 
+  it("依頼ごとに、立場の違う住民が 2 人以上いて、自分の一行を書く問いと確かめる問いがある", () => {
+    for (const s of w.spots) {
+      const voices = w.npcs.filter((n) => n.place === s.place && n.view);
+      expect(voices.length, s.id).toBeGreaterThanOrEqual(2);
+      expect(s.quest.write.length, s.id).toBeGreaterThan(0);
+      expect(s.checks.length, s.id).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it("住民のせりふと立場の数字は、同じ町の依頼の facts にある", () => {
+    for (const n of w.npcs) {
+      const known = w.spots
+        .filter((s) => s.place === n.place)
+        .flatMap((s) => s.facts.map((f) => f.text))
+        .join(" ");
+      const digits = [...n.lines, n.view ?? ""].join(" ").match(/\d+(\.\d+)?/g) ?? [];
+      for (const d of digits) if (!/^[0-9]$/.test(d)) expect(known, `${n.id}: ${d}`).toContain(d);
+    }
+  });
+
   it("画面に出す言葉は短い。調べた一言は 20 字まで、選択肢は 10 字まで", () => {
     for (const s of w.spots) {
       expect(s.hint.length).toBeLessThanOrEqual(20);
       for (const o of s.quest.options) expect(o.label.length).toBeLessThanOrEqual(10);
     }
+    for (const n of w.npcs) if (n.view) expect(n.view.length, n.id).toBeLessThanOrEqual(36);
   });
 
   it("始まりの位置・依頼の場所・住民・バスの標識は、市の中の歩ける所にある", () => {

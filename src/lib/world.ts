@@ -27,7 +27,10 @@ export type Spot = {
   stamp: string;
   why: string;
   facts: Fact[];
-  quest: { ask: string; options: Option[] };
+  /** write は自分の一行を書くときに案内役が投げる問い */
+  quest: { ask: string; write: string; options: Option[] };
+  /** 自分の案を窓口へ持っていく前に、本人が確かめる問い。正解を言わずに考える手がかりにする */
+  checks: string[];
   window: Window;
   /** もっと深く解く画面。バス停なら地図の作業台 */
   deeper?: { label: string; href: string };
@@ -44,6 +47,8 @@ export type Npc = {
   body?: [number, number, number];
   hair?: [number, number, number];
   lines: string[];
+  /** 話したあと、案を考える画面に並ぶ、この人の立場の一言 */
+  view?: string;
 };
 
 export type Prop = { place: string; kind: string; at: Vec2; face: number; scale?: number };

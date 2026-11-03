@@ -217,3 +217,17 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .choices.bus .choice small { margin-left: auto; font-size: 13px; font-weight: 700; opacity: .65; }
 .ride-sign { position: absolute; left: 50%; top: 76px; transform: translateX(-50%); background: #4d8c6b; color: var(--paper); border: 3px solid var(--ink); border-radius: 999px; padding: 10px 24px; font: 800 18px/1 var(--font-maru), sans-serif; box-shadow: 0 4px 0 var(--ink); animation: rise .2s ease-out both; }
 .ride-sign span { font-size: 22px; font-weight: 900; }
+
+/* 学生が自分で考えるための部品。町の人の声、自分の一行、終業の書き写し */
+.voices { grid-column: 1 / -1; list-style: none; margin: 0; padding: 10px 14px; background: rgba(255,250,240,.95); border: 3px solid var(--ink); border-radius: 16px; font: 700 14px/1.5 var(--font-maru), sans-serif; animation: rise .2s ease-out both; }
+.voices li + li { margin-top: 4px; }
+.voices b { margin-right: 8px; }
+.voices .unheard { color: #8a7f70; }
+.choice.own { grid-column: 1 / 3; justify-content: center; border-style: dashed; }
+.write { position: absolute; left: 50%; bottom: 152px; transform: translateX(-50%); width: min(720px, calc(100% - 32px)); display: flex; gap: 10px; align-items: center; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; padding: 12px 14px; box-shadow: 0 4px 0 var(--ink); animation: rise .2s ease-out both; }
+.write input { flex: 1; min-width: 0; font: 800 18px/1.4 var(--font-maru), sans-serif; color: var(--ink); background: transparent; border: 0; border-bottom: 3px dashed var(--ink); padding: 6px 4px; outline: none; }
+.write small { font-weight: 700; color: #8a7f70; }
+.result-label { max-width: min(640px, 90vw); text-align: center; }
+.end-label small { display: block; font-size: 12px; font-weight: 700; color: #8a7f70; }
+.end-actions { display: flex; gap: 10px; justify-content: center; }
+@media (max-width: 640px) { .choice.own { grid-column: 1; } .write { flex-wrap: wrap; bottom: 148px; } .voices { font-size: 13px; } }
