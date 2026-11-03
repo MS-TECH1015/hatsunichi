@@ -1,0 +1,10 @@
+:root {
+  --ink: #1f2328;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --accent: #d9480f;
+  --lit: #f59f00;
+  --paper: #fffdf8;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif; color: var(--ink); background: #fff; }
