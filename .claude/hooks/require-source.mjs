@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { findUnsourcedNumbers } from "../../scripts/check-sources.mjs";
 
 const input = JSON.parse(readFileSync(0, "utf8"));
-const file = String(input.tool_input?.file_path ?? "").replace(/\/g, "/");
+const file = String(input.tool_input?.file_path ?? "").replaceAll("\\", "/");
 if (!/\/data\/[^/]+\.json$/.test(file)) process.exit(0);
 
 let next;

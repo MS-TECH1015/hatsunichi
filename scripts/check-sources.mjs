@@ -2,6 +2,8 @@
 // 規則: 数値を持つオブジェクトは、自分か祖先に source_id を持ち、その id が meta.sources に存在する。
 // 例外: meta（出典表そのもの）と assumptions（「仮定」の札で表示する値）。
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const SKIP_KEYS = new Set(["lat", "lon", "centroid", "stop_sequence", "persons"]);
 
@@ -34,7 +36,8 @@ export function findUnsourcedNumbers(json) {
   }
 }
 
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\/g, "/").split("/").at(-1))) {
+const runAsMain = process.argv[1] !== undefined && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
+if (runAsMain) {
   const file = process.argv[2] ?? "data/town.json";
   const problems = findUnsourcedNumbers(JSON.parse(readFileSync(file, "utf8")));
   if (problems.length) {

@@ -1,9 +1,12 @@
 node_modules/
 .next/
+.cache/
 .env
 .env.*
 !.env.example
 data/raw/
 *.zip
 *.xlsx
+*.tsbuildinfo
+next-env.d.ts
 .DS_Store

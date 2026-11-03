@@ -8,3 +8,54 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif; color: var(--ink); background: #fff; }
+
+.shell { display: flex; flex-direction: column; height: 100vh; }
+.band { position: sticky; top: 0; z-index: 20; display: flex; gap: 16px; align-items: baseline; padding: 8px 16px; background: var(--ink); color: #fff; font-weight: 600; }
+.band-sub { font-weight: 400; font-size: 12px; opacity: 0.8; }
+.main { flex: 1; display: grid; grid-template-columns: 1fr 380px; min-height: 0; }
+.map-area { position: relative; min-height: 0; }
+.map { position: absolute; inset: 0; }
+.ticket-card, .impact-card, .resident-card { position: absolute; z-index: 10; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-size: 13px; }
+.ticket-card { left: 12px; top: 12px; width: 300px; }
+.ticket-title { font-weight: 600; margin-bottom: 6px; }
+.ticket-card dl { display: grid; grid-template-columns: 3em 1fr; gap: 4px 8px; margin: 0; }
+.ticket-card dt { color: var(--muted); }
+.ticket-card dd { margin: 0; }
+.impact-card { left: 12px; bottom: 28px; }
+.impact-num { font-size: 18px; font-weight: 700; }
+.impact-sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.resident-card { right: 12px; top: 12px; width: 300px; }
+.resident-head { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.resident-card p { margin: 8px 0 0; }
+.resident-calc { color: var(--muted); font-size: 11px; }
+.close { margin-left: auto; border: 0; background: none; font-size: 16px; cursor: pointer; }
+.resident-pin { border: 2px solid var(--accent); background: #fff; color: var(--accent); border-radius: 12px; padding: 2px 8px; font-size: 11px; cursor: pointer; white-space: nowrap; }
+.resident-pin[data-state="affected"] { background: var(--accent); color: #fff; }
+.resident-pin[data-state="relieved"] { border-color: #2b8a3e; color: #2b8a3e; }
+.panel { border-left: 1px solid var(--line); overflow: auto; font-size: 13px; }
+.panel-head { position: sticky; top: 0; background: #fff; padding: 10px 12px; border-bottom: 1px solid var(--line); z-index: 5; }
+.panel-head h2 { font-size: 15px; margin: 0 0 6px; display: flex; align-items: center; gap: 6px; }
+.slider { display: flex; align-items: center; gap: 6px; }
+.slider input { flex: 1; }
+.formula { color: var(--muted); font-size: 11px; margin-top: 4px; }
+.trips { width: 100%; border-collapse: collapse; }
+.trips th { text-align: left; font-weight: 500; color: var(--muted); font-size: 11px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.trips td { padding: 5px 8px; border-bottom: 1px solid #f1f3f5; vertical-align: middle; }
+.trips tr.off td { background: #fff4e6; text-decoration: line-through; }
+.trips tr.off td:last-child { text-decoration: none; }
+.mono { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.btn { border: 1px solid var(--line); background: #fff; border-radius: 6px; padding: 2px 8px; cursor: pointer; font-size: 12px; }
+.btn.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.chip-wrap { position: relative; display: inline-block; }
+.chip { display: inline-block; border: 1px solid var(--line); background: #fff; border-radius: 10px; padding: 0 6px; font-size: 10px; line-height: 16px; color: var(--muted); cursor: pointer; vertical-align: middle; }
+.chip-assumed { color: var(--accent); border-color: var(--accent); cursor: default; }
+.chip-pop { position: absolute; left: 0; top: 20px; z-index: 30; width: 300px; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--ink); white-space: normal; }
+.chip-pop a { color: #364fc7; word-break: break-all; }
+.foot { display: flex; flex-direction: column; gap: 2px; padding: 6px 16px; font-size: 11px; color: var(--muted); border-top: 1px solid var(--line); }
+@media (max-width: 900px) {
+  .main { grid-template-columns: 1fr; grid-template-rows: 60vh 1fr; }
+  .panel { border-left: 0; border-top: 1px solid var(--line); }
+  .ticket-card, .resident-card { width: calc(100% - 24px); }
+  .resident-card { top: auto; bottom: 90px; }
+}
