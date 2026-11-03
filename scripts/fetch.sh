@@ -28,3 +28,5 @@ fetch "https://odp-pref-tottori.tori-info.co.jp/dataset/1890/resource/9622/31201
 fetch "https://www.city.tottori.lg.jp/uploaded/attachment/53775.xlsx" population_2026-09.xlsx
 # 国土交通省 位置参照情報 大字・町丁目レベル 鳥取県 19.0b https://nlftp.mlit.go.jp/isj/ （PDL1.0、出典表示）
 fetch "https://nlftp.mlit.go.jp/isj/dls/data/19.0b/31000-19.0b.zip" isj_31000-19.0b.zip
+# 国土数値情報 行政区域 N03 2025 鳥取県 https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N03-2025.html （CC BY 4.0、出典表示）
+fetch "https://nlftp.mlit.go.jp/ksj/gml/data/N03/N03-2025/N03-20250101_31_GML.zip" n03_2025_31.zip
