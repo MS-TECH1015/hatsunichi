@@ -60,6 +60,8 @@ const ROOF_COLORS = [0x9e3826, 0x4d5770, 0x3f6b96, 0x74503a];
 const PALE = new THREE.Color(0xeee8d6);
 const FOG_PLAY: [number, number] = [110, 340];
 const FOG_TITLE: [number, number] = [900, 2600];
+const LABEL_HIDE = 60; // 歩いているとき、これより近い地名の札は隠す。町に入ると町名の帯が出る
+const CORNER = 2.5; // バスが角を曲がるときの丸みの長さ
 
 export class TownScene {
   private renderer: THREE.WebGLRenderer;
@@ -79,6 +81,7 @@ export class TownScene {
   private touchDir: Vec2 = [0, 0];
   private obstacles: { at: Vec2; radius: number }[] = [];
   private markers: THREE.Sprite[] = [];
+  private labels: THREE.Sprite[] = [];
   private bubbles = new Map<string, THREE.Sprite>();
   private walkers: Walker[] = [];
   private clouds: THREE.Group[] = [];
@@ -112,7 +115,7 @@ export class TownScene {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.effect = new OutlineEffect(this.renderer, { defaultThickness: 0.0032, defaultColor: OUTLINE });
     this.scene.background = skyTexture();
     this.scene.fog = this.fog;
@@ -212,7 +215,7 @@ export class TownScene {
     this.rideBus.visible = true;
     return new Promise((resolve) => {
       this.ride = {
-        ...measure(r.path),
+        ...measure(rounded(r.path)),
         t: 0,
         heading: 0,
         done: () => {
@@ -488,6 +491,7 @@ export class TownScene {
       sprite.scale.set(style.width / 22, 128 / 22, 1);
       sprite.material.depthTest = true;
       sprite.renderOrder = 5;
+      this.labels.push(sprite);
     }
   }
 
@@ -495,7 +499,7 @@ export class TownScene {
   private buildBus() {
     const line = routeBetween(this.city.routes, "eki", "kumoyama");
     if (line) {
-      this.busLine = { ...measure(line.path), t: 0, heading: 0, done: () => {} };
+      this.busLine = { ...measure(rounded(line.path)), t: 0, heading: 0, done: () => {} };
       this.bus = this.place("bus", line.path[0], 0);
     }
     this.rideBus = this.place("bus", this.world.start, 0);
@@ -725,6 +729,8 @@ export class TownScene {
       const want = near ? Math.atan2(dx, dz) : (w.npc.face * Math.PI) / 2;
       w.obj.rotation.y = turnToward(w.obj.rotation.y, want, dt * 6);
     }
+    const focus = this.ride ? null : this.playerPos;
+    for (const l of this.labels) l.visible = !this.playing || !focus || Math.hypot(l.position.x - focus[0], l.position.z - focus[1]) > LABEL_HIDE;
     for (const c of this.clouds) c.position.x = c.userData.baseX + Math.sin(now / 9000 + c.userData.baseX) * 30;
     this.driveBus(dt);
     this.updateSun();
@@ -868,6 +874,27 @@ export class TownScene {
     g.fill();
     g.stroke();
   }
+}
+
+/** 折れ線の角を丸める。バスが角で急に向きを変えないように */
+function rounded(path: Vec2[]): Vec2[] {
+  const out: Vec2[] = [path[0]];
+  for (let i = 1; i + 1 < path.length; i++) {
+    const [a, v, b] = [path[i - 1], path[i], path[i + 1]];
+    const da = Math.hypot(a[0] - v[0], a[1] - v[1]);
+    const db = Math.hypot(b[0] - v[0], b[1] - v[1]);
+    if (da < 1e-6 || db < 1e-6) continue;
+    const ka = Math.min(CORNER, da / 2) / da;
+    const kb = Math.min(CORNER, db / 2) / db;
+    const p: Vec2 = [v[0] + (a[0] - v[0]) * ka, v[1] + (a[1] - v[1]) * ka];
+    const q: Vec2 = [v[0] + (b[0] - v[0]) * kb, v[1] + (b[1] - v[1]) * kb];
+    for (const t of [0, 0.25, 0.5, 0.75, 1]) {
+      const u = 1 - t;
+      out.push([u * u * p[0] + 2 * u * t * v[0] + t * t * q[0], u * u * p[1] + 2 * u * t * v[1] + t * t * q[1]]);
+    }
+  }
+  out.push(path[path.length - 1]);
+  return out;
 }
 
 /** 折れ線の長さを測っておく。pointAt で距離から位置と向きを引く */

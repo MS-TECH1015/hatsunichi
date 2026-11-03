@@ -53,6 +53,8 @@ PLACE_CLEAR = 23  # 町の周りは市じゅうの家と木を置かない（単
 FLAT_R = 23  # 町を平らにする半径
 FLAT_BLEND = 8  # そこから元の地形へ戻す幅
 CORNER = 3.0  # バスの道の角を丸める長さ
+FORK = math.radians(20)  # これより狭い角で同じ停留所から出る 2 本は 1 本にまとめる
+DETOUR = 1.2  # 近道を消す目安。各停で回っても直線のこの倍以内なら、近道は二重の道とみなす
 
 rng = random.Random(7)
 
@@ -276,14 +278,52 @@ def bus_graph():
                     continue
                 d = math.dist(nodes[na][:2], nodes[nb][:2])
                 edges[na][nb] = edges[nb][na] = d
-    return nodes, edges
+    return nodes, prune(narrow_forks(nodes, edges))
 
 
-def shortest(edges, src):
+def narrow_forks(nodes, edges):
+    """1 つの停留所から、ほぼ同じ向きへ 2 本の線が出ているとき、遠い方を近い方の先へつなぎ直す。
+    停留所を直線で結ぶと、細い V の字の二重の道ができるため"""
+    def angle(a, b):
+        return math.atan2(nodes[b][1] - nodes[a][1], nodes[b][0] - nodes[a][0])
+
+    for _ in range(20):
+        changed = False
+        for a in list(edges):
+            nbrs = sorted(edges[a], key=lambda n: edges[a][n])
+            for i, b in enumerate(nbrs):
+                for c in nbrs[i + 1:]:
+                    if c not in edges[a] or b not in edges[a]:
+                        continue
+                    diff = abs((angle(a, b) - angle(a, c) + math.pi) % math.tau - math.pi)
+                    if diff > FORK:
+                        continue
+                    del edges[a][c], edges[c][a]
+                    if b != c and c not in edges[b]:
+                        edges[b][c] = edges[c][b] = math.dist(nodes[b][:2], nodes[c][:2])
+                    changed = True
+        if not changed:
+            break
+    return edges
+
+
+def prune(edges):
+    """急行が途中の停留所を飛ばした近道を消す。各停でほぼ同じ長さで行けるなら、同じ道が二重に描かれるため"""
+    before = sum(map(len, edges.values())) // 2
+    for d, a, b in sorted(((d, a, b) for a in list(edges) for b, d in edges[a].items() if a < b), reverse=True):
+        del edges[a][b], edges[b][a]
+        dist, _ = shortest(edges, a, d * DETOUR)
+        if dist.get(b, math.inf) > d * DETOUR:
+            edges[a][b] = edges[b][a] = d
+    print(f"bus edges {before} -> {sum(map(len, edges.values())) // 2}")
+    return edges
+
+
+def shortest(edges, src, limit=math.inf):
     dist, prev, heap = {src: 0.0}, {}, [(0.0, src)]
     while heap:
         d, u = heapq.heappop(heap)
-        if d > dist[u]:
+        if d > dist[u] or d > limit:
             continue
         for v, w in edges[u].items():
             if d + w < dist.get(v, 1e18):

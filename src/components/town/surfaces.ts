@@ -27,11 +27,12 @@ const TERRAIN = /* glsl */ `
 vec2 gp = vWorld.xz;
 vec4 info = texture2D(uGround, (gp - uGrid.xy) / uGrid.zw);
 float n = vnoise(gp * 0.45) * 0.6 + vnoise(gp * 1.7) * 0.4;
-diffuseColor.rgb *= 0.92 + 0.14 * n;
-diffuseColor.rgb *= 1.0 - step(0.94, hash12(floor(gp * 5.0))) * 0.06;
+diffuseColor.rgb *= 0.86 + 0.24 * n;
+diffuseColor.rgb *= mix(vec3(1.0), vec3(1.10, 1.05, 0.80), vnoise(gp * 0.07) * (1.0 - info.r));
+diffuseColor.rgb *= 1.0 - step(0.94, hash12(floor(gp * 5.0))) * 0.10;
 float warp = vnoise(gp * 0.18) * 5.0 + vnoise(gp * 0.7) * 1.2;
-float rip = sin(dot(gp, vec2(0.86, 0.51)) * 5.5 + warp);
-vec3 sandy = diffuseColor.rgb * (0.95 + 0.07 * rip) + vec3(0.04, 0.035, 0.02) * smoothstep(0.75, 1.0, rip);
+float rip = sin(dot(gp, vec2(0.86, 0.51)) * 5.5 + warp) * 0.5 + 0.5;
+vec3 sandy = diffuseColor.rgb * mix(0.78, 1.04, smoothstep(0.05, 0.6, rip)) + vec3(0.06, 0.05, 0.03) * smoothstep(0.85, 1.0, rip);
 diffuseColor.rgb = mix(diffuseColor.rgb, sandy, info.r);
 `;
 
