@@ -264,3 +264,11 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
   .hud-stamps { gap: 4px; padding: 4px 6px; }
   .hud-sound { width: 38px; height: 38px; }
 }
+.hud-finds { font-family: inherit; color: var(--ink); cursor: pointer; }
+.hud-sound.push { margin-left: auto; }
+.book-town { margin: 0 0 10px; }
+.book-town h3 { display: flex; justify-content: space-between; margin: 0; padding: 6px 4px; border-top: 2px solid var(--ink); font-size: 15px; font-weight: 900; }
+.book-town h3 span { font-variant-numeric: tabular-nums; color: #8a7f70; }
+.book-town ul { list-style: none; margin: 0; padding: 0; }
+.book-town li { padding: 5px 4px; border-top: 2px dashed #e1d6c0; font-size: 13px; font-weight: 700; }
+.book-town small { display: block; font-size: 11px; font-weight: 600; color: #8a7f70; }

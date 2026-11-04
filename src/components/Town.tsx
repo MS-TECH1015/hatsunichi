@@ -19,6 +19,7 @@ type Panel =
   | { type: "bus"; from: Place }
   | { type: "ride"; to: Place; minutes: number }
   | { type: "end" }
+  | { type: "book" }
   | null;
 
 const MUTE_KEY = "hatsunichi-muted";
@@ -44,6 +45,29 @@ function saveSent(list: Sent[]) {
     localStorage.setItem(SENT_KEY, JSON.stringify(list));
   } catch {
     // 保存できない環境では、この回だけの記録になる
+  }
+}
+
+const BOOK_KEY = "hatsunichi-book";
+
+/** 手帳は回をまたいで残す。本人のブラウザにだけ置く */
+function loadBook(): Find[] {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(BOOK_KEY) ?? "[]");
+    if (!Array.isArray(v)) return [];
+    return v
+      .filter((x) => typeof x?.id === "string" && typeof x.text === "string" && typeof x.source === "string")
+      .map((x) => ({ id: x.id, text: x.text, source: x.source, spot: typeof x.spot === "string" ? x.spot : undefined, place: typeof x.place === "string" ? x.place : undefined }));
+  } catch {
+    return [];
+  }
+}
+
+function saveBook(list: Find[]) {
+  try {
+    localStorage.setItem(BOOK_KEY, JSON.stringify(list));
+  } catch {
+    // 保存できない環境では、この回だけの手帳になる
   }
 }
 
@@ -79,14 +103,23 @@ export function Town({ world }: Props) {
   const [sent, setSent] = useState<Sent[]>([]);
   const [showSent, setShowSent] = useState(false);
   const [marked, setMarked] = useState(false);
+  /** 回をまたいで残す手帳。finds はこの回に見つけたもので、前の回に見たものは知らせずに数えるだけ */
+  const [book, setBook] = useState<Find[]>([]);
+  const bookRef = useRef<Find[]>([]);
   const seen = useRef(new Set<string>());
   const jot = useCallback((f: Find) => {
     if (seen.current.has(f.id)) return;
     seen.current.add(f.id);
     setFinds((prev) => [...prev, f]);
+    if (bookRef.current.some((x) => x.id === f.id)) return;
+    bookRef.current = [...bookRef.current, f];
+    setBook(bookRef.current);
+    saveBook(bookRef.current);
     setFresh(f);
     play("select", 0.4);
   }, []);
+  /** 町を歩くだけ。白兎の初日も時計の終業も無い */
+  const [walk, setWalk] = useState(false);
   // 閉じた直後の Space で同じ相手をまた開かないように
   const closedAt = useRef(0);
   const { start_hour, end_hour } = world.meta.clock;
@@ -129,7 +162,7 @@ export function Town({ world }: Props) {
 
   // 17 時を過ぎるか、案が 3 つそろって会話を閉じたら終業
   useEffect(() => {
-    if (!started || panel) return;
+    if (!started || panel || walk) return;
     if (minutes < end_hour * 60 && answers.length < 3) return;
     setPanel({ type: "end" });
     sceneRef.current?.setPaused(true);
@@ -149,6 +182,15 @@ export function Town({ world }: Props) {
     setTalked([rabbit.id]);
     // カメラが降りきってから白兎が話しかける
     window.setTimeout(() => setPanel({ type: "talk", speaker: rabbit.name, role: rabbit.role, lines: rabbit.lines, i: 0 }), 1700);
+  }
+
+  function stroll() {
+    if (!ready || started) return;
+    play("start");
+    setWalk(true);
+    setStarted(true);
+    sceneRef.current?.play();
+    sceneRef.current?.setPaused(false);
   }
 
   function open(t: Target) {
@@ -226,7 +268,18 @@ export function Town({ world }: Props) {
     }
   }
 
-  useEffect(() => setSent(loadSent()), []);
+  useEffect(() => {
+    setSent(loadSent());
+    bookRef.current = loadBook();
+    setBook(bookRef.current);
+  }, []);
+
+  function openBook() {
+    if (panel) return;
+    sceneRef.current?.setPaused(true);
+    play("open");
+    setPanel({ type: "book" });
+  }
 
   function markSent() {
     const at = new Date().toLocaleDateString("sv-SE");
@@ -301,6 +354,9 @@ export function Town({ world }: Props) {
           <button className="btn-game big" disabled={!ready} onClick={begin}>
             {ready ? "はじめる" : "よみこみ中…"}
           </button>
+          <button className="btn-game ghost" disabled={!ready} onClick={stroll}>
+            町を歩くだけ
+          </button>
           <p className="title-keys">
             <kbd>←↑↓→</kbd> 歩く　<kbd>Shift</kbd> 走る　<kbd>Space</kbd> 話す
           </p>
@@ -351,22 +407,26 @@ export function Town({ world }: Props) {
 
       {started && (
         <div className="hud">
-          <div className="hud-clock">
-            <SunIcon />
-            <span>{clockText(minutes)}</span>
-            <span className="hud-day" aria-hidden>
-              <span style={{ width: `${day * 100}%` }} />
-            </span>
-          </div>
-          <div className="hud-finds" aria-label={`見つけたこと ${finds.length}`}>
-            手帳 {finds.length}
-          </div>
-          <div className="hud-stamps" aria-label={`案 ${answers.length}/3`}>
-            {[0, 1, 2].map((i) => (
-              <Stamp key={i} char={answers[i]?.spot.stamp} pop={answers[i]?.spot.id === stampedId} />
-            ))}
-          </div>
-          <button className="hud-sound" onClick={toggleMute} aria-label={muted ? "音を出す" : "音を消す"}>
+          {!walk && (
+            <div className="hud-clock">
+              <SunIcon />
+              <span>{clockText(minutes)}</span>
+              <span className="hud-day" aria-hidden>
+                <span style={{ width: `${day * 100}%` }} />
+              </span>
+            </div>
+          )}
+          <button className="hud-finds" onClick={openBook} aria-label={`手帳 これまでに ${book.length}`}>
+            手帳 {book.length}
+          </button>
+          {!walk && (
+            <div className="hud-stamps" aria-label={`案 ${answers.length}/3`}>
+              {[0, 1, 2].map((i) => (
+                <Stamp key={i} char={answers[i]?.spot.stamp} pop={answers[i]?.spot.id === stampedId} />
+              ))}
+            </div>
+          )}
+          <button className={walk ? "hud-sound push" : "hud-sound"} onClick={toggleMute} aria-label={muted ? "音を出す" : "音を消す"}>
             <SoundIcon muted={muted} />
           </button>
         </div>
@@ -448,6 +508,8 @@ export function Town({ world }: Props) {
           <span>{panel.to.name}</span> 行き ・ {panel.minutes}分
         </div>
       )}
+
+      {panel?.type === "book" && <BookView book={book} world={world} onClose={close} />}
 
       {panel?.type === "end" && (
         <div className="end">
@@ -953,5 +1015,67 @@ function SoundIcon({ muted }: { muted: boolean }) {
       <path d="M4 9h4l5-4v14l-5-4H4z" fill="var(--paper)" />
       {muted ? <path d="M17 9l5 6M22 9l-5 6" /> : <path d="M17 8.5a5 5 0 0 1 0 7M19.5 6a8.5 8.5 0 0 1 0 12" />}
     </svg>
+  );
+}
+
+/** 手帳。町ごとに見つけた数と、これまでに見つけたこと。バスで移った距離は「移動」にまとめる */
+function BookView({ book, world, onClose }: { book: Find[]; world: World; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const total = (place: string) => world.spots.filter((s) => s.place === place).length;
+  const moves = book.filter((f) => !f.place);
+  return (
+    <div className="end">
+      <div className="end-card sent-card">
+        <h2>手帳</h2>
+        {world.places.map((p) => {
+          const got = book.filter((f) => f.place === p.id);
+          return (
+            <section key={p.id} className="book-town">
+              <h3>
+                {p.name}
+                <span>
+                  {got.length} / {total(p.id)}
+                </span>
+              </h3>
+              <ul>
+                {got.map((f) => (
+                  <li key={f.id}>
+                    {f.text}
+                    <small>{f.source}</small>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })}
+        {moves.length > 0 && (
+          <section className="book-town">
+            <h3>
+              移動<span>{moves.length}</span>
+            </h3>
+            <ul>
+              {moves.map((f) => (
+                <li key={f.id}>
+                  {f.text}
+                  <small>{f.source}</small>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        <div className="end-actions">
+          <button className="btn-game" onClick={onClose}>
+            とじる
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
