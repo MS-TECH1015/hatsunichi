@@ -216,6 +216,12 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .end-finds small { display: block; font-size: 11px; font-weight: 600; color: #8a7f70; }
 .end-help { display: block; margin: 0 0 14px; text-align: left; font-size: 13px; font-weight: 900; }
 .end-help input { display: block; width: 100%; margin-top: 4px; padding: 8px 10px; border: 3px solid var(--ink); border-radius: 10px; font: inherit; font-weight: 700; background: #fff; }
+.sent-card { max-height: calc(100% - 32px); overflow-y: auto; text-align: left; }
+.sent-card h2 { text-align: center; }
+.sent-list { list-style: none; margin: 0 0 14px; padding: 0; }
+.sent-list li { display: grid; gap: 4px; padding: 10px 4px; border-top: 2px dashed #e1d6c0; font-size: 13px; font-weight: 700; }
+.sent-list small { color: #8a7f70; }
+.sent-list textarea { width: 100%; padding: 6px 8px; border: 2px solid var(--ink); border-radius: 8px; font: inherit; font-weight: 600; resize: vertical; background: #fff; }
 
 /* 右上の地図。押すと大きくなる */
 .minimap { position: absolute; top: 68px; right: 12px; width: 200px; background: var(--paper); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); padding: 4px; transition: width .2s; z-index: 2; }

@@ -22,6 +22,37 @@ type Panel =
   | null;
 
 const MUTE_KEY = "hatsunichi-muted";
+const SENT_KEY = "hatsunichi-sent";
+
+/** 市に出した記録。本人のブラウザにだけ残す。返事が来たら貼り、就活で見せられる一覧にする */
+type Sent = { at: string; titles: string[]; reply: string };
+
+function loadSent(): Sent[] {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(SENT_KEY) ?? "[]");
+    if (!Array.isArray(v)) return [];
+    return v
+      .filter((x) => typeof x?.at === "string" && Array.isArray(x.titles))
+      .map((x) => ({ at: x.at, titles: x.titles.map(String), reply: String(x.reply ?? "") }));
+  } catch {
+    return [];
+  }
+}
+
+function saveSent(list: Sent[]) {
+  try {
+    localStorage.setItem(SENT_KEY, JSON.stringify(list));
+  } catch {
+    // 保存できない環境では、この回だけの記録になる
+  }
+}
+
+/** 市政提案は 2 週間をめどに回答すると書いている。world.submit.reply の出典と同じ */
+function replyBy(at: string): string {
+  const d = new Date(at);
+  d.setDate(d.getDate() + 14);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
 const LINE_MAX = 60; // 自分の一行の長さの上限。窓口に一文で伝わる長さ
 
 export function Town({ world }: Props) {
@@ -45,6 +76,9 @@ export function Town({ world }: Props) {
   const [fresh, setFresh] = useState<Find | null>(null);
   /** 本人が手伝えること。案の文は AI でも書けるが、手伝いに行くのは本人なので 1 枚の頭に載せる */
   const [help, setHelp] = useState("");
+  const [sent, setSent] = useState<Sent[]>([]);
+  const [showSent, setShowSent] = useState(false);
+  const [marked, setMarked] = useState(false);
   const seen = useRef(new Set<string>());
   const jot = useCallback((f: Find) => {
     if (seen.current.has(f.id)) return;
@@ -192,10 +226,34 @@ export function Town({ world }: Props) {
     }
   }
 
+  useEffect(() => setSent(loadSent()), []);
+
+  function markSent() {
+    const at = new Date().toLocaleDateString("sv-SE");
+    const next = [...sent, { at, titles: answers.map((a) => `${a.spot.title}: ${a.label}`), reply: "" }];
+    setSent(next);
+    saveSent(next);
+    setMarked(true);
+    play("stamp");
+  }
+
+  function setReply(i: number, reply: string) {
+    const next = sent.map((s, j) => (j === i ? { ...s, reply } : s));
+    setSent(next);
+    saveSent(next);
+  }
+
+  function copySent() {
+    const body = sent.map((s) => [`- ${s.at} ${world.submit.name}へ出した: ${s.titles.join(" / ")}`, s.reply.trim() && `  返事: ${s.reply.trim()}`].filter(Boolean).join("\n"));
+    void navigator.clipboard.writeText(`はつにち 出した記録\n\n${body.join("\n")}\n`).then(() => setCopied(true));
+  }
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== " " && e.key !== "Enter") return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (!started) {
+        if (showSent) return;
         e.preventDefault();
         begin();
         return;
@@ -222,7 +280,10 @@ export function Town({ world }: Props) {
 
   function copyAnswers() {
     const body = answers.map((a) => sheetOf(a, world)).join("\n\n");
-    const found = finds.map((f) => `- ${f.text} 出典: ${f.source}`).join("\n");
+    // 案を出した場所の数字は案の中に載っているので、手帳からは外す
+    const found = finds
+      .filter((f) => !answers.some((a) => a.spot.id === f.spot))
+      .map((f) => `- ${f.text} 出典: ${f.source}`).join("\n");
     const text = ["はつにち 初日の記録", help.trim() && `自分が手伝えること: ${help.trim()}`, body, found && `■ 見つけたこと\n${found}`].filter(Boolean).join("\n\n");
     void navigator.clipboard.writeText(`${text}\n`).then(() => setCopied(true));
   }
@@ -243,11 +304,42 @@ export function Town({ world }: Props) {
           <p className="title-keys">
             <kbd>←↑↓→</kbd> 歩く　<kbd>Shift</kbd> 走る　<kbd>Space</kbd> 話す
           </p>
+          {sent.length > 0 && (
+            <button className="btn-game small ghost" onClick={() => setShowSent(true)}>
+              出した記録 {sent.length}
+            </button>
+          )}
           <p className="title-note">
             人・店・相談は架空。地名と地形は実在。数字は出典つき
             <br />
             地形: 国土地理院 標高タイルを加工 ・ 市の境: 国土数値情報（行政区域）を加工
           </p>
+        </div>
+      )}
+
+      {!started && showSent && (
+        <div className="end">
+          <div className="end-card sent-card">
+            <h2>出した記録</h2>
+            <ul className="sent-list">
+              {sent.map((s, i) => (
+                <li key={`${s.at}-${i}`}>
+                  <b>{s.at} に出した</b>
+                  <span>{s.titles.join(" / ")}</span>
+                  <small>返事のめど {replyBy(s.at)}</small>
+                  <textarea value={s.reply} onChange={(e) => setReply(i, e.target.value)} placeholder="返ってきた返事を貼る" rows={2} maxLength={2000} />
+                </li>
+              ))}
+            </ul>
+            <div className="end-actions">
+              <button className="btn-game ghost" onClick={copySent}>
+                {copied ? "写しました" : "記録を書き写す"}
+              </button>
+              <button className="btn-game" onClick={() => setShowSent(false)}>
+                とじる
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -367,7 +459,7 @@ export function Town({ world }: Props) {
               ))}
             </div>
             <p className="end-line">
-              {guide}「{answers.length === 0 ? "明日は一つ、出してみよう" : "届け先、のぞいてみて"}」
+              {guide}「{answers.length === 0 ? "明日は一つ、出してみよう" : "出したら、市から返事が来るよ"}」
             </p>
             <ul className="end-list">
               {answers.map((a) => (
@@ -399,11 +491,10 @@ export function Town({ world }: Props) {
             )}
             {answers.length > 0 && (
               <p className="end-meta">
-                案は{" "}
                 <a href={world.submit.url} target="_blank" rel="noreferrer">
                   {world.submit.name}
                 </a>{" "}
-                から出せる
+                に出すと、市から返事が来る。{world.submit.reply}
               </p>
             )}
             <p className="end-meta">
@@ -419,6 +510,11 @@ export function Town({ world }: Props) {
               {(answers.length > 0 || finds.length > 0) && (
                 <button className="btn-game ghost" onClick={copyAnswers}>
                   {copied ? "写しました" : "書き写す"}
+                </button>
+              )}
+              {answers.length > 0 && (
+                <button className="btn-game ghost" onClick={markSent} disabled={marked}>
+                  {marked ? "記録した" : "出したら記録"}
                 </button>
               )}
               <button className="btn-game" onClick={() => location.reload()}>
