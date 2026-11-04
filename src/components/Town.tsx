@@ -320,7 +320,7 @@ export function Town({ world }: Props) {
               ))}
             </div>
             <p className="end-line">
-              {guide}「{answers.length === 0 ? "明日は一言でいいから、案を出してみよう" : "持っていく先のページを、まず読んでみて"}」
+              {guide}「{answers.length === 0 ? "明日は一つ、出してみよう" : "届け先、のぞいてみて"}」
             </p>
             <ul className="end-list">
               {answers.map((a) => (
@@ -490,7 +490,7 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, on
               {voices.map((v) => (
                 <li key={v.name} className={v.heard ? undefined : "unheard"}>
                   <b>{v.heard ? v.name : "？"}</b>
-                  {v.heard ? v.view : `${v.role}の話は、まだ聞いていない`}
+                  {v.heard ? v.view : `${v.role}に、まだ聞いてない`}
                 </li>
               ))}
             </ul>
@@ -520,7 +520,7 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, on
         <Stamp char={spot.stamp} big pop />
         <div className="result-label">{answer.label}</div>
       </div>
-      <Dialog speaker={guide} text={answer.own ? `持っていく前に、ひとつ考えてみて。${answer.note.question}` : answer.note.question} onNext={onClose} last>
+      <Dialog speaker={guide} text={answer.note.question} onNext={onClose} last>
         <div className="dialog-actions">
           <button
             className="btn-game small ghost"
@@ -529,7 +529,7 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, on
               onStage("write", answer.option);
             }}
           >
-            {answer.own ? "書き直す" : "自分の言葉に直す"}
+            書き直す
           </button>
           <button
             className="btn-game small ghost"
@@ -665,13 +665,13 @@ function Detail({ spot, answer, voices, world, onClose }: { spot: Spot; answer?:
               <span className="pill">問い</span> {answer.note.question}
             </div>
           </div>
-          <p className="muted small">この付箋は案ごとに事前に書いたもの。正解ではなく、考えるための材料</p>
+          <p className="muted small">付箋は前もって書いたもの。正解ではない</p>
         </>
       )}
 
       {answer && spot.checks.length > 0 && (
         <>
-          <h3>持っていく前に確かめること</h3>
+          <h3>出す前に</h3>
           <ul className="facts">
             {spot.checks.map((c) => (
               <li key={c}>{c}</li>

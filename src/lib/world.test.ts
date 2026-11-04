@@ -73,7 +73,20 @@ describe("world", () => {
       expect(s.hint.length).toBeLessThanOrEqual(20);
       for (const o of s.quest.options) expect(o.label.length).toBeLessThanOrEqual(10);
     }
-    for (const n of w.npcs) if (n.view) expect(n.view.length, n.id).toBeLessThanOrEqual(36);
+    for (const n of w.npcs) if (n.view) expect(n.view.length, n.id).toBeLessThanOrEqual(12);
+  });
+
+  it("せりふと説明は短く。文字が多いと読まれない", () => {
+    for (const n of w.npcs) {
+      expect(n.lines.length, n.id).toBeLessThanOrEqual(n.kind === "rabbit" ? 4 : 2);
+      for (const l of n.lines) expect(l.length, `${n.id}: ${l}`).toBeLessThanOrEqual(22);
+    }
+    for (const s of w.spots) {
+      const short = [s.quest.ask, s.quest.write, ...s.checks, ...s.quest.options.flatMap((o) => [o.note.good, o.note.gap, o.note.question])];
+      for (const t of short) expect(t.length, `${s.id}: ${t}`).toBeLessThanOrEqual(18);
+      expect(s.checks.length, s.id).toBeLessThanOrEqual(2);
+      expect(s.why.length, s.id).toBeLessThanOrEqual(80);
+    }
   });
 
   it("始まりの位置・依頼の場所・住民・バスの標識は、市の中の歩ける所にある", () => {
