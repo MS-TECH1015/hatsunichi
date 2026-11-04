@@ -67,6 +67,8 @@ export type World = {
   spots: Spot[];
   npcs: Npc[];
   sources: Record<string, { name: string; url: string; date: string; note: string }>;
+  /** 案を出す先。担当の窓口は問い合わせ先で、提案を受けて回答すると書いてあるのはここだけ */
+  submit: { name: string; url: string; reply: string; source: string };
 };
 
 /** 場所の中の座標を、市全体の座標に直したもの */

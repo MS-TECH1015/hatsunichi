@@ -57,6 +57,11 @@ describe("world", () => {
     }
   });
 
+  it("案を出す先は、提案を受け付けると書いた公式ページで、出典がある", () => {
+    expect(w.submit.url).toMatch(/^https:\/\//);
+    expect(w.sources[w.submit.source]).toBeDefined();
+  });
+
   it("案は根拠の数字を選んで出す。どの依頼にも数字が 1 つ以上ある", () => {
     for (const s of w.spots) expect(s.facts.length, s.id).toBeGreaterThan(0);
   });

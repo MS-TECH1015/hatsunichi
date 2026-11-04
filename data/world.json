@@ -1394,6 +1394,18 @@
       "url": "http://db.pref.tottori.jp/pressrelease.nsf/5725f7416e09e6da492573cb001f7512/7DDD6198BBE617D349258B1600236E4C",
       "date": "2026-11-04",
       "note": "表の最初の行、鳥取砂丘。集計の日数が年によって違う。県のサイトのため数字だけを引用"
+    },
+    "tottori_shiseiteian": {
+      "name": "鳥取市 市政提案 提案の方法",
+      "url": "https://www.city.tottori.lg.jp/page/3265.html",
+      "date": "2026-11-04",
+      "note": "SHA256 1bf9e9a28a554197654b6f5f4fa707456a16a1a18d4c973269269e47282be2e1。入力フォーム・用紙・Fax と E-mail・持参で受け付け、2 週間をめどに回答するよう努めると書いてある"
     }
+  },
+  "submit": {
+    "name": "鳥取市 市政提案 市長への手紙",
+    "url": "https://www.city.tottori.lg.jp/site/shiseiteian/",
+    "reply": "2 週間をめどに回答。要旨と回答を市のサイトに載せることがある",
+    "source": "tottori_shiseiteian"
   }
 }

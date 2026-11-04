@@ -196,7 +196,7 @@ export function Town({ world }: Props) {
     world.npcs.filter((n) => n.place === spot.place && n.view).map((n) => ({ name: n.name, role: n.role, view: n.view ?? "", heard: talked.includes(n.id) }));
 
   function copyAnswers() {
-    const body = answers.map((a) => sheetOf(a, world.sources)).join("\n\n");
+    const body = answers.map((a) => sheetOf(a, world)).join("\n\n");
     void navigator.clipboard.writeText(`はつにち 初日の案\n\n${body}\n`).then(() => setCopied(true));
   }
   const day = Math.min(Math.max((minutes - start_hour * 60) / ((end_hour - start_hour) * 60), 0), 1);
@@ -346,6 +346,15 @@ export function Town({ world }: Props) {
                 </li>
               ))}
             </ul>
+            {answers.length > 0 && (
+              <p className="end-meta">
+                案は{" "}
+                <a href={world.submit.url} target="_blank" rel="noreferrer">
+                  {world.submit.name}
+                </a>{" "}
+                から出せる
+              </p>
+            )}
             <p className="end-meta">
               {clockText(minutes)} ・ 話した人 {people}
             </p>
@@ -465,16 +474,20 @@ type SpotViewProps = {
 
 /** 窓口に持っていく1枚。根拠の数字と出典、まだ確かめていないことを付ける。
  * 町の住民は架空なので、その声は載せない */
-function sheetOf(a: Answer, sources: World["sources"]): string {
-  const src = sources[a.fact.source];
+function sheetOf(a: Answer, world: World): string {
+  const src = world.sources[a.fact.source];
+  const { submit } = world;
   return [
     `■ ${a.spot.title}`,
     `案: ${a.option}`,
     `根拠: ${a.fact.text}`,
     `出典: ${src.name} ${src.url}`,
     `まだ確かめていないこと: ${a.spot.checks.join(" / ")}`,
-    `持っていく先: ${a.spot.window.name} ${a.spot.window.url}`,
-  ].join("\n");
+    `出す先: ${submit.name} ${submit.url}`,
+    a.spot.window.url !== submit.url && `担当の窓口: ${a.spot.window.name} ${a.spot.window.url}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 /** 調べる → 頼まれる → 町の人の声を見て、案を選ぶか自分で書く → 判子と問い。理由と出典は「くわしく」に。
@@ -741,11 +754,21 @@ function Detail({ spot, answer, voices, world, onClose }: { spot: Spot; answer?:
 
       <h3>届け先</h3>
       <p>
-        <a href={spot.window.url} target="_blank" rel="noreferrer">
-          {spot.window.name}
-        </a>{" "}
-        <span className="muted small">{spot.window.checked} 確認</span>
+        案を出すなら{" "}
+        <a href={world.submit.url} target="_blank" rel="noreferrer">
+          {world.submit.name}
+        </a>
+        。<span className="muted small">{world.submit.reply}</span>
       </p>
+      {spot.window.url !== world.submit.url && (
+        <p>
+          担当は{" "}
+          <a href={spot.window.url} target="_blank" rel="noreferrer">
+            {spot.window.name}
+          </a>{" "}
+          <span className="muted small">{spot.window.checked} 確認</span>
+        </p>
+      )}
       {spot.deeper && (
         <a className="btn-game small ghost" href={withBase(spot.deeper.href)}>
           {spot.deeper.label}
