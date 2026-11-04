@@ -254,3 +254,13 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .end-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
 .end-actions .btn-game { white-space: nowrap; }
 @media (max-width: 640px) { .choice.own { grid-column: 1; } .write { flex-wrap: wrap; bottom: 148px; } .voices { font-size: 13px; } }
+.hud-finds { white-space: nowrap; }
+/* スマホの幅では、時計の帯を外して上のバーを 1 行に収める */
+@media (max-width: 480px) {
+  .hud { gap: 6px; }
+  .hud-day { display: none; }
+  .hud-clock { font-size: 16px; padding: 4px 10px 4px 8px; }
+  .hud-finds { font-size: 13px; padding: 4px 8px; }
+  .hud-stamps { gap: 4px; padding: 4px 6px; }
+  .hud-sound { width: 38px; height: 38px; }
+}
