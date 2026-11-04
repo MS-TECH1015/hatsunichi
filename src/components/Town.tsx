@@ -5,16 +5,19 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { CALCS, defaults, type Calc } from "@/lib/calcs";
 import { clockText, facilityFind, markFind, rideFind, spotFind, targetAt, unsourcedNumbers, type Fact, type Facility, type Find, type Mark, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
 import { withBase } from "@/lib/base";
+import { OWN_MAX, sheetOf, type SheetRequest } from "@/lib/sheet";
+import type { Note as Reviewed } from "@/lib/review";
 import type { TownScene } from "./town/TownScene";
 import { play, setMuted } from "./town/sfx";
 
 type Props = { world: World };
 /** own は自分で書いた一行。選んだ案と違い付箋が無いので、確かめる問いだけを出す */
 /** fact は学生が選んだ根拠の数字。案は数字と出典を付けて窓口へ持っていく */
-type Answer = { spot: Spot; option: string; label: string; note: Note; own?: boolean; fact: Fact; calc?: string; place?: Facility };
+type Answer = { spot: Spot; option: string; label: string; note: Note; own?: boolean; fact: Fact; calc?: string; knobs?: Record<string, number>; place?: Facility };
+/** 計算の一文と、そのときの前提の値。確認役のサーバーは値から一文を作り直す */
+type Worked = { text: string; knobs: Record<string, number> };
 
 /** 市の施設の使い方を民間から募る制度。施設を選んだ 1 枚に参考として添える。確認 2026-11-05 */
-const PROPOSAL = { name: "鳥取市 公共施設マネジメント民間提案制度", url: "https://www.city.tottori.lg.jp/page/48913.html" };
 
 /** 町ごとの見つけるものの数。依頼の場所・町丁の札・未活用施設の札 */
 const townTotal = (world: World, place: string) =>
@@ -23,7 +26,7 @@ type Voice = { name: string; role: string; view: string; heard: boolean };
 type Stage = "hint" | "ask" | "write" | "basis" | "calc" | "place" | "result";
 type Panel =
   | { type: "talk"; speaker: string; role?: string; lines: string[]; i: number }
-  | { type: "spot"; spot: Spot; stage: Stage; detail?: boolean; draft?: string; pending?: { option: Option; own: boolean; fact?: Fact; calc?: string } }
+  | { type: "spot"; spot: Spot; stage: Stage; detail?: boolean; draft?: string; pending?: { option: Option; own: boolean; fact?: Fact; calc?: Worked } }
   | { type: "bus"; from: Place }
   | { type: "ride"; to: Place; minutes: number }
   | { type: "end" }
@@ -85,7 +88,7 @@ function replyBy(at: string): string {
   d.setDate(d.getDate() + 14);
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
-const LINE_MAX = 60; // 自分の一行の長さの上限。窓口に一文で伝わる長さ
+const LINE_MAX = OWN_MAX;
 
 export function Town({ world }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -311,18 +314,18 @@ export function Town({ world }: Props) {
   }
 
   /** 手帳に未活用施設があれば、案に使う場所を選ぶ段へ。1 つも無ければそのまま決まる */
-  function toPlace(spot: Spot, fact: Fact, calc?: string) {
+  function toPlace(spot: Spot, fact: Fact, calc?: Worked) {
     if (panel?.type !== "spot" || !panel.pending) return;
     if (foundFacilities.length === 0) return finish(spot, fact, calc);
     play("select");
     setPanel({ ...panel, stage: "place", pending: { ...panel.pending, fact, calc } });
   }
 
-  function finish(spot: Spot, fact: Fact, calc?: string, place?: Facility) {
+  function finish(spot: Spot, fact: Fact, calc?: Worked, place?: Facility) {
     if (panel?.type !== "spot" || !panel.pending) return;
     const { option: o, own } = panel.pending;
     play("choose");
-    setAnswers((prev) => [...prev.filter((x) => x.spot.id !== spot.id), { spot, option: o.text, label: o.label, note: o.note, own, fact, calc, place }]);
+    setAnswers((prev) => [...prev.filter((x) => x.spot.id !== spot.id), { spot, option: o.text, label: o.label, note: o.note, own, fact, calc: calc?.text, knobs: calc?.knobs, place }]);
     sceneRef.current?.markAnswered(spot.id);
     setStampedId(spot.id);
     window.setTimeout(() => play("stamp"), 300);
@@ -768,31 +771,62 @@ type SpotViewProps = {
   onDetail: (open: boolean) => void;
   onChoose: (s: Spot, o: Option, own?: boolean) => void;
   onSettle: (s: Spot, f: Fact) => void;
-  onCalc: (calc?: string) => void;
+  onCalc: (calc?: Worked) => void;
   facilities: Facility[];
   onPlace: (f?: Facility) => void;
   onClose: () => void;
 };
 
-/** 窓口に持っていく1枚。根拠の数字と出典、まだ確かめていないことを付ける。
- * 町の住民は架空なので、その声は載せない */
-function sheetOf(a: Answer, world: World): string {
-  const src = world.sources[a.fact.source];
-  const { submit } = world;
-  return [
-    `■ ${a.spot.title}`,
-    `案: ${a.option}`,
-    `根拠: ${a.fact.text}`,
-    `出典: ${src.name} ${src.url}`,
-    a.calc && `計算（前提は推定）: ${a.calc}`,
-    a.place && `使う場所: ${a.place.name}、${world.places.find((p) => p.id === a.place?.place)?.name ?? ""}。鳥取市の未活用施設。今も使われていないかは未確認 出典: ${world.sources[a.place.sources[0]]?.name ?? ""}`,
-    a.place && `参考: 市の施設の使い方は ${PROPOSAL.name} で民間から募っている。この施設の案を市が募っているわけではない ${PROPOSAL.url}`,
-    `まだ確かめていないこと: ${a.spot.checks.join(" / ")}`,
-    `出す先: ${submit.name} ${submit.url}`,
-    a.spot.window.url !== submit.url && `担当の窓口: ${a.spot.window.name} ${a.spot.window.url}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+/** 確認役は手元のサーバー（scripts/review-server.ts）。/map と同じ NEXT_PUBLIC_REVIEW_URL の隣の /sheet に送る */
+const REVIEW_URL = process.env.NEXT_PUBLIC_REVIEW_URL;
+const SHEET_URL = REVIEW_URL && new URL("sheet", REVIEW_URL).toString();
+
+/** 送るのは番号と前提の値だけ。サーバーが world.json から 1 枚を組み直す。自由な文は自分で書いた一行だけ */
+function requestOf(a: Answer): SheetRequest {
+  return {
+    spot: a.spot.id,
+    option: a.own ? undefined : a.spot.quest.options.findIndex((o) => o.text === a.option),
+    own: a.own ? a.option : undefined,
+    fact: a.spot.facts.findIndex((f) => f.text === a.fact.text),
+    knobs: a.knobs,
+    facility: a.place?.id,
+  };
+}
+
+/** 決めた 1 枚を確認役（Claude）に見せて、付箋を 1 枚もらう。確認役のサーバーを動かしているときだけ出る */
+function ReviewCard({ answer }: { answer: Answer }) {
+  const [state, setState] = useState<"idle" | "wait" | "fail">("idle");
+  const [note, setNote] = useState<Reviewed | null>(null);
+  if (!SHEET_URL) return null;
+  const ask = async () => {
+    setState("wait");
+    try {
+      const res = await fetch(SHEET_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(requestOf(answer)) });
+      if (!res.ok) throw new Error(String(res.status));
+      setNote(((await res.json()) as { note: Reviewed }).note);
+      play("stamp");
+    } catch {
+      setState("fail");
+    }
+  };
+  if (!note)
+    return (
+      <aside className="review-card">
+        <button className="btn-game small" disabled={state === "wait"} onClick={ask}>
+          {state === "wait" ? "読んでもらっている…" : "確認役に見せる"}
+        </button>
+        {state === "fail" && <small>確認役に届かなかった。手元のサーバーが動いているか見る</small>}
+      </aside>
+    );
+  return (
+    <aside className="review-card" aria-live="polite">
+      <b>確認役の付箋</b>
+      <p>よい: {note.good}</p>
+      <p>足りない: {note.gap}</p>
+      <p>問い: {note.question}</p>
+      <small>{note.demo ? "鍵が無いので、用意してある付箋" : `${note.model}${note.retries ? `。出典に無い数字で ${note.retries} 回書き直した` : ""}`}</small>
+    </aside>
+  );
 }
 
 /** 調べる → 頼まれる → 町の人の声を見て、案を選ぶか自分で書く → 判子と問い。理由と出典は「くわしく」に。
@@ -888,6 +922,7 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, on
   if (!answer) return null;
   return (
     <>
+      <ReviewCard key={`${spot.id}:${answer.option}`} answer={answer} />
       <div className="result">
         <Stamp char={spot.stamp} big pop />
         <div className="result-label">{answer.label}</div>
@@ -1176,7 +1211,7 @@ function BookView({ book, world, onClose }: { book: Find[]; world: World; onClos
 }
 
 /** 案の大きさを町の数字と比べる計算。動かす前提には「推定」と付け、結果は前提の値ごと 1 枚に載る */
-function CalcView({ calc, spot, world, guide, onDone, onBack }: { calc: Calc; spot: Spot; world: World; guide: string; onDone: (calc?: string) => void; onBack: () => void }) {
+function CalcView({ calc, spot, world, guide, onDone, onBack }: { calc: Calc; spot: Spot; world: World; guide: string; onDone: (calc?: Worked) => void; onBack: () => void }) {
   const [k, setK] = useState(() => defaults(calc));
   const text = calc.say(k);
   const used = [...new Set(calc.bases.map((b) => b.fact))].map((i) => spot.facts[i]);
@@ -1200,7 +1235,7 @@ function CalcView({ calc, spot, world, guide, onDone, onBack }: { calc: Calc; sp
           <p className="calc-out">{text}</p>
           <small className="calc-src">根拠: {used.map((f) => world.sources[f.source]?.name ?? f.source).join(" / ")}</small>
         </div>
-        <button className="choice wide" onClick={() => onDone(text)} onMouseEnter={() => play("select", 0.2)}>
+        <button className="choice wide" onClick={() => onDone({ text, knobs: k })} onMouseEnter={() => play("select", 0.2)}>
           この計算も1枚に載せて決める
         </button>
         <button className="choice why" onClick={() => onDone()}>

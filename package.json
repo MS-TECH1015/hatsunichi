@@ -18,7 +18,8 @@
     "demo": "node scripts/copy-worker.mjs && next build && npx --yes serve out",
     "review": "node scripts/review-server.ts",
     "deploy": "node scripts/deploy-pages.mjs",
-    "eval": "node scripts/eval.ts"
+    "eval": "node scripts/eval.ts",
+    "eval:sheet": "node scripts/eval-sheet.ts"
   },
   "repository": {
     "type": "git",

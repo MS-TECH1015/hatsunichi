@@ -1,15 +1,25 @@
 // 確認役の手元サーバー。Pages は静的なので API を持てず、確認役はここで動かす。
-// 使い方: node scripts/review-server.ts  → http://localhost:8787/review に POST
-// 画面側は NEXT_PUBLIC_REVIEW_URL=http://localhost:8787/review で向ける
-import { createServer } from "node:http";
+// 使い方: node --env-file=.env scripts/review-server.ts
+//   POST /review  作業台（/map）の提出用紙に付箋を付ける
+//   POST /sheet   3D の町で決めた 1 枚に付箋を付ける
+// 画面側は NEXT_PUBLIC_REVIEW_URL=http://localhost:8787/review で向ける。/sheet はその隣を使う
+// 鍵を使うので、この PC の中からだけ受け付ける。ほかのサイトの画面からの呼び出しは断る
+import { createServer, type IncomingMessage } from "node:http";
 import town from "../data/town.json" with { type: "json" };
+import world from "../data/world.json" with { type: "json" };
 import { impactOf, residentState, type Town } from "../src/lib/impact.ts";
 import { loadTickets } from "../src/lib/ticket.ts";
-import { reviewSubmission, type Facts, type Submission } from "../src/lib/review.ts";
+import { reviewSheet, reviewSubmission, type Facts, type Submission } from "../src/lib/review.ts";
+import { answerFromRequest, type SheetRequest } from "../src/lib/sheet.ts";
+import type { World } from "../src/lib/world.ts";
 
 const PORT = Number(process.env.REVIEW_PORT ?? 8787);
 const LIMIT_PER_HOUR = 10;
+const BODY_MAX = 4096;
+const LOCAL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 const hits = new Map<string, number[]>();
+
+type Reply = { status: number; body: unknown };
 
 function overLimit(ip: string): boolean {
   const now = Date.now();
@@ -20,16 +30,17 @@ function overLimit(ip: string): boolean {
   return false;
 }
 
-const headers = { "content-type": "application/json", "access-control-allow-origin": "*", "access-control-allow-headers": "content-type" };
-
-createServer(async (req, res) => {
-  if (req.method === "OPTIONS") return res.writeHead(204, headers).end();
-  if (req.method !== "POST" || req.url !== "/review") return res.writeHead(404, headers).end(JSON.stringify({ error: "POST /review だけ" }));
-  if (overLimit(req.socket.remoteAddress ?? "local")) return res.writeHead(429, headers).end(JSON.stringify({ error: "1時間に10回まで" }));
-
+async function readJson(req: IncomingMessage): Promise<unknown> {
   let raw = "";
-  for await (const chunk of req) raw += chunk;
-  const body = JSON.parse(raw) as { submission: Submission; load_factor?: number; ticket?: string };
+  for await (const chunk of req) {
+    raw += chunk;
+    if (raw.length > BODY_MAX) throw new Error("大きすぎる");
+  }
+  return JSON.parse(raw);
+}
+
+async function reviewMap(input: unknown): Promise<Reply> {
+  const body = input as { submission: Submission; load_factor?: number; ticket?: string };
   const t = town as unknown as Town;
   const removed = new Set(body.submission.removed.map((r) => r.trip_id));
   const load = body.load_factor ?? t.assumptions.load_factor_default;
@@ -43,6 +54,40 @@ createServer(async (req, res) => {
   };
   const tickets = loadTickets();
   const ticket = tickets.find((x) => x.file === body.ticket) ?? tickets[0];
-  const note = await reviewSubmission(ticket, facts, body.submission);
-  res.writeHead(200, headers).end(JSON.stringify({ note, facts }));
-}).listen(PORT, () => console.log(`確認役: http://localhost:${PORT}/review  鍵 ${process.env.ANTHROPIC_API_KEY ? "あり" : "なし（demo）"}`));
+  return { status: 200, body: { note: await reviewSubmission(ticket, facts, body.submission), facts } };
+}
+
+async function reviewTownSheet(input: unknown): Promise<Reply> {
+  const w = world as unknown as World;
+  const answer = answerFromRequest(w, input as SheetRequest);
+  if (typeof answer === "string") return { status: 400, body: { error: answer } };
+  return { status: 200, body: { note: await reviewSheet(answer, w) } };
+}
+
+const ROUTES: Record<string, (input: unknown) => Promise<Reply>> = { "/review": reviewMap, "/sheet": reviewTownSheet };
+
+createServer(async (req, res) => {
+  const origin = req.headers.origin;
+  const local = origin !== undefined && LOCAL.test(origin);
+  const headers = { "content-type": "application/json", ...(local ? { "access-control-allow-origin": origin, "access-control-allow-headers": "content-type", vary: "origin" } : {}) };
+  const send = ({ status, body }: Reply) => res.writeHead(status, headers).end(JSON.stringify(body));
+
+  if (origin !== undefined && !local) return send({ status: 403, body: { error: "この PC の画面からだけ受け付ける" } });
+  if (req.method === "OPTIONS") return res.writeHead(204, headers).end();
+  const route = req.method === "POST" ? ROUTES[req.url ?? ""] : undefined;
+  if (!route) return send({ status: 404, body: { error: "POST /review か POST /sheet だけ" } });
+  if (overLimit(req.socket.remoteAddress ?? "local")) return send({ status: 429, body: { error: "1時間に10回まで" } });
+
+  let input: unknown;
+  try {
+    input = await readJson(req);
+  } catch {
+    return send({ status: 400, body: { error: `JSON で ${BODY_MAX} バイトまで` } });
+  }
+  try {
+    send(await route(input));
+  } catch (e) {
+    console.error(e);
+    send({ status: 502, body: { error: "確認役に届かなかった" } });
+  }
+}).listen(PORT, "127.0.0.1", () => console.log(`確認役: http://localhost:${PORT}/review と /sheet  鍵 ${process.env.ANTHROPIC_API_KEY ? "あり" : "なし（demo）"}`));

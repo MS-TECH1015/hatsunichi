@@ -288,3 +288,8 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .place-note { grid-column: 1 / -1; justify-self: start; padding: 4px 10px; border-radius: 10px; background: rgba(255, 250, 240, 0.92); font-size: 11px; font-weight: 700; color: #5a5146; }
 .find-toast.cheer { background: #4f7a5a; color: #fffaf0; }
 .book-full { margin-right: 8px; padding: 0 6px; border: 1.5px solid #4f7a5a; border-radius: 6px; font-size: 11px; font-style: normal; color: #4f7a5a; }
+/* 確認役の付箋。右上は地図なので左上に貼る */
+.review-card { position: absolute; top: 72px; left: 16px; width: min(320px, calc(100% - 32px)); display: flex; flex-direction: column; gap: 4px; background: #fff3a6; border: 3px solid var(--ink); border-radius: 12px; padding: 12px 14px; box-shadow: 0 4px 0 var(--ink); font-size: 14px; line-height: 1.6; animation: rise .2s ease-out both; }
+.review-card p { margin: 0; }
+.review-card small { font-size: 11px; color: #6b5f4a; }
+.review-card .btn-game { align-self: flex-start; }

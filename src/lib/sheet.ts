@@ -31,7 +31,8 @@ export function sheetOf(a: SheetAnswer, world: World): string {
 /** 画面から確認役へ送るもの。option は選んだ案の番号、own は自分で書いた一行。どちらか一方 */
 export type SheetRequest = { spot: string; option?: number; own?: string; fact: number; knobs?: Record<string, number>; facility?: string };
 
-export const OWN_MAX = 200;
+/** 自分で書いた一行の上限。窓口に一文で伝わる長さで、画面の入力欄も同じ */
+export const OWN_MAX = 60;
 
 /** 送られてきた番号と値から 1 枚の中身を組み直す。おかしければ理由の文を返す */
 export function answerFromRequest(world: World, req: SheetRequest): SheetAnswer | string {

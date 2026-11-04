@@ -82,8 +82,8 @@ npm run eval                 # 確認役の測定。docs/eval/<モデル>.md に
 ### 公開と確認役
 
 - 公開先は GitHub Pages: https://ms-tech1015.github.io/hatsunichi/ 。静的書き出し（`output: "export"`）なので、Pages 上の確認役は鍵なしの demo の付箋を画面側で作る
-- 配備は `npm run deploy`。`out/` を gh-pages ブランチへ push する。`.github/workflows/pages.yml` の Actions 配備も用意してあるが、push には gh の `workflow` スコープが要る
-- 本物の確認役は手元で動かす。`.env` に `ANTHROPIC_API_KEY` を書き、`npm run review` で http://localhost:8787/review を立て、`NEXT_PUBLIC_REVIEW_URL=http://localhost:8787/review npm run dev` で画面を向ける。このとき提出文は Anthropic の API に送られる（学習には使われず、既定で 30 日以内に消える）
+- 配備は `npm run deploy`。`out/` を gh-pages ブランチへ push する
+- 本物の確認役は手元で動かす。`.env` に `ANTHROPIC_API_KEY` を書き、`npm run review` で http://localhost:8787/review を立て、`NEXT_PUBLIC_REVIEW_URL=http://localhost:8787/review npm run dev` で画面を向ける。3D の町では決めた 1 枚の左上に「確認役に見せる」が出る。このとき提出文と 1 枚は Anthropic の API に送られる（学習には使われず、既定で 30 日以内に消える）
 
 ## 数字の出し方
 
@@ -96,9 +96,11 @@ npm run eval                 # 確認役の測定。docs/eval/<モデル>.md に
 
 ## 確認役
 
-`src/lib/review.ts`。Messages API の tool use で `submit_review`（good・gap・question）を強制し、返ってきた文の数字を計算結果と提出用紙の数字と照合する。無い数字が混ざっていたら理由を添えて作り直させ、3回で通らなければ数字を伏せて返す。作り直しの回数は画面に出す。
+`src/lib/review.ts`。Messages API の構造化出力で good・gap・question の形を決め、返ってきた文の数字を、作業台では計算結果と提出用紙、3D の町では 1 枚の文と照合する。無い数字が混ざっていたら理由を添えて作り直させ、3回で通らなければ数字を伏せて返す。作り直しの回数は画面に出す。
 
-点数・採点・ランキングの語は使わない。提出内容はサーバーに残さない。残るのは本人が同意した「ひとこと」だけで、それも本人のブラウザの中。
+点数・採点・ランキングの語は使わない。提出内容と 1 枚はサーバーに残さない。手帳と出した記録は本人のブラウザの中だけに残る。
+
+3D の町の 1 枚は、画面から番号と前提の値だけを受け取り、サーバーが `data/world.json` から組み直す。自由な文は自分で書いた一行（60 字まで）だけで、`<sheet>` で囲んで指示として扱わない。測定は `npm run eval:sheet`。
 
 ## Claude Code の使い方
 
