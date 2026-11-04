@@ -60,11 +60,15 @@ export type Npc = {
 
 export type Prop = { place: string; kind: string; at: Vec2; face: number; scale?: number };
 
+/** 町丁の印。近くを歩くと、人口と近い病院・小学校までの距離が手帳に残る。at は場所の中の座標。scripts/build_marks.py が作る */
+export type Mark = { id: string; place: string; at: Vec2; text: string; sources: string[] };
+
 export type World = {
   meta: { start: { place: string; at: Vec2 }; clock: { start_hour: number; end_hour: number; minutes_per_second: number; minutes_per_talk: number } };
   places: Place[];
   props: Prop[];
   spots: Spot[];
+  marks: Mark[];
   npcs: Npc[];
   sources: Record<string, { name: string; url: string; date: string; note: string }>;
   /** 案を出す先。担当の窓口は問い合わせ先で、提案を受けて回答すると書いてあるのはここだけ */
@@ -81,6 +85,8 @@ export type Ground = { x0: number; z0: number; cell: number; w: number; h: numbe
 export type Route = { km: number; path: Vec2[] };
 
 export const TALK_RANGE = 2.2;
+/** 町丁の印を拾う距離（単位）。家に押し出されても届くよう、家の半径より少し広い */
+export const MARK_RANGE = 3;
 export const PROP_RADIUS: Record<string, number> = { house: 2.4, house_b: 2.4, shop: 2.4, pear_tree: 0.6, field: 4.2, school: 5.2, tree: 0.9, pole: 0.3, vending: 0.7, bench: 0.8, hill: 9 };
 /** 路線バスの平均の速さ [推定: 停車を含めて時速 25 km と置いた] */
 export const BUS_KMH = 25;
@@ -97,6 +103,7 @@ export function placeWorld(world: World): Placed {
     start: shift(world.meta.start.place, world.meta.start.at),
     props: world.props.map((p) => ({ ...p, at: shift(p.place, p.at) })),
     spots: world.spots.map((s) => ({ ...s, at: shift(s.place, s.at) })),
+    marks: world.marks.map((m) => ({ ...m, at: shift(m.place, m.at) })),
     npcs: world.npcs.map((n) => ({ ...n, at: shift(n.place, n.at) })),
     stops: world.places.filter((p) => p.hub && p.stop).map((p) => ({ place: p, at: shift(p.id, p.stop!) })),
   };
@@ -128,6 +135,19 @@ export function nearestTarget(pos: Vec2, world: Placed, range = TALK_RANGE): Tar
   for (const spot of world.spots) consider(spot.at, spot.radius, { type: "spot", spot });
   for (const s of world.stops) consider(s.at, 0.4, { type: "bus", place: s.place, at: s.at });
   return best ? (best as { d: number; t: Target }).t : null;
+}
+
+/** いちばん近い町丁の印。範囲の外なら null */
+export function nearestMark(pos: Vec2, marks: Mark[], range = MARK_RANGE): Mark | null {
+  let best: Mark | null = null;
+  let bestD = range;
+  for (const m of marks) {
+    const d = Math.hypot(pos[0] - m.at[0], pos[1] - m.at[1]);
+    if (d > bestD) continue;
+    best = m;
+    bestD = d;
+  }
+  return best;
 }
 
 export const targetAt = (t: Target): Vec2 => (t.type === "spot" ? t.spot.at : t.type === "npc" ? t.npc.at : t.at);
@@ -198,4 +218,8 @@ export function rideFind(from: Place, to: Place): Find {
     text: `${from.name}から${to.name}まで、まっすぐなら ${km < 10 ? km.toFixed(1) : Math.round(km)} km`,
     source: `${from.geo_source} と ${to.geo_source} の緯度経度`,
   };
+}
+
+export function markFind(mark: Mark, sources: World["sources"]): Find {
+  return { id: `mark:${mark.id}`, text: mark.text, source: mark.sources.map((k) => sources[k]?.name ?? k).join(" / "), place: mark.place };
 }

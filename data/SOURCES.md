@@ -11,6 +11,8 @@ SHA256 は取得時の `data/raw/fetch.log` から写した。
 | gtfs_hinomaru | 日ノ丸自動車 GTFS-JP | 鳥取県オープンデータポータル 鳥取県バス情報 | https://odp-pref-tottori.tori-info.co.jp/bus.html → /bus_data/2.zip | 2026-11-03 | 732b406e5580e63627d59b081da373fdd3616798264333a36536f90cf3430408 | 日本交通と同じ（規約の既定 CC BY 2.1 JP） | 全便の停留所の並びを、地図の道とバスの経路に使った。同じ名前で 400 m 以内の停留所は 1 つにまとめた |
 | n03_2025 | 国土数値情報 行政区域データ 2025年（令和7年）鳥取県 | 国土交通省 国土数値情報ダウンロードサイト | https://nlftp.mlit.go.jp/ksj/ → /ksj/gml/data/N03/N03-2025/N03-20250101_31_GML.zip | 2026-11-03 | 1c1f63f88eba6053b98466a33d897780eba3fda1224f22fc0c1abdaf962ab2cf | CC BY 4.0（測量法に基づく国土地理院長承認 R 6JHf 503） | 鳥取市の境を、歩ける範囲と地図の色分けに使った |
 | gsi_dem_z11 | 地理院タイル 標高タイル（DEM10B）ズーム 11 の 9 枚 | 国土地理院 | https://cyberjapandata.gsi.go.jp/xyz/dem_png/11/{x}/{y}.png（x 1786〜1788、y 807〜809） | 2026-11-03 | 9 枚それぞれの値は data/raw/fetch.log | 地理院タイル利用規約。出典明示で申請不要 | 100 m 格子に並べ直し、高さを 1.5 倍にして Blender で地形にした。川はこの標高から水の流れを計算して引いたもので、実在の川筋ではない |
+| census_small | 令和2年国勢調査 町丁・字等別境界データ（A002005212020）、小地域集計 年齢（5歳階級）別人口 令和2年（T001082）・平成27年（T000849）鳥取県 | 政府統計の総合窓口(e-Stat)、総務省統計局 | https://www.e-stat.go.jp/gis/statmap-search → 境界 /data?dlserveyId=A002005212020&code=31&coordSys=1&format=shape&downloadType=5&datum=2000、表 /data?statsId=T001082&code=31&downloadType=2 と statsId=T000849 | 2026-11-04 | 境界 dde7162113438efdb9f8d063c675ebed7b00c476bcf0b51ddbd14c8d46b1a468、令和2年 a72c2764a89d113a5771ac538bb7fcdcf719e618056b730bbeb1310c924e1f2b、平成27年 f2928d319a33f09b23fb5a46a13222d5fa59437b760a7280695c94504b6fc139 | 政府標準利用規約 第2.0版（CC BY 4.0 互換）。「出典：政府統計の総合窓口(e-Stat)（https://www.e-stat.go.jp/）」と「「国勢調査」（総務省）を加工して作成」 | 鳥取市の町丁ごとに人口総数、65 歳以上の割合（年齢の分かる人に対して）、平成27年からの増減を出し、境界の図形中心点に「?」の札を置いた。秘匿の町丁は使っていない |
+| ksj_facilities | 国土数値情報 医療機関データ 令和2年度（P04）、学校データ 令和5年度（P29）鳥取県 | 国土交通省 国土数値情報ダウンロードサイト | https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-P04-2020.html → /ksj/gml/data/P04/P04-20/P04-20_31_GML.zip、https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-P29-2023.html → /ksj/gml/data/P29/P29-23/P29-23_31_GML.zip | 2026-11-04 | P04 78aac421e0865a166965d93a3e8ef2c502988eb1b2f0823ef57cd88f1f6f0f2f、P29 df70b4b79c67d41e60f6b0ea36c27e34401334bfd605c8913f15f3056e4b4189 | CC BY 4.0。「『国土数値情報（医療機関データ）』（国土交通省）（URL）をもとに作成」の形で表示 | 町丁の図形中心点から、県内の病院（医療機関分類が病院）と小学校（学校分類が小学校と義務教育学校）までの直線距離を出した。施設の名前と位置は画面に出さない |
 
 取得したがまだ使っていないもの
 - 鳥取県介護サービス事業所一覧 CSV（CC BY、/dataset/1888、SHA256 51d10aaecefb04195b4da7b4424622a610bd8876090e68482dbe6a2d7bc286a8）
@@ -23,6 +25,8 @@ SHA256 は取得時の `data/raw/fetch.log` から写した。
 - 位置参照情報は PDL1.0。「編集・加工した情報を、あたかも国が作成したかのような態様で公表・利用してはいけません」に従い、点の配置は作者の想定だと明記する
 - 地理院タイルは出典明示のみで申請不要 [出典: https://maps.gsi.go.jp/development/ichiran.html]
 - 国土数値情報 N03 は CC BY 4.0。「国土数値情報（行政区域データ）を加工して作成」と表示する
+- e-Stat は政府標準利用規約 第2.0版、国土数値情報の医療機関（令和2年度）と学校（令和5年度）は CC BY 4.0。学校データの平成25年度版は非商用なので使っていない [確認 2026-11-04: https://www.e-stat.go.jp/terms-of-use 、上の 2 つの詳細ページ]
+- 国土数値情報の測量法に基づく承認について、使う側にも申請が要るかは未確認
 - AI での利用について、各規約に個別の条項があるかは確かめていない（未確認）
 
 ## 作者が置いたもの（データではない）

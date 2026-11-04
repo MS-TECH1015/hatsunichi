@@ -30,3 +30,11 @@ fetch "https://www.city.tottori.lg.jp/uploaded/attachment/53775.xlsx" population
 fetch "https://nlftp.mlit.go.jp/isj/dls/data/19.0b/31000-19.0b.zip" isj_31000-19.0b.zip
 # 国土数値情報 行政区域 N03 2025 鳥取県 https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N03-2025.html （CC BY 4.0、出典表示）
 fetch "https://nlftp.mlit.go.jp/ksj/gml/data/N03/N03-2025/N03-20250101_31_GML.zip" n03_2025_31.zip
+# e-Stat 令和2年国勢調査 町丁・字等別境界データ 鳥取県（政府標準利用規約 第2.0版、出典表示と加工の明記）
+fetch "https://www.e-stat.go.jp/gis/statmap-search/data?dlserveyId=A002005212020&code=31&coordSys=1&format=shape&downloadType=5&datum=2000" estat_r2ka31.zip
+# e-Stat 国勢調査 小地域集計 年齢（5歳階級）別人口 鳥取県 令和2年 T001082・平成27年 T000849
+fetch "https://www.e-stat.go.jp/gis/statmap-search/data?statsId=T001082&code=31&downloadType=2" estat_T001082_31.zip
+fetch "https://www.e-stat.go.jp/gis/statmap-search/data?statsId=T000849&code=31&downloadType=2" estat_T000849_31.zip
+# 国土数値情報 医療機関 令和2年度 P04 と 学校 令和5年度 P29 鳥取県（CC BY 4.0、出典表示）
+fetch "https://nlftp.mlit.go.jp/ksj/gml/data/P04/P04-20/P04-20_31_GML.zip" ksj_P04-20_31.zip
+fetch "https://nlftp.mlit.go.jp/ksj/gml/data/P29/P29-23/P29-23_31_GML.zip" ksj_P29-23_31.zip

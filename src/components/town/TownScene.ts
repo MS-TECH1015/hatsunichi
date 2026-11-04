@@ -8,6 +8,7 @@ import { withBase } from "@/lib/base";
 import {
   busMinutes,
   heightAt,
+  nearestMark,
   nearestTarget,
   placeWorld,
   pushOut,
@@ -16,6 +17,7 @@ import {
   targetAt,
   PROP_RADIUS,
   type Ground,
+  type Mark,
   type Npc,
   type Placed,
   type Route,
@@ -28,7 +30,7 @@ import { cityLooks, clock } from "./surfaces";
 import { Towns, type TownData } from "./townMesh";
 
 /** place はいま入っている町の名前。町の外とバスの中では null */
-export type SceneState = { minutes: number; target: Target | null; place: string | null };
+export type SceneState = { minutes: number; target: Target | null; place: string | null; mark: Mark | null };
 
 type CityData = {
   grid: { x0: number; z0: number; cell: number; w: number; h: number };
@@ -96,6 +98,10 @@ export class TownScene {
   private center = new THREE.Vector3();
   private map: { canvas: HTMLCanvasElement; image: HTMLImageElement } | null = null;
   private answered = new Set<string>();
+  /** 町丁の印の札と、手帳に入った印の id */
+  private signs: THREE.Sprite[] = [];
+  private found = new Set<string>();
+  private lastMark: Mark | null = null;
   private minutes: number;
   private paused = true;
   private playing = false;
@@ -172,6 +178,12 @@ export class TownScene {
     this.answered.add(spotId);
     const m = this.markers.find((s) => s.userData.spotId === spotId);
     if (m) m.visible = false;
+  }
+
+  /** 手帳に入った印は札を薄くし、地図からも消す */
+  setFound(markIds: string[]) {
+    this.found = new Set(markIds);
+    for (const s of this.signs) s.material.opacity = this.found.has(s.userData.markId) ? 0.35 : 1;
   }
 
   markTalked(npcId: string) {
@@ -374,6 +386,7 @@ export class TownScene {
       const top = new THREE.Box3().setFromObject(o).max.y;
       this.markers.push(this.addMarker(s.id, s.at, top + 1.6));
     }
+    for (const m of this.world.marks) this.signs.push(this.addMarkSign(m));
     for (const n of this.world.npcs) {
       const o = this.place(n.kind, n.at, n.face, PEOPLE_SCALE);
       if (n.body) this.tint(o, "person_body", n.body);
@@ -544,6 +557,30 @@ export class TownScene {
     sprite.scale.setScalar(2.2);
     sprite.material.fog = false;
     sprite.userData = { spotId, baseY: height };
+    return sprite;
+  }
+
+  /** 町丁の印の札。依頼の「!」より小さく、白地に「?」 */
+  private addMarkSign(mark: Mark): THREE.Sprite {
+    const sprite = this.sprite((g) => {
+      g.fillStyle = "#fffaf0";
+      g.strokeStyle = INK;
+      g.lineWidth = 9;
+      g.beginPath();
+      g.arc(64, 64, 44, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      g.fillStyle = INK;
+      g.font = "900 60px sans-serif";
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      g.fillText("?", 64, 68);
+    });
+    const height = this.groundY(mark.at) + 2.4;
+    sprite.position.set(mark.at[0], height, mark.at[1]);
+    sprite.scale.setScalar(1.4);
+    sprite.material.fog = false;
+    sprite.userData = { markId: mark.id, baseY: height, phase: mark.at[0] };
     return sprite;
   }
 
@@ -720,6 +757,10 @@ export class TownScene {
       const far = Math.max(1, cam.distanceTo(m.position) / 45);
       m.scale.setScalar((2.2 + Math.sin(now / 150) * 0.06) * far);
     }
+    for (const s of this.signs) {
+      s.position.y = s.userData.baseY + Math.sin(now / 400 + s.userData.phase) * 0.2;
+      s.scale.setScalar(1.4 * Math.max(1, cam.distanceTo(s.position) / 45));
+    }
     for (const b of this.bubbles.values()) b.position.y = b.userData.baseY + Math.sin(now / 420) * 0.08;
     for (const w of this.walkers) {
       w.obj.scale.set(PEOPLE_SCALE, PEOPLE_SCALE * (1 + Math.sin(now / 380 + w.phase) * 0.035), PEOPLE_SCALE);
@@ -808,11 +849,13 @@ export class TownScene {
     const target = this.paused || this.ride ? this.lastTarget : nearestTarget(this.playerPos, this.world);
     this.showRing(target, now);
     const place = this.ride ? null : (this.towns?.placeAt(this.playerPos[0], this.playerPos[1]) ?? null);
+    const mark = this.ride ? null : nearestMark(this.playerPos, this.world.marks);
     const id = (t: Target | null) => (!t ? null : t.type === "spot" ? t.spot.id : t.type === "npc" ? t.npc.id : `bus:${t.place.id}`);
-    if (id(target) !== id(this.lastTarget) || place !== this.placeName || Math.floor(now / 500) !== Math.floor((now - dt * 1000) / 500)) {
+    if (id(target) !== id(this.lastTarget) || place !== this.placeName || mark !== this.lastMark || Math.floor(now / 500) !== Math.floor((now - dt * 1000) / 500)) {
       this.lastTarget = target;
       this.placeName = place;
-      this.onChange({ minutes: this.minutes, target, place });
+      this.lastMark = mark;
+      this.onChange({ minutes: this.minutes, target, place, mark });
     }
   }
 
@@ -852,6 +895,15 @@ export class TownScene {
       const [x, y] = px(s.at);
       g.fillStyle = "#4d8c6b";
       g.fillRect(x - 3 * dpr, y - 3 * dpr, 6 * dpr, 6 * dpr);
+    }
+    for (const m of this.world.marks) {
+      if (this.found.has(m.id)) continue;
+      const [x, y] = px(m.at);
+      g.fillStyle = "#fffaf0";
+      g.beginPath();
+      g.arc(x, y, 3 * dpr, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
     }
     for (const s of this.world.spots) {
       const [x, y] = px(s.at);

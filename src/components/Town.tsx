@@ -2,7 +2,7 @@
 // 町を歩く画面。描画は TownScene、ここはタイトル・HUD・会話・依頼の選択・判子・詳細の UI。
 // 画面に出す文字は一言ずつにし、理由・出典・付箋・窓口は「くわしく」の中に置く
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { clockText, rideFind, spotFind, targetAt, unsourcedNumbers, type Fact, type Find, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
+import { clockText, markFind, rideFind, spotFind, targetAt, unsourcedNumbers, type Fact, type Find, type Mark, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
 import { withBase } from "@/lib/base";
 import type { TownScene } from "./town/TownScene";
 import { play, setMuted } from "./town/sfx";
@@ -87,6 +87,7 @@ export function Town({ world }: Props) {
   const [started, setStarted] = useState(false);
   const [minutes, setMinutes] = useState(world.meta.clock.start_hour * 60);
   const [target, setTarget] = useState<Target | null>(null);
+  const [mark, setMark] = useState<Mark | null>(null);
   const [placeName, setPlaceName] = useState<string | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
   const [answers, setAnswers] = useState<Answer[]>([]);
@@ -135,6 +136,7 @@ export function Town({ world }: Props) {
         setMinutes(s.minutes);
         setTarget(s.target);
         setPlaceName(s.place);
+        setMark(s.mark);
       });
       sceneRef.current = scene;
       if (location.search.includes("debug")) (window as unknown as { __town: TownScene }).__town = scene;
@@ -215,6 +217,16 @@ export function Town({ world }: Props) {
   useEffect(() => {
     if (started && target?.type === "spot") jot(spotFind(target.spot, world.sources));
   }, [started, target, jot, world.sources]);
+
+  // 町丁の印の近くを通ったら、その町丁の人口と近い病院・小学校までの距離を手帳に残す
+  useEffect(() => {
+    if (started && mark) jot(markFind(mark, world.sources));
+  }, [started, mark, jot, world.sources]);
+
+  // 手帳に入った印は、町の札を薄くし地図から消す
+  useEffect(() => {
+    if (ready) sceneRef.current?.setFound(book.filter((f) => f.id.startsWith("mark:")).map((f) => f.id.slice(5)));
+  }, [ready, book]);
 
   useEffect(() => {
     if (!fresh) return;
@@ -369,6 +381,8 @@ export function Town({ world }: Props) {
             人・店・相談は架空。地名と地形は実在。数字は出典つき
             <br />
             地形: 国土地理院 標高タイルを加工 ・ 市の境: 国土数値情報（行政区域）を加工
+            <br />
+            町の「?」: 政府統計の総合窓口(e-Stat)「国勢調査」（総務省）と国土数値情報（医療機関・学校）を加工
           </p>
         </div>
       )}
@@ -449,7 +463,7 @@ export function Town({ world }: Props) {
       {started && (
         <div className={bigMap ? "minimap big" : "minimap"}>
           <canvas ref={mapRef} onClick={() => setBigMap(!bigMap)} aria-label="鳥取市の地図" />
-          <small>国土地理院・国土数値情報を加工</small>
+          <small>国土地理院・国土数値情報・e-Stat を加工</small>
         </div>
       )}
 
@@ -1028,7 +1042,7 @@ function BookView({ book, world, onClose }: { book: Find[]; world: World; onClos
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const total = (place: string) => world.spots.filter((s) => s.place === place).length;
+  const total = (place: string) => world.spots.filter((s) => s.place === place).length + world.marks.filter((m) => m.place === place).length;
   const moves = book.filter((f) => !f.place);
   return (
     <div className="end">

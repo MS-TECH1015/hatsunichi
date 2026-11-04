@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import world from "../../data/world.json";
 import city from "../../public/city/city.json";
-import { busMinutes, clockText, heightAt, nearestTarget, placeWorld, pushOut, rideFind, routeBetween, spotFind, stepWithin, straightKm, unsourcedNumbers, walkable, type Ground, type Route, type World } from "./world";
+import { busMinutes, clockText, heightAt, markFind, nearestMark, nearestTarget, placeWorld, pushOut, rideFind, routeBetween, spotFind, stepWithin, straightKm, unsourcedNumbers, walkable, type Ground, type Route, type World } from "./world";
 
 const w = placeWorld(world as unknown as World);
 const bytes = (path: string) => readFileSync(new URL(path, import.meta.url));
@@ -153,5 +153,27 @@ describe("world", () => {
 
   it("時計の表示", () => {
     expect(clockText(9 * 60 + 5)).toBe("9:05");
+  });
+});
+
+describe("町丁の印", () => {
+  it("どの印も場所と出典があり、id が重ならず、歩ける所にある", () => {
+    expect(w.marks.length).toBeGreaterThan(0);
+    expect(new Set(w.marks.map((m) => m.id)).size).toBe(w.marks.length);
+    for (const m of w.marks) {
+      expect(w.places.some((p) => p.id === m.place)).toBe(true);
+      for (const k of m.sources) expect(w.sources[k]).toBeDefined();
+      expect(walkable(ground, m.at[0], m.at[1])).toBe(true);
+    }
+  });
+
+  it("近くに来た印だけ拾い、手帳では印の id と場所を持つ", () => {
+    const m = w.marks[0];
+    expect(nearestMark(m.at, w.marks)?.id).toBe(m.id);
+    expect(nearestMark([m.at[0] + 50, m.at[1] + 50], [m])).toBeNull();
+    const f = markFind(m, w.sources);
+    expect(f.id).toBe(`mark:${m.id}`);
+    expect(f.place).toBe(m.place);
+    expect(f.source).toContain("国勢調査");
   });
 });
