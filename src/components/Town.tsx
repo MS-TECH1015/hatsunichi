@@ -3,7 +3,7 @@
 // 画面に出す文字は一言ずつにし、理由・出典・付箋・窓口は「くわしく」の中に置く
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { CALCS, defaults, type Calc } from "@/lib/calcs";
-import { clockText, markFind, rideFind, spotFind, targetAt, unsourcedNumbers, type Fact, type Find, type Mark, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
+import { clockText, facilityFind, markFind, rideFind, spotFind, targetAt, unsourcedNumbers, type Fact, type Facility, type Find, type Mark, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
 import { withBase } from "@/lib/base";
 import type { TownScene } from "./town/TownScene";
 import { play, setMuted } from "./town/sfx";
@@ -11,12 +11,19 @@ import { play, setMuted } from "./town/sfx";
 type Props = { world: World };
 /** own は自分で書いた一行。選んだ案と違い付箋が無いので、確かめる問いだけを出す */
 /** fact は学生が選んだ根拠の数字。案は数字と出典を付けて窓口へ持っていく */
-type Answer = { spot: Spot; option: string; label: string; note: Note; own?: boolean; fact: Fact; calc?: string };
+type Answer = { spot: Spot; option: string; label: string; note: Note; own?: boolean; fact: Fact; calc?: string; place?: Facility };
+
+/** 市の施設の使い方を民間から募る制度。施設を選んだ 1 枚に参考として添える。確認 2026-11-05 */
+const PROPOSAL = { name: "鳥取市 公共施設マネジメント民間提案制度", url: "https://www.city.tottori.lg.jp/page/48913.html" };
+
+/** 町ごとの見つけるものの数。依頼の場所・町丁の札・未活用施設の札 */
+const townTotal = (world: World, place: string) =>
+  world.spots.filter((s) => s.place === place).length + world.marks.filter((m) => m.place === place).length + world.facilities.filter((f) => f.place === place).length;
 type Voice = { name: string; role: string; view: string; heard: boolean };
-type Stage = "hint" | "ask" | "write" | "basis" | "calc" | "result";
+type Stage = "hint" | "ask" | "write" | "basis" | "calc" | "place" | "result";
 type Panel =
   | { type: "talk"; speaker: string; role?: string; lines: string[]; i: number }
-  | { type: "spot"; spot: Spot; stage: Stage; detail?: boolean; draft?: string; pending?: { option: Option; own: boolean; fact?: Fact } }
+  | { type: "spot"; spot: Spot; stage: Stage; detail?: boolean; draft?: string; pending?: { option: Option; own: boolean; fact?: Fact; calc?: string } }
   | { type: "bus"; from: Place }
   | { type: "ride"; to: Place; minutes: number }
   | { type: "end" }
@@ -89,6 +96,8 @@ export function Town({ world }: Props) {
   const [minutes, setMinutes] = useState(world.meta.clock.start_hour * 60);
   const [target, setTarget] = useState<Target | null>(null);
   const [mark, setMark] = useState<Mark | null>(null);
+  const [facility, setFacility] = useState<Facility | null>(null);
+  const [cheer, setCheer] = useState<string | null>(null);
   const [placeName, setPlaceName] = useState<string | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
   const [answers, setAnswers] = useState<Answer[]>([]);
@@ -138,6 +147,7 @@ export function Town({ world }: Props) {
         setTarget(s.target);
         setPlaceName(s.place);
         setMark(s.mark);
+        setFacility(s.facility);
       });
       sceneRef.current = scene;
       if (location.search.includes("debug")) (window as unknown as { __town: TownScene }).__town = scene;
@@ -224,10 +234,40 @@ export function Town({ world }: Props) {
     if (started && mark) jot(markFind(mark, world.sources));
   }, [started, mark, jot, world.sources]);
 
-  // 手帳に入った印は、町の札を薄くし地図から消す
+  // 未活用施設の近くを通ったら、施設名・用途・床面積を手帳に残す。案を決めるときに使う場所として選べる
   useEffect(() => {
-    if (ready) sceneRef.current?.setFound(book.filter((f) => f.id.startsWith("mark:")).map((f) => f.id.slice(5)));
+    if (started && facility) jot(facilityFind(facility, world.sources));
+  }, [started, facility, jot, world.sources]);
+
+  // 手帳に入った札は、町で薄くし地図から消す
+  useEffect(() => {
+    if (ready) sceneRef.current?.setFound(book.map((f) => f.id));
   }, [ready, book]);
+
+  // 町の見つけるものが手帳にそろったら知らせる。読み込んだ時点でそろっていた町は知らせない
+  const fullTowns = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    if (!ready) return;
+    const full = world.places.filter((p) => book.filter((f) => f.place === p.id).length >= townTotal(world, p.id));
+    if (fullTowns.current === null) {
+      fullTowns.current = new Set(full.map((p) => p.id));
+      return;
+    }
+    const known = fullTowns.current;
+    const done = full.find((p) => !known.has(p.id));
+    if (!done) return;
+    known.add(done.id);
+    setCheer(done.name);
+    play("stamp", 0.5);
+  }, [ready, book, world]);
+
+  useEffect(() => {
+    if (!cheer) return;
+    const t = window.setTimeout(() => setCheer(null), 3600);
+    return () => window.clearTimeout(t);
+  }, [cheer]);
+
+  const foundFacilities = world.facilities.filter((f) => book.some((b) => b.id === `fac:${f.id}`));
 
   useEffect(() => {
     if (!fresh) return;
@@ -267,14 +307,22 @@ export function Town({ world }: Props) {
       setPanel({ ...panel, stage: "calc", pending: { ...panel.pending, fact } });
       return;
     }
-    finish(spot, fact);
+    toPlace(spot, fact);
   }
 
-  function finish(spot: Spot, fact: Fact, calc?: string) {
+  /** 手帳に未活用施設があれば、案に使う場所を選ぶ段へ。1 つも無ければそのまま決まる */
+  function toPlace(spot: Spot, fact: Fact, calc?: string) {
+    if (panel?.type !== "spot" || !panel.pending) return;
+    if (foundFacilities.length === 0) return finish(spot, fact, calc);
+    play("select");
+    setPanel({ ...panel, stage: "place", pending: { ...panel.pending, fact, calc } });
+  }
+
+  function finish(spot: Spot, fact: Fact, calc?: string, place?: Facility) {
     if (panel?.type !== "spot" || !panel.pending) return;
     const { option: o, own } = panel.pending;
     play("choose");
-    setAnswers((prev) => [...prev.filter((x) => x.spot.id !== spot.id), { spot, option: o.text, label: o.label, note: o.note, own, fact, calc }]);
+    setAnswers((prev) => [...prev.filter((x) => x.spot.id !== spot.id), { spot, option: o.text, label: o.label, note: o.note, own, fact, calc, place }]);
     sceneRef.current?.markAnswered(spot.id);
     setStampedId(spot.id);
     window.setTimeout(() => play("stamp"), 300);
@@ -390,11 +438,11 @@ export function Town({ world }: Props) {
             </button>
           )}
           <p className="title-note">
-            人・店・相談は架空。地名と地形は実在。数字は出典つき
+            数字・施設・窓口は実在の公開情報。町の人・家・店・事業者は架空。試作で、市・県・バス事業者とは関係ない
             <br />
             地形: 国土地理院 標高タイルを加工 ・ 市の境: 国土数値情報（行政区域）を加工
             <br />
-            町の「?」: 政府統計の総合窓口(e-Stat)「国勢調査」（総務省）と国土数値情報（医療機関・学校）を加工
+            町の「?」: 政府統計の総合窓口(e-Stat)「国勢調査」（総務省）と国土数値情報（医療機関・学校）を加工。緑の札: 鳥取市「未活用施設」（鳥取県オープンデータポータル）を加工
           </p>
         </div>
       )}
@@ -458,7 +506,14 @@ export function Town({ world }: Props) {
         </div>
       )}
 
-      {started && fresh && panel?.type !== "end" && (
+      {started && cheer && panel?.type !== "end" && (
+        <div className="find-toast cheer" key={`cheer-${cheer}`}>
+          <small>手帳がそろった</small>
+          {cheer}を歩ききった
+        </div>
+      )}
+
+      {started && fresh && !cheer && panel?.type !== "end" && (
         <div className="find-toast" key={fresh.id}>
           <small>手帳に書いた</small>
           {fresh.text}
@@ -475,7 +530,7 @@ export function Town({ world }: Props) {
       {started && (
         <div className={bigMap ? "minimap big" : "minimap"}>
           <canvas ref={mapRef} onClick={() => setBigMap(!bigMap)} aria-label="鳥取市の地図" />
-          <small>国土地理院・国土数値情報・e-Stat を加工</small>
+          <small>国土地理院・国土数値情報・e-Stat・鳥取市 を加工</small>
         </div>
       )}
 
@@ -515,7 +570,9 @@ export function Town({ world }: Props) {
           }}
           onChoose={choose}
           onSettle={settle}
-          onCalc={(calc) => panel.pending?.fact && finish(panel.spot, panel.pending.fact, calc)}
+          onCalc={(calc) => panel.pending?.fact && toPlace(panel.spot, panel.pending.fact, calc)}
+          facilities={foundFacilities}
+          onPlace={(f) => panel.pending?.fact && finish(panel.spot, panel.pending.fact, panel.pending.calc, f)}
           onClose={close}
         />
       )}
@@ -712,6 +769,8 @@ type SpotViewProps = {
   onChoose: (s: Spot, o: Option, own?: boolean) => void;
   onSettle: (s: Spot, f: Fact) => void;
   onCalc: (calc?: string) => void;
+  facilities: Facility[];
+  onPlace: (f?: Facility) => void;
   onClose: () => void;
 };
 
@@ -726,6 +785,8 @@ function sheetOf(a: Answer, world: World): string {
     `根拠: ${a.fact.text}`,
     `出典: ${src.name} ${src.url}`,
     a.calc && `計算（前提は推定）: ${a.calc}`,
+    a.place && `使う場所: ${a.place.name}、${world.places.find((p) => p.id === a.place?.place)?.name ?? ""}。鳥取市の未活用施設。今も使われていないかは未確認 出典: ${world.sources[a.place.sources[0]]?.name ?? ""}`,
+    a.place && `参考: 市の施設の使い方は ${PROPOSAL.name} で民間から募っている。この施設の案を市が募っているわけではない ${PROPOSAL.url}`,
     `まだ確かめていないこと: ${a.spot.checks.join(" / ")}`,
     `出す先: ${submit.name} ${submit.url}`,
     a.spot.window.url !== submit.url && `担当の窓口: ${a.spot.window.name} ${a.spot.window.url}`,
@@ -736,7 +797,7 @@ function sheetOf(a: Answer, world: World): string {
 
 /** 調べる → 頼まれる → 町の人の声を見て、案を選ぶか自分で書く → 判子と問い。理由と出典は「くわしく」に。
  * 3つの案は正解ではなく方向の違う出発点。考えるのは遊んでいる学生で、ゲームは材料と問いだけを渡す */
-function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, onStage, onDetail, onChoose, onSettle, onCalc, onClose }: SpotViewProps) {
+function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, onStage, onDetail, onChoose, onSettle, onCalc, facilities, onPlace, onClose }: SpotViewProps) {
   useEffect(() => {
     if (detail || (stage !== "ask" && stage !== "basis")) return;
     const onKey = (e: KeyboardEvent) => {
@@ -769,6 +830,8 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, on
     );
 
   if (stage === "hint") return <Dialog text={spot.hint} onNext={() => onStage("ask")} />;
+
+  if (stage === "place") return <PlaceView spot={spot} facilities={facilities} world={world} guide={guide} onDone={onPlace} />;
 
   if (stage === "calc" && CALCS[spot.id]) return <CalcView calc={CALCS[spot.id]} spot={spot} world={world} guide={guide} onDone={onCalc} onBack={() => onStage("basis")} />;
 
@@ -1059,7 +1122,7 @@ function BookView({ book, world, onClose }: { book: Find[]; world: World; onClos
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const total = (place: string) => world.spots.filter((s) => s.place === place).length + world.marks.filter((m) => m.place === place).length;
+  const total = (place: string) => townTotal(world, place);
   const moves = book.filter((f) => !f.place);
   return (
     <div className="end">
@@ -1072,6 +1135,7 @@ function BookView({ book, world, onClose }: { book: Find[]; world: World; onClos
               <h3>
                 {p.name}
                 <span>
+                  {got.length >= total(p.id) && <em className="book-full">歩ききった</em>}
                   {got.length} / {total(p.id)}
                 </span>
               </h3>
@@ -1147,6 +1211,37 @@ function CalcView({ calc, spot, world, guide, onDone, onBack }: { calc: Calc; sp
         </button>
       </div>
       <Dialog speaker={guide} text="前提を動かして、案がどれくらい届くか見てみよう" />
+    </>
+  );
+}
+
+/** 手帳に入った未活用施設から、案に使う場所を 1 つ選ぶ。同じ町の施設を先に並べる */
+function PlaceView({ spot, facilities, world, guide, onDone }: { spot: Spot; facilities: Facility[]; world: World; guide: string; onDone: (f?: Facility) => void }) {
+  const sorted = [...facilities.filter((f) => f.place === spot.place), ...facilities.filter((f) => f.place !== spot.place)];
+  const town = (id: string) => world.places.find((p) => p.id === id)?.name ?? id;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const f = sorted[Number(e.key) - 1];
+      if (f) onDone(f);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+  return (
+    <>
+      <div className="choices">
+        {sorted.map((f, i) => (
+          <button key={f.id} className="choice fact" onClick={() => onDone(f)} onMouseEnter={() => play("select", 0.2)}>
+            <kbd>{i + 1}</kbd>
+            {f.name}、{town(f.place)}
+          </button>
+        ))}
+        <button className="choice why" onClick={() => onDone()}>
+          場所は決めない
+        </button>
+        <small className="place-note">鳥取市の未活用施設の一覧から。市がこの場所の案を募っているわけではない。今も使われていないかは未確認</small>
+      </div>
+      <Dialog speaker={guide} text="見つけた建物に、この案で使えそうな所はある？" />
     </>
   );
 }

@@ -17,6 +17,7 @@ import {
   targetAt,
   PROP_RADIUS,
   type Ground,
+  type Facility,
   type Mark,
   type Npc,
   type Placed,
@@ -30,7 +31,7 @@ import { cityLooks, clock } from "./surfaces";
 import { Towns, type TownData } from "./townMesh";
 
 /** place はいま入っている町の名前。町の外とバスの中では null */
-export type SceneState = { minutes: number; target: Target | null; place: string | null; mark: Mark | null };
+export type SceneState = { minutes: number; target: Target | null; place: string | null; mark: Mark | null; facility: Facility | null };
 
 type CityData = {
   grid: { x0: number; z0: number; cell: number; w: number; h: number };
@@ -102,6 +103,7 @@ export class TownScene {
   private signs: THREE.Sprite[] = [];
   private found = new Set<string>();
   private lastMark: Mark | null = null;
+  private lastFacility: Facility | null = null;
   private minutes: number;
   private paused = true;
   private playing = false;
@@ -180,10 +182,10 @@ export class TownScene {
     if (m) m.visible = false;
   }
 
-  /** 手帳に入った印は札を薄くし、地図からも消す */
-  setFound(markIds: string[]) {
-    this.found = new Set(markIds);
-    for (const s of this.signs) s.material.opacity = this.found.has(s.userData.markId) ? 0.35 : 1;
+  /** 手帳に入った札は薄くし、地図からも消す。id は手帳の id（mark:… と fac:…） */
+  setFound(findIds: string[]) {
+    this.found = new Set(findIds);
+    for (const s of this.signs) s.material.opacity = this.found.has(s.userData.findId) ? 0.35 : 1;
   }
 
   markTalked(npcId: string) {
@@ -387,6 +389,7 @@ export class TownScene {
       this.markers.push(this.addMarker(s.id, s.at, top + 1.6));
     }
     for (const m of this.world.marks) this.signs.push(this.addMarkSign(m));
+    for (const f of this.world.facilities) this.signs.push(this.addFacilitySign(f));
     for (const n of this.world.npcs) {
       const o = this.place(n.kind, n.at, n.face, PEOPLE_SCALE);
       if (n.body) this.tint(o, "person_body", n.body);
@@ -580,7 +583,36 @@ export class TownScene {
     sprite.position.set(mark.at[0], height, mark.at[1]);
     sprite.scale.setScalar(1.4);
     sprite.material.fog = false;
-    sprite.userData = { markId: mark.id, baseY: height, phase: mark.at[0] };
+    sprite.userData = { findId: `mark:${mark.id}`, baseY: height, phase: mark.at[0] };
+    return sprite;
+  }
+
+  /** 未活用施設の札。緑の角札に家の形。町丁の「?」より少し高く出す */
+  private addFacilitySign(f: Facility): THREE.Sprite {
+    const sprite = this.sprite((g) => {
+      g.fillStyle = "#4f7a5a";
+      g.strokeStyle = INK;
+      g.lineWidth = 9;
+      g.beginPath();
+      g.roundRect(18, 18, 92, 92, 18);
+      g.fill();
+      g.stroke();
+      g.fillStyle = "#fffaf0";
+      g.beginPath();
+      g.moveTo(64, 34);
+      g.lineTo(94, 60);
+      g.lineTo(34, 60);
+      g.closePath();
+      g.fill();
+      g.fillRect(42, 60, 44, 32);
+      g.fillStyle = "#4f7a5a";
+      g.fillRect(58, 72, 12, 20);
+    });
+    const height = this.groundY(f.at) + 3.2;
+    sprite.position.set(f.at[0], height, f.at[1]);
+    sprite.scale.setScalar(1.4);
+    sprite.material.fog = false;
+    sprite.userData = { findId: `fac:${f.id}`, baseY: height, phase: f.at[1] };
     return sprite;
   }
 
@@ -850,12 +882,14 @@ export class TownScene {
     this.showRing(target, now);
     const place = this.ride ? null : (this.towns?.placeAt(this.playerPos[0], this.playerPos[1]) ?? null);
     const mark = this.ride ? null : nearestMark(this.playerPos, this.world.marks);
+    const facility = this.ride ? null : nearestMark(this.playerPos, this.world.facilities);
     const id = (t: Target | null) => (!t ? null : t.type === "spot" ? t.spot.id : t.type === "npc" ? t.npc.id : `bus:${t.place.id}`);
-    if (id(target) !== id(this.lastTarget) || place !== this.placeName || mark !== this.lastMark || Math.floor(now / 500) !== Math.floor((now - dt * 1000) / 500)) {
+    if (id(target) !== id(this.lastTarget) || place !== this.placeName || mark !== this.lastMark || facility !== this.lastFacility || Math.floor(now / 500) !== Math.floor((now - dt * 1000) / 500)) {
       this.lastTarget = target;
       this.placeName = place;
       this.lastMark = mark;
-      this.onChange({ minutes: this.minutes, target, place, mark });
+      this.lastFacility = facility;
+      this.onChange({ minutes: this.minutes, target, place, mark, facility });
     }
   }
 
@@ -896,8 +930,15 @@ export class TownScene {
       g.fillStyle = "#4d8c6b";
       g.fillRect(x - 3 * dpr, y - 3 * dpr, 6 * dpr, 6 * dpr);
     }
+    for (const f of this.world.facilities) {
+      if (this.found.has(`fac:${f.id}`)) continue;
+      const [x, y] = px(f.at);
+      g.fillStyle = "#4f7a5a";
+      g.fillRect(x - 3.5 * dpr, y - 3.5 * dpr, 7 * dpr, 7 * dpr);
+      g.strokeRect(x - 3.5 * dpr, y - 3.5 * dpr, 7 * dpr, 7 * dpr);
+    }
     for (const m of this.world.marks) {
-      if (this.found.has(m.id)) continue;
+      if (this.found.has(`mark:${m.id}`)) continue;
       const [x, y] = px(m.at);
       g.fillStyle = "#fffaf0";
       g.beginPath();

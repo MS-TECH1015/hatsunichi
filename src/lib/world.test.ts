@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import world from "../../data/world.json";
 import city from "../../public/city/city.json";
 import { CALCS, defaults } from "./calcs";
-import { busMinutes, clockText, heightAt, markFind, nearestMark, nearestTarget, placeWorld, pushOut, rideFind, routeBetween, spotFind, stepWithin, straightKm, unsourcedNumbers, walkable, type Ground, type Route, type World } from "./world";
+import { busMinutes, clockText, facilityFind, heightAt, markFind, nearestMark, nearestTarget, placeWorld, pushOut, rideFind, routeBetween, spotFind, stepWithin, straightKm, unsourcedNumbers, walkable, type Ground, type Route, type World } from "./world";
 
 const w = placeWorld(world as unknown as World);
 const bytes = (path: string) => readFileSync(new URL(path, import.meta.url));
@@ -197,5 +197,24 @@ describe("町ごとの計算", () => {
       const high = Object.fromEntries(calc.knobs.map((k) => [k.id, k.max]));
       for (const v of [defaults(calc), low, high]) expect(calc.say(v)).not.toMatch(/NaN|Infinity|undefined/);
     }
+  });
+});
+
+describe("未活用施設", () => {
+  it("どの札も場所と出典があり、id が重ならず、歩ける所にある", () => {
+    expect(w.facilities.length).toBeGreaterThan(0);
+    expect(new Set(w.facilities.map((f) => f.id)).size).toBe(w.facilities.length);
+    for (const f of w.facilities) {
+      expect(w.places.some((p) => p.id === f.place)).toBe(true);
+      for (const k of f.sources) expect(w.sources[k]).toBeDefined();
+      expect(walkable(ground, f.at[0], f.at[1])).toBe(true);
+    }
+  });
+
+  it("文は一覧の時点のものだと分かるように「未確認」で終わり、手帳では fac: の id を持つ", () => {
+    for (const f of w.facilities) expect(f.text.endsWith("今も使われていないかは未確認")).toBe(true);
+    const f = facilityFind(w.facilities[0], w.sources);
+    expect(f.id).toBe(`fac:${w.facilities[0].id}`);
+    expect(f.source).toContain("未活用施設");
   });
 });

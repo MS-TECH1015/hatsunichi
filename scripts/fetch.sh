@@ -38,3 +38,5 @@ fetch "https://www.e-stat.go.jp/gis/statmap-search/data?statsId=T000849&code=31&
 # 国土数値情報 医療機関 令和2年度 P04 と 学校 令和5年度 P29 鳥取県（CC BY 4.0、出典表示）
 fetch "https://nlftp.mlit.go.jp/ksj/gml/data/P04/P04-20/P04-20_31_GML.zip" ksj_P04-20_31.zip
 fetch "https://nlftp.mlit.go.jp/ksj/gml/data/P29/P29-23/P29-23_31_GML.zip" ksj_P29-23_31.zip
+# 鳥取市 公共施設一覧のうち未活用施設 鳥取県オープンデータポータル（CC BY、出典と加工の表示）
+fetch "https://odp-pref-tottori.tori-info.co.jp/dataset/1652/url_resource/143/data_55-12_23.csv" odp_1652_mikatsuyo.csv

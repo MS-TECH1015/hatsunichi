@@ -285,3 +285,6 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
   .calc-knob { grid-template-columns: 1fr 64px; }
   .calc-knob input { grid-column: 1 / -1; }
 }
+.place-note { grid-column: 1 / -1; justify-self: start; padding: 4px 10px; border-radius: 10px; background: rgba(255, 250, 240, 0.92); font-size: 11px; font-weight: 700; color: #5a5146; }
+.find-toast.cheer { background: #4f7a5a; color: #fffaf0; }
+.book-full { margin-right: 8px; padding: 0 6px; border: 1.5px solid #4f7a5a; border-radius: 6px; font-size: 11px; font-style: normal; color: #4f7a5a; }

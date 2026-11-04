@@ -63,12 +63,16 @@ export type Prop = { place: string; kind: string; at: Vec2; face: number; scale?
 /** 町丁の印。近くを歩くと、人口と近い病院・小学校までの距離が手帳に残る。at は場所の中の座標。scripts/build_marks.py が作る */
 export type Mark = { id: string; place: string; at: Vec2; text: string; sources: string[] };
 
+/** 鳥取市の未活用施設。近くを通ると手帳に入り、案を出すときに「使う場所」として選べる。scripts/build_facilities.py が作る */
+export type Facility = Mark & { name: string };
+
 export type World = {
   meta: { start: { place: string; at: Vec2 }; clock: { start_hour: number; end_hour: number; minutes_per_second: number; minutes_per_talk: number } };
   places: Place[];
   props: Prop[];
   spots: Spot[];
   marks: Mark[];
+  facilities: Facility[];
   npcs: Npc[];
   sources: Record<string, { name: string; url: string; date: string; note: string }>;
   /** 案を出す先。担当の窓口は問い合わせ先で、提案を受けて回答すると書いてあるのはここだけ */
@@ -104,6 +108,7 @@ export function placeWorld(world: World): Placed {
     props: world.props.map((p) => ({ ...p, at: shift(p.place, p.at) })),
     spots: world.spots.map((s) => ({ ...s, at: shift(s.place, s.at) })),
     marks: world.marks.map((m) => ({ ...m, at: shift(m.place, m.at) })),
+    facilities: world.facilities.map((f) => ({ ...f, at: shift(f.place, f.at) })),
     npcs: world.npcs.map((n) => ({ ...n, at: shift(n.place, n.at) })),
     stops: world.places.filter((p) => p.hub && p.stop).map((p) => ({ place: p, at: shift(p.id, p.stop!) })),
   };
@@ -138,8 +143,8 @@ export function nearestTarget(pos: Vec2, world: Placed, range = TALK_RANGE): Tar
 }
 
 /** いちばん近い町丁の印。範囲の外なら null */
-export function nearestMark(pos: Vec2, marks: Mark[], range = MARK_RANGE): Mark | null {
-  let best: Mark | null = null;
+export function nearestMark<T extends { at: Vec2 }>(pos: Vec2, marks: T[], range = MARK_RANGE): T | null {
+  let best: T | null = null;
   let bestD = range;
   for (const m of marks) {
     const d = Math.hypot(pos[0] - m.at[0], pos[1] - m.at[1]);
@@ -222,4 +227,8 @@ export function rideFind(from: Place, to: Place): Find {
 
 export function markFind(mark: Mark, sources: World["sources"]): Find {
   return { id: `mark:${mark.id}`, text: mark.text, source: mark.sources.map((k) => sources[k]?.name ?? k).join(" / "), place: mark.place };
+}
+
+export function facilityFind(f: Facility, sources: World["sources"]): Find {
+  return { ...markFind(f, sources), id: `fac:${f.id}` };
 }
