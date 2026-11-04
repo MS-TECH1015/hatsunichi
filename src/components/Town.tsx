@@ -2,7 +2,7 @@
 // 町を歩く画面。描画は TownScene、ここはタイトル・HUD・会話・依頼の選択・判子・詳細の UI。
 // 画面に出す文字は一言ずつにし、理由・出典・付箋・窓口は「くわしく」の中に置く
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { clockText, targetAt, unsourcedNumbers, type Fact, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
+import { clockText, rideFind, spotFind, targetAt, unsourcedNumbers, type Fact, type Find, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
 import { withBase } from "@/lib/base";
 import type { TownScene } from "./town/TownScene";
 import { play, setMuted } from "./town/sfx";
@@ -40,6 +40,19 @@ export function Town({ world }: Props) {
   const [muted, setMute] = useState(false);
   const [stampedId, setStampedId] = useState<string | null>(null);
   const [bigMap, setBigMap] = useState(false);
+  /** 歩いて見つけたこと。案を出さずに歩くだけの人にも、終業で残るものにする */
+  const [finds, setFinds] = useState<Find[]>([]);
+  const [fresh, setFresh] = useState<Find | null>(null);
+  /** 本人が手伝えること。案の文は AI でも書けるが、手伝いに行くのは本人なので 1 枚の頭に載せる */
+  const [help, setHelp] = useState("");
+  const seen = useRef(new Set<string>());
+  const jot = useCallback((f: Find) => {
+    if (seen.current.has(f.id)) return;
+    seen.current.add(f.id);
+    setFinds((prev) => [...prev, f]);
+    setFresh(f);
+    play("select", 0.4);
+  }, []);
   // 閉じた直後の Space で同じ相手をまた開かないように
   const closedAt = useRef(0);
   const { start_hour, end_hour } = world.meta.clock;
@@ -122,6 +135,17 @@ export function Town({ world }: Props) {
     setPanel({ type: "spot", spot: t.spot, stage: done ? "result" : "hint" });
   }
 
+  // 依頼の場所の近くに来たら、その場所の数字を手帳に残す。話しかけなくても残る
+  useEffect(() => {
+    if (started && target?.type === "spot") jot(spotFind(target.spot, world.sources));
+  }, [started, target, jot, world.sources]);
+
+  useEffect(() => {
+    if (!fresh) return;
+    const t = window.setTimeout(() => setFresh(null), 3200);
+    return () => window.clearTimeout(t);
+  }, [fresh]);
+
   function close() {
     closedAt.current = performance.now();
     setPanel(null);
@@ -137,6 +161,7 @@ export function Town({ world }: Props) {
     await sceneRef.current?.rideTo(from.id, to.id);
     play("open");
     close();
+    jot(rideFind(from, to));
   }
 
   /** 案を決めたら、次は根拠の数字を選ぶ。数字の無い案は窓口で使えないので、ここを通らないと判子は押されない */
@@ -197,7 +222,9 @@ export function Town({ world }: Props) {
 
   function copyAnswers() {
     const body = answers.map((a) => sheetOf(a, world)).join("\n\n");
-    void navigator.clipboard.writeText(`はつにち 初日の案\n\n${body}\n`).then(() => setCopied(true));
+    const found = finds.map((f) => `- ${f.text} 出典: ${f.source}`).join("\n");
+    const text = ["はつにち 初日の記録", help.trim() && `自分が手伝えること: ${help.trim()}`, body, found && `■ 見つけたこと\n${found}`].filter(Boolean).join("\n\n");
+    void navigator.clipboard.writeText(`${text}\n`).then(() => setCopied(true));
   }
   const day = Math.min(Math.max((minutes - start_hour * 60) / ((end_hour - start_hour) * 60), 0), 1);
   const people = talked.filter((id) => world.npcs.some((n) => n.id === id)).length;
@@ -239,6 +266,9 @@ export function Town({ world }: Props) {
               <span style={{ width: `${day * 100}%` }} />
             </span>
           </div>
+          <div className="hud-finds" aria-label={`見つけたこと ${finds.length}`}>
+            手帳 {finds.length}
+          </div>
           <div className="hud-stamps" aria-label={`案 ${answers.length}/3`}>
             {[0, 1, 2].map((i) => (
               <Stamp key={i} char={answers[i]?.spot.stamp} pop={answers[i]?.spot.id === stampedId} />
@@ -247,6 +277,13 @@ export function Town({ world }: Props) {
           <button className="hud-sound" onClick={toggleMute} aria-label={muted ? "音を出す" : "音を消す"}>
             <SoundIcon muted={muted} />
           </button>
+        </div>
+      )}
+
+      {started && fresh && panel?.type !== "end" && (
+        <div className="find-toast" key={fresh.id}>
+          <small>手帳に書いた</small>
+          {fresh.text}
         </div>
       )}
 
@@ -346,6 +383,20 @@ export function Town({ world }: Props) {
                 </li>
               ))}
             </ul>
+            {finds.length > 0 && (
+              <div className="end-finds">
+                <h3>見つけたこと {finds.length}</h3>
+                <ul>
+                  {finds.map((f) => (
+                    <li key={f.id}>
+                      {f.text}
+                      {f.spot && !answers.some((a) => a.spot.id === f.spot) && <em>案はまだ</em>}
+                      <small>{f.source}</small>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {answers.length > 0 && (
               <p className="end-meta">
                 案は{" "}
@@ -358,8 +409,14 @@ export function Town({ world }: Props) {
             <p className="end-meta">
               {clockText(minutes)} ・ 話した人 {people}
             </p>
+            {answers.length > 0 && (
+              <label className="end-help">
+                自分が手伝えること
+                <input value={help} onChange={(e) => setHelp(e.target.value)} maxLength={60} placeholder="例: 月に一度、土曜の午前なら行ける" />
+              </label>
+            )}
             <div className="end-actions">
-              {answers.length > 0 && (
+              {(answers.length > 0 || finds.length > 0) && (
                 <button className="btn-game ghost" onClick={copyAnswers}>
                   {copied ? "写しました" : "書き写す"}
                 </button>

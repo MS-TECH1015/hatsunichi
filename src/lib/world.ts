@@ -173,3 +173,29 @@ export function routeBetween(routes: Record<string, Route>, from: string, to: st
 export const busMinutes = (km: number) => Math.round((km / BUS_KMH) * 60);
 
 export const clockText = (minutes: number) => `${Math.floor(minutes / 60)}:${String(Math.floor(minutes % 60)).padStart(2, "0")}`;
+
+/** 歩いて見つけたこと。text の数字は source の出典に戻れる。spot は依頼の場所で見つけたときの依頼 id */
+export type Find = { id: string; text: string; source: string; spot?: string };
+
+/** 緯度経度 2 点の直線距離 km。地球を半径 6371 km の球として計算する */
+export function straightKm([lat1, lon1]: Vec2, [lat2, lon2]: Vec2): number {
+  const rad = Math.PI / 180;
+  const a = Math.sin(((lat2 - lat1) * rad) / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(((lon2 - lon1) * rad) / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(a));
+}
+
+/** 依頼の場所に近づいたときに残す 1 行。その依頼の最初の数字を使う */
+export function spotFind(spot: Spot, sources: World["sources"]): Find {
+  const f = spot.facts[0];
+  return { id: `spot:${spot.id}`, text: `${spot.title}。${f.text}`, source: sources[f.source]?.name ?? f.source, spot: spot.id };
+}
+
+/** バスで町を移ったときに残す 1 行。走った道の長さでなく、まっすぐの距離で近さを見せる */
+export function rideFind(from: Place, to: Place): Find {
+  const km = straightKm(from.geo, to.geo);
+  return {
+    id: `ride:${[from.id, to.id].sort().join("|")}`,
+    text: `${from.name}から${to.name}まで、まっすぐなら ${km < 10 ? km.toFixed(1) : Math.round(km)} km`,
+    source: `${from.geo_source} と ${to.geo_source} の緯度経度`,
+  };
+}

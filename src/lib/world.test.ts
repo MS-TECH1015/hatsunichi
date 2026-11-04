@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import world from "../../data/world.json";
 import city from "../../public/city/city.json";
-import { busMinutes, clockText, heightAt, nearestTarget, placeWorld, pushOut, routeBetween, stepWithin, unsourcedNumbers, walkable, type Ground, type Route, type World } from "./world";
+import { busMinutes, clockText, heightAt, nearestTarget, placeWorld, pushOut, rideFind, routeBetween, spotFind, stepWithin, straightKm, unsourcedNumbers, walkable, type Ground, type Route, type World } from "./world";
 
 const w = placeWorld(world as unknown as World);
 const bytes = (path: string) => readFileSync(new URL(path, import.meta.url));
@@ -71,6 +71,19 @@ describe("world", () => {
     expect(unsourcedNumbers("７時台と17時の便を残し、週3日、63本のうち10本を減らす", facts)).toEqual(["10"]);
     expect(unsourcedNumbers("4207件の空き家と、42.9%の高齢化", facts)).toEqual([]);
     expect(unsourcedNumbers("4,207件のうち500件", facts)).toEqual(["500"]);
+  });
+
+  it("手帳の距離は緯度経度の直線距離で、行きと帰りで同じ 1 行になる", () => {
+    const eki = w.places.find((p) => p.id === "eki")!;
+    const sakyu = w.places.find((p) => p.id === "sakyu")!;
+    const km = straightKm(eki.geo, sakyu.geo);
+    expect(km).toBeGreaterThan(3);
+    expect(km).toBeLessThan(8);
+    expect(rideFind(eki, sakyu).id).toBe(rideFind(sakyu, eki).id);
+  });
+
+  it("依頼の場所で手帳に残す 1 行は、どの依頼でも出典の名前が引ける", () => {
+    for (const s of w.spots) expect(spotFind(s, w.sources).source, s.id).toBe(w.sources[s.facts[0].source].name);
   });
 
   it("住民のせりふと立場の数字は、同じ町の依頼の facts にある", () => {
