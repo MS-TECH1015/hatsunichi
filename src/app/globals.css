@@ -272,3 +272,16 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .book-town ul { list-style: none; margin: 0; padding: 0; }
 .book-town li { padding: 5px 4px; border-top: 2px dashed #e1d6c0; font-size: 13px; font-weight: 700; }
 .book-town small { display: block; font-size: 11px; font-weight: 600; color: #8a7f70; }
+.calc-box { grid-column: 1 / -1; display: grid; gap: 8px; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; padding: 12px 14px; box-shadow: 0 4px 0 var(--ink); animation: rise .2s ease-out both; }
+.calc-ask { margin: 0; font-size: 15px; font-weight: 900; }
+.calc-knob { display: grid; grid-template-columns: 1fr 160px 72px; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; }
+.calc-knob em { margin-left: 6px; padding: 0 4px; border: 1.5px solid #8a7f70; border-radius: 6px; font-size: 11px; font-style: normal; color: #8a7f70; }
+.calc-knob input { width: 100%; accent-color: var(--ink); }
+.calc-knob b { text-align: right; font-variant-numeric: tabular-nums; }
+.calc-out { margin: 0; padding-top: 8px; border-top: 2px dashed #e1d6c0; font-size: 14px; font-weight: 800; }
+.calc-src { font-size: 11px; font-weight: 600; color: #8a7f70; }
+.choice.wide { grid-column: 1 / 3; justify-content: center; }
+@media (max-width: 480px) {
+  .calc-knob { grid-template-columns: 1fr 64px; }
+  .calc-knob input { grid-column: 1 / -1; }
+}

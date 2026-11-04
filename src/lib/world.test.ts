@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import world from "../../data/world.json";
 import city from "../../public/city/city.json";
+import { CALCS, defaults } from "./calcs";
 import { busMinutes, clockText, heightAt, markFind, nearestMark, nearestTarget, placeWorld, pushOut, rideFind, routeBetween, spotFind, stepWithin, straightKm, unsourcedNumbers, walkable, type Ground, type Route, type World } from "./world";
 
 const w = placeWorld(world as unknown as World);
@@ -175,5 +176,26 @@ describe("町丁の印", () => {
     expect(f.id).toBe(`mark:${m.id}`);
     expect(f.place).toBe(m.place);
     expect(f.source).toContain("国勢調査");
+  });
+});
+
+describe("町ごとの計算", () => {
+  const nums = (t: string) => t.normalize("NFKC").replace(/(\d),(\d)/g, "$1$2").match(/\d+(\.\d+)?/g) ?? [];
+
+  it("7 つの依頼の場所すべてにあり、根拠の数字はその場所の文に書いてある", () => {
+    expect(Object.keys(CALCS).sort()).toEqual(w.spots.map((s) => s.id).sort());
+    for (const [id, calc] of Object.entries(CALCS)) {
+      const spot = w.spots.find((s) => s.id === id)!;
+      for (const b of calc.bases) expect(nums(spot.facts[b.fact].text)).toContain(String(b.value));
+    }
+  });
+
+  it("前提を端まで動かしても、結果の文に NaN や Infinity が出ない", () => {
+    for (const calc of Object.values(CALCS)) {
+      for (const k of calc.knobs) expect(k.value >= k.min && k.value <= k.max).toBe(true);
+      const low = Object.fromEntries(calc.knobs.map((k) => [k.id, k.min]));
+      const high = Object.fromEntries(calc.knobs.map((k) => [k.id, k.max]));
+      for (const v of [defaults(calc), low, high]) expect(calc.say(v)).not.toMatch(/NaN|Infinity|undefined/);
+    }
   });
 });

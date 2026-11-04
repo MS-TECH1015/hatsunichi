@@ -2,6 +2,7 @@
 // 町を歩く画面。描画は TownScene、ここはタイトル・HUD・会話・依頼の選択・判子・詳細の UI。
 // 画面に出す文字は一言ずつにし、理由・出典・付箋・窓口は「くわしく」の中に置く
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { CALCS, defaults, type Calc } from "@/lib/calcs";
 import { clockText, markFind, rideFind, spotFind, targetAt, unsourcedNumbers, type Fact, type Find, type Mark, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
 import { withBase } from "@/lib/base";
 import type { TownScene } from "./town/TownScene";
@@ -10,12 +11,12 @@ import { play, setMuted } from "./town/sfx";
 type Props = { world: World };
 /** own は自分で書いた一行。選んだ案と違い付箋が無いので、確かめる問いだけを出す */
 /** fact は学生が選んだ根拠の数字。案は数字と出典を付けて窓口へ持っていく */
-type Answer = { spot: Spot; option: string; label: string; note: Note; own?: boolean; fact: Fact };
+type Answer = { spot: Spot; option: string; label: string; note: Note; own?: boolean; fact: Fact; calc?: string };
 type Voice = { name: string; role: string; view: string; heard: boolean };
-type Stage = "hint" | "ask" | "write" | "basis" | "result";
+type Stage = "hint" | "ask" | "write" | "basis" | "calc" | "result";
 type Panel =
   | { type: "talk"; speaker: string; role?: string; lines: string[]; i: number }
-  | { type: "spot"; spot: Spot; stage: Stage; detail?: boolean; draft?: string; pending?: { option: Option; own: boolean } }
+  | { type: "spot"; spot: Spot; stage: Stage; detail?: boolean; draft?: string; pending?: { option: Option; own: boolean; fact?: Fact } }
   | { type: "bus"; from: Place }
   | { type: "ride"; to: Place; minutes: number }
   | { type: "end" }
@@ -258,11 +259,22 @@ export function Town({ world }: Props) {
     setPanel({ type: "spot", spot, stage: "basis", pending: { option: o, own } });
   }
 
+  /** 根拠を選んだら、その町の計算で案の大きさを見る。計算の無い場所はそのまま決まる */
   function settle(spot: Spot, fact: Fact) {
+    if (panel?.type !== "spot" || !panel.pending) return;
+    if (CALCS[spot.id]) {
+      play("select");
+      setPanel({ ...panel, stage: "calc", pending: { ...panel.pending, fact } });
+      return;
+    }
+    finish(spot, fact);
+  }
+
+  function finish(spot: Spot, fact: Fact, calc?: string) {
     if (panel?.type !== "spot" || !panel.pending) return;
     const { option: o, own } = panel.pending;
     play("choose");
-    setAnswers((prev) => [...prev.filter((x) => x.spot.id !== spot.id), { spot, option: o.text, label: o.label, note: o.note, own, fact }]);
+    setAnswers((prev) => [...prev.filter((x) => x.spot.id !== spot.id), { spot, option: o.text, label: o.label, note: o.note, own, fact, calc }]);
     sceneRef.current?.markAnswered(spot.id);
     setStampedId(spot.id);
     window.setTimeout(() => play("stamp"), 300);
@@ -503,6 +515,7 @@ export function Town({ world }: Props) {
           }}
           onChoose={choose}
           onSettle={settle}
+          onCalc={(calc) => panel.pending?.fact && finish(panel.spot, panel.pending.fact, calc)}
           onClose={close}
         />
       )}
@@ -698,6 +711,7 @@ type SpotViewProps = {
   onDetail: (open: boolean) => void;
   onChoose: (s: Spot, o: Option, own?: boolean) => void;
   onSettle: (s: Spot, f: Fact) => void;
+  onCalc: (calc?: string) => void;
   onClose: () => void;
 };
 
@@ -711,6 +725,7 @@ function sheetOf(a: Answer, world: World): string {
     `案: ${a.option}`,
     `根拠: ${a.fact.text}`,
     `出典: ${src.name} ${src.url}`,
+    a.calc && `計算（前提は推定）: ${a.calc}`,
     `まだ確かめていないこと: ${a.spot.checks.join(" / ")}`,
     `出す先: ${submit.name} ${submit.url}`,
     a.spot.window.url !== submit.url && `担当の窓口: ${a.spot.window.name} ${a.spot.window.url}`,
@@ -721,7 +736,7 @@ function sheetOf(a: Answer, world: World): string {
 
 /** 調べる → 頼まれる → 町の人の声を見て、案を選ぶか自分で書く → 判子と問い。理由と出典は「くわしく」に。
  * 3つの案は正解ではなく方向の違う出発点。考えるのは遊んでいる学生で、ゲームは材料と問いだけを渡す */
-function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, onStage, onDetail, onChoose, onSettle, onClose }: SpotViewProps) {
+function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, onStage, onDetail, onChoose, onSettle, onCalc, onClose }: SpotViewProps) {
   useEffect(() => {
     if (detail || (stage !== "ask" && stage !== "basis")) return;
     const onKey = (e: KeyboardEvent) => {
@@ -754,6 +769,8 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, on
     );
 
   if (stage === "hint") return <Dialog text={spot.hint} onNext={() => onStage("ask")} />;
+
+  if (stage === "calc" && CALCS[spot.id]) return <CalcView calc={CALCS[spot.id]} spot={spot} world={world} guide={guide} onDone={onCalc} onBack={() => onStage("basis")} />;
 
   if (stage === "basis")
     return (
@@ -1091,5 +1108,45 @@ function BookView({ book, world, onClose }: { book: Find[]; world: World; onClos
         </div>
       </div>
     </div>
+  );
+}
+
+/** 案の大きさを町の数字と比べる計算。動かす前提には「推定」と付け、結果は前提の値ごと 1 枚に載る */
+function CalcView({ calc, spot, world, guide, onDone, onBack }: { calc: Calc; spot: Spot; world: World; guide: string; onDone: (calc?: string) => void; onBack: () => void }) {
+  const [k, setK] = useState(() => defaults(calc));
+  const text = calc.say(k);
+  const used = [...new Set(calc.bases.map((b) => b.fact))].map((i) => spot.facts[i]);
+  return (
+    <>
+      <div className="choices">
+        <div className="calc-box">
+          <p className="calc-ask">{calc.ask}</p>
+          {calc.knobs.map((x) => (
+            <label key={x.id} className="calc-knob">
+              <span>
+                {x.label}
+                <em>推定</em>
+              </span>
+              <input type="range" min={x.min} max={x.max} step={x.step} value={k[x.id]} onChange={(e) => setK({ ...k, [x.id]: Number(e.target.value) })} />
+              <b>
+                {k[x.id]} {x.unit}
+              </b>
+            </label>
+          ))}
+          <p className="calc-out">{text}</p>
+          <small className="calc-src">根拠: {used.map((f) => world.sources[f.source]?.name ?? f.source).join(" / ")}</small>
+        </div>
+        <button className="choice wide" onClick={() => onDone(text)} onMouseEnter={() => play("select", 0.2)}>
+          この計算も1枚に載せて決める
+        </button>
+        <button className="choice why" onClick={() => onDone()}>
+          計算は載せずに決める
+        </button>
+        <button className="choice why" onClick={onBack}>
+          もどる
+        </button>
+      </div>
+      <Dialog speaker={guide} text="前提を動かして、案がどれくらい届くか見てみよう" />
+    </>
   );
 }
