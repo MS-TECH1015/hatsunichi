@@ -2,19 +2,20 @@
 // 町を歩く画面。描画は TownScene、ここはタイトル・HUD・会話・依頼の選択・判子・詳細の UI。
 // 画面に出す文字は一言ずつにし、理由・出典・付箋・窓口は「くわしく」の中に置く
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { clockText, targetAt, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
+import { clockText, targetAt, unsourcedNumbers, type Fact, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
 import { withBase } from "@/lib/base";
 import type { TownScene } from "./town/TownScene";
 import { play, setMuted } from "./town/sfx";
 
 type Props = { world: World };
 /** own は自分で書いた一行。選んだ案と違い付箋が無いので、確かめる問いだけを出す */
-type Answer = { spot: Spot; option: string; label: string; note: Note; own?: boolean };
+/** fact は学生が選んだ根拠の数字。案は数字と出典を付けて窓口へ持っていく */
+type Answer = { spot: Spot; option: string; label: string; note: Note; own?: boolean; fact: Fact };
 type Voice = { name: string; role: string; view: string; heard: boolean };
-type Stage = "hint" | "ask" | "write" | "result";
+type Stage = "hint" | "ask" | "write" | "basis" | "result";
 type Panel =
   | { type: "talk"; speaker: string; role?: string; lines: string[]; i: number }
-  | { type: "spot"; spot: Spot; stage: Stage; detail?: boolean; draft?: string }
+  | { type: "spot"; spot: Spot; stage: Stage; detail?: boolean; draft?: string; pending?: { option: Option; own: boolean } }
   | { type: "bus"; from: Place }
   | { type: "ride"; to: Place; minutes: number }
   | { type: "end" }
@@ -138,9 +139,17 @@ export function Town({ world }: Props) {
     close();
   }
 
+  /** 案を決めたら、次は根拠の数字を選ぶ。数字の無い案は窓口で使えないので、ここを通らないと判子は押されない */
   function choose(spot: Spot, o: Option, own = false) {
+    play("select");
+    setPanel({ type: "spot", spot, stage: "basis", pending: { option: o, own } });
+  }
+
+  function settle(spot: Spot, fact: Fact) {
+    if (panel?.type !== "spot" || !panel.pending) return;
+    const { option: o, own } = panel.pending;
     play("choose");
-    setAnswers((prev) => [...prev.filter((x) => x.spot.id !== spot.id), { spot, option: o.text, label: o.label, note: o.note, own }]);
+    setAnswers((prev) => [...prev.filter((x) => x.spot.id !== spot.id), { spot, option: o.text, label: o.label, note: o.note, own, fact }]);
     sceneRef.current?.markAnswered(spot.id);
     setStampedId(spot.id);
     window.setTimeout(() => play("stamp"), 300);
@@ -187,7 +196,7 @@ export function Town({ world }: Props) {
     world.npcs.filter((n) => n.place === spot.place && n.view).map((n) => ({ name: n.name, role: n.role, view: n.view ?? "", heard: talked.includes(n.id) }));
 
   function copyAnswers() {
-    const body = answers.map((a) => `■ ${a.spot.title}\n案: ${a.option}\n持っていく先: ${a.spot.window.name} ${a.spot.window.url}`).join("\n\n");
+    const body = answers.map((a) => sheetOf(a, world.sources)).join("\n\n");
     void navigator.clipboard.writeText(`はつにち 初日の案\n\n${body}\n`).then(() => setCopied(true));
   }
   const day = Math.min(Math.max((minutes - start_hour * 60) / ((end_hour - start_hour) * 60), 0), 1);
@@ -290,6 +299,7 @@ export function Town({ world }: Props) {
             setPanel({ ...panel, detail });
           }}
           onChoose={choose}
+          onSettle={settle}
           onClose={close}
         />
       )}
@@ -449,22 +459,43 @@ type SpotViewProps = {
   onStage: (s: Stage, draft?: string) => void;
   onDetail: (open: boolean) => void;
   onChoose: (s: Spot, o: Option, own?: boolean) => void;
+  onSettle: (s: Spot, f: Fact) => void;
   onClose: () => void;
 };
 
+/** 窓口に持っていく1枚。根拠の数字と出典、まだ確かめていないことを付ける。
+ * 町の住民は架空なので、その声は載せない */
+function sheetOf(a: Answer, sources: World["sources"]): string {
+  const src = sources[a.fact.source];
+  return [
+    `■ ${a.spot.title}`,
+    `案: ${a.option}`,
+    `根拠: ${a.fact.text}`,
+    `出典: ${src.name} ${src.url}`,
+    `まだ確かめていないこと: ${a.spot.checks.join(" / ")}`,
+    `持っていく先: ${a.spot.window.name} ${a.spot.window.url}`,
+  ].join("\n");
+}
+
 /** 調べる → 頼まれる → 町の人の声を見て、案を選ぶか自分で書く → 判子と問い。理由と出典は「くわしく」に。
  * 3つの案は正解ではなく方向の違う出発点。考えるのは遊んでいる学生で、ゲームは材料と問いだけを渡す */
-function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, onStage, onDetail, onChoose, onClose }: SpotViewProps) {
+function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, onStage, onDetail, onChoose, onSettle, onClose }: SpotViewProps) {
   useEffect(() => {
-    if (stage !== "ask" || detail) return;
+    if (detail || (stage !== "ask" && stage !== "basis")) return;
     const onKey = (e: KeyboardEvent) => {
+      const i = Number(e.key) - 1;
+      if (stage === "basis") {
+        const f = spot.facts[i];
+        if (f) onSettle(spot, f);
+        return;
+      }
       if (e.key === String(spot.quest.options.length + 1)) onStage("write");
-      const o = spot.quest.options[Number(e.key) - 1];
+      const o = spot.quest.options[i];
       if (o) onChoose(spot, o);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [stage, detail, spot, onChoose, onStage]);
+  }, [stage, detail, spot, onChoose, onSettle, onStage]);
 
   if (detail) return <Detail spot={spot} answer={answer} voices={voices} world={world} onClose={() => onDetail(false)} />;
 
@@ -473,6 +504,7 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, on
       <WriteView
         draft={draft}
         prompt={spot.quest.write}
+        facts={spot.facts}
         guide={guide}
         onDone={(line) => onChoose(spot, { text: line, label: line, note: { good: "", gap: "", question: spot.checks[0] } }, true)}
         onBack={() => onStage("ask")}
@@ -480,6 +512,24 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, on
     );
 
   if (stage === "hint") return <Dialog text={spot.hint} onNext={() => onStage("ask")} />;
+
+  if (stage === "basis")
+    return (
+      <>
+        <div className="choices">
+          {spot.facts.map((f, i) => (
+            <button key={f.text} className="choice fact" onClick={() => onSettle(spot, f)} onMouseEnter={() => play("select", 0.2)}>
+              <kbd>{i + 1}</kbd>
+              {f.text}
+            </button>
+          ))}
+          <button className="choice why" onClick={() => onStage("ask")}>
+            もどる
+          </button>
+        </div>
+        <Dialog speaker={guide} text="どの数字を根拠にする？" />
+      </>
+    );
 
   if (stage === "ask")
     return (
@@ -556,9 +606,10 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, on
 }
 
 /** 自分の一行を書く。Enter で出す。変換中の Enter は確定に使われるので出さない */
-function WriteView({ draft, prompt, guide, onDone, onBack }: { draft?: string; prompt: string; guide: string; onDone: (line: string) => void; onBack: () => void }) {
+function WriteView({ draft, prompt, facts, guide, onDone, onBack }: { draft?: string; prompt: string; facts: Fact[]; guide: string; onDone: (line: string) => void; onBack: () => void }) {
   const [text, setText] = useState(draft ?? "");
   const line = text.trim();
+  const loose = unsourcedNumbers(line, facts);
   const submit = () => {
     if (line) onDone(line);
   };
@@ -587,6 +638,7 @@ function WriteView({ draft, prompt, guide, onDone, onBack }: { draft?: string; p
         <button className="btn-game small ghost" onClick={onBack}>
           もどる
         </button>
+        {loose.length > 0 && <p className="loose">「{loose.join("」「")}」は調べた数字に無い。自分で決めた数なら、そのままで</p>}
       </div>
       <Dialog speaker={guide} text={prompt} />
     </>
@@ -647,6 +699,13 @@ function Detail({ spot, answer, voices, world, onClose }: { spot: Spot; answer?:
         <>
           <h3>あなたの一行</h3>
           <p className="chosen">{answer.option}</p>
+        </>
+      )}
+
+      {answer && (
+        <>
+          <h3>根拠にした数字</h3>
+          <p className="chosen">{answer.fact.text}</p>
         </>
       )}
 

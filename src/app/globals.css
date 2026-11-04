@@ -227,6 +227,9 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .write { position: absolute; left: 50%; bottom: 152px; transform: translateX(-50%); width: min(720px, calc(100% - 32px)); display: flex; gap: 10px; align-items: center; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; padding: 12px 14px; box-shadow: 0 4px 0 var(--ink); animation: rise .2s ease-out both; }
 .write input { flex: 1; min-width: 0; font: 800 18px/1.4 var(--font-maru), sans-serif; color: var(--ink); background: transparent; border: 0; border-bottom: 3px dashed var(--ink); padding: 6px 4px; outline: none; }
 .write small { font-weight: 700; color: #8a7f70; }
+.write { flex-wrap: wrap; }
+.write .loose { flex-basis: 100%; margin: 0; font-size: 13px; font-weight: 700; color: #b5400a; }
+.choice.fact { grid-column: 1 / -1; font-size: 15px; font-weight: 700; padding: 10px 14px; }
 .result-label { max-width: min(640px, 90vw); text-align: center; }
 .end-label small { display: block; font-size: 12px; font-weight: 700; color: #8a7f70; }
 .end-actions { display: flex; gap: 10px; justify-content: center; }

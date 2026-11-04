@@ -6,6 +6,13 @@ export type Note = { good: string; gap: string; question: string };
 /** label は画面の選択肢に出す短い言い方。text は詳細と記録に残す言い方 */
 export type Option = { text: string; label: string; note: Note };
 export type Fact = { text: string; source: string };
+
+/** 文の中の数字のうち、調べた数字に無いもの。1 桁と時刻は、案の中の決めごとに多いので拾わない */
+export function unsourcedNumbers(text: string, facts: Fact[]): string[] {
+  const numbers = (t: string) => t.normalize("NFKC").replace(/(\d),(\d)/g, "$1$2").match(/\d+(\.\d+)?(?![\d.]|\s?[時分])/g) ?? [];
+  const known = new Set(facts.flatMap((f) => numbers(f.text)));
+  return [...new Set(numbers(text))].filter((n) => n.length > 1 && !known.has(n));
+}
 export type Window = { name: string; url: string; checked: string; note: string };
 
 /** 物語を置く町。at は build_city.py が緯度経度から求めた位置。stop はバスに乗れる標識の位置（場所の中の座標） */

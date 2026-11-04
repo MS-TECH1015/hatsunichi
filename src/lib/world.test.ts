@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import world from "../../data/world.json";
 import city from "../../public/city/city.json";
-import { busMinutes, clockText, heightAt, nearestTarget, placeWorld, pushOut, routeBetween, stepWithin, walkable, type Ground, type Route, type World } from "./world";
+import { busMinutes, clockText, heightAt, nearestTarget, placeWorld, pushOut, routeBetween, stepWithin, unsourcedNumbers, walkable, type Ground, type Route, type World } from "./world";
 
 const w = placeWorld(world as unknown as World);
 const bytes = (path: string) => readFileSync(new URL(path, import.meta.url));
@@ -55,6 +55,17 @@ describe("world", () => {
       expect(s.quest.write.length, s.id).toBeGreaterThan(0);
       expect(s.checks.length, s.id).toBeGreaterThanOrEqual(2);
     }
+  });
+
+  it("案は根拠の数字を選んで出す。どの依頼にも数字が 1 つ以上ある", () => {
+    for (const s of w.spots) expect(s.facts.length, s.id).toBeGreaterThan(0);
+  });
+
+  it("自分の一行の数字照合。調べた数字に無いものだけ拾い、1 桁と時刻は拾わない", () => {
+    const facts = [{ text: "平日の便 63 本。空き家は 4,207 件。高齢化率 42.9%", source: "x" }];
+    expect(unsourcedNumbers("７時台と17時の便を残し、週3日、63本のうち10本を減らす", facts)).toEqual(["10"]);
+    expect(unsourcedNumbers("4207件の空き家と、42.9%の高齢化", facts)).toEqual([]);
+    expect(unsourcedNumbers("4,207件のうち500件", facts)).toEqual(["500"]);
   });
 
   it("住民のせりふと立場の数字は、同じ町の依頼の facts にある", () => {
