@@ -86,6 +86,10 @@ describe("world", () => {
     for (const s of w.spots) expect(spotFind(s, w.sources).source, s.id).toBe(w.sources[s.facts[0].source].name);
   });
 
+  it("書き写す1枚に載る、まだ確かめていないことに、架空の住民の名前を入れない", () => {
+    for (const s of w.spots) for (const c of s.checks) for (const n of w.npcs) expect(c, s.id).not.toContain(n.name);
+  });
+
   it("住民のせりふと立場の数字は、同じ町の依頼の facts にある", () => {
     for (const n of w.npcs) {
       const known = w.spots

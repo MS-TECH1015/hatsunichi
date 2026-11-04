@@ -297,7 +297,7 @@ export function Town({ world }: Props) {
       {!started && (
         <div className="title">
           <h1 className="logo">はつにち</h1>
-          <p className="tagline">鳥取市で、仕事の初日。</p>
+          <p className="tagline">鳥取市を歩いて、町の困りごとを見つける。</p>
           <button className="btn-game big" disabled={!ready} onClick={begin}>
             {ready ? "はじめる" : "よみこみ中…"}
           </button>

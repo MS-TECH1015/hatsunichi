@@ -6,8 +6,8 @@ import "./globals.css";
 const maru = Zen_Maru_Gothic({ weight: ["500", "700", "900"], subsets: ["latin"], variable: "--font-maru", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "hatsunichi — 鳥取の町で、仕事の初日",
-  description: "鳥取の大学生が模型の町を歩き、住民に話しかけ、人手不足の依頼に一言で案を出す。数字は公開データの出典つき",
+  title: "hatsunichi — 鳥取の町を歩いて、困りごとを見つける",
+  description: "鳥取市の模型の町を歩き、町の困りごとと公的な数字を見つけ、出典つきの案を市の提案窓口へ出せる形にする。歩くだけでもよい",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
