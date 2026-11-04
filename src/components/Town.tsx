@@ -278,12 +278,12 @@ export function Town({ world }: Props) {
   const voicesOf = (spot: Spot): Voice[] =>
     world.npcs.filter((n) => n.place === spot.place && n.view).map((n) => ({ name: n.name, role: n.role, view: n.view ?? "", heard: talked.includes(n.id) }));
 
+  /** 案を出した場所の数字は案の中に載っているので、手帳の一覧からは外す */
+  const extraFinds = finds.filter((f) => !answers.some((a) => a.spot.id === f.spot));
+
   function copyAnswers() {
     const body = answers.map((a) => sheetOf(a, world)).join("\n\n");
-    // 案を出した場所の数字は案の中に載っているので、手帳からは外す
-    const found = finds
-      .filter((f) => !answers.some((a) => a.spot.id === f.spot))
-      .map((f) => `- ${f.text} 出典: ${f.source}`).join("\n");
+    const found = extraFinds.map((f) => `- ${f.text} 出典: ${f.source}`).join("\n");
     const text = ["はつにち 初日の記録", help.trim() && `自分が手伝えること: ${help.trim()}`, body, found && `■ 見つけたこと\n${found}`].filter(Boolean).join("\n\n");
     void navigator.clipboard.writeText(`${text}\n`).then(() => setCopied(true));
   }
@@ -475,14 +475,14 @@ export function Town({ world }: Props) {
                 </li>
               ))}
             </ul>
-            {finds.length > 0 && (
+            {extraFinds.length > 0 && (
               <div className="end-finds">
-                <h3>見つけたこと {finds.length}</h3>
+                <h3>見つけたこと {extraFinds.length}</h3>
                 <ul>
-                  {finds.map((f) => (
+                  {extraFinds.map((f) => (
                     <li key={f.id}>
                       {f.text}
-                      {f.spot && !answers.some((a) => a.spot.id === f.spot) && <em>案はまだ</em>}
+                      {f.spot && <em>案はまだ</em>}
                       <small>{f.source}</small>
                     </li>
                   ))}
