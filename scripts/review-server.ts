@@ -1,5 +1,5 @@
 // 確認役の手元サーバー。Pages は静的なので API を持てず、確認役はここで動かす。
-// 使い方: node --env-file=.env scripts/review-server.ts
+// 使い方: npm run review （.env があれば読む）
 //   POST /review  作業台（/map）の提出用紙に付箋を付ける
 //   POST /sheet   3D の町で決めた 1 枚に付箋を付ける
 // 画面側は NEXT_PUBLIC_REVIEW_URL=http://localhost:8787/review で向ける。/sheet はその隣を使う

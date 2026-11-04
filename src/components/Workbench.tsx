@@ -61,7 +61,7 @@ export function Workbench({ town, meta, tickets }: { town: Town; meta: Meta; tic
                 {tickets.map((tk, i) => (
                   <button key={tk.file} type="button" className={week === i ? "tab on" : "tab"} onClick={() => setWeek(i)}>第{i + 1}週</button>
                 ))}
-                {tickets.length < 2 && <span className="tab muted">第2週 先生の依頼票待ち</span>}
+                {tickets.length < 2 && <span className="tab muted">第2週 依頼票はまだ無い</span>}
               </span>
             </div>
             <dl>

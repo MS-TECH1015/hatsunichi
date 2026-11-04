@@ -6,10 +6,11 @@ import type { Dot, Resident, Town } from "@/lib/impact";
 import type { ResidentState } from "@/lib/impact";
 import type { BusPose } from "@/lib/busPosition";
 import { ThreeLayer } from "./threeLayer";
+import { withBase } from "@/lib/base";
 
 const GSI_PALE = "https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png";
 // Turbopack が MapLibre の worker を束ねられないので、public/ に置いた worker を直接指す（scripts/copy-worker.mjs）
-const WORKER_URL = "/maplibre-gl-worker.mjs";
+const WORKER_URL = withBase("/maplibre-gl-worker.mjs");
 
 type Props = {
   town: Town;

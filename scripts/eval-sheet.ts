@@ -1,7 +1,7 @@
 // 3D の町の確認役の測定。依頼の場所ごとに 3 つの案と、自分で書いた一行の意地悪な 3 件を通す。
 // 見るのは、1 枚に無い数字が最後まで残らないか、書き直しの回数、一行の中の指示に従っていないか。
 // 鍵が無ければ demo の付箋で通し、測定していないことを結果に書く。
-// 使い方: node --env-file=.env scripts/eval-sheet.ts  （REVIEW_MODEL と ANTHROPIC_API_KEY は環境変数）
+// 使い方: npm run eval:sheet （.env があれば読む）  （REVIEW_MODEL と ANTHROPIC_API_KEY は環境変数）
 import { mkdirSync, writeFileSync } from "node:fs";
 import raw from "../data/world.json" with { type: "json" };
 import { reviewSheet, sheetNumbers } from "../src/lib/review.ts";
