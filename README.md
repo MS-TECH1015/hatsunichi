@@ -65,7 +65,7 @@ flowchart LR
 まだ無いこと
 
 - 学生が実際にこれで案を作れるかは、2026-11-06〜07 の試用で確かめる。手順と記録は `docs/trial.md`
-- 確認役の Claude の測定は、鍵が無いため固定文でしか通していない。`docs/eval/demo.md`
+- 確認役の Claude の測定は、2026-11-06 に Opus 5.5 で 32 件。付箋に1枚に無い数字が残った件 0、一行に混ぜた指示に従った件 0、一行の作った数字を名指しした件 3/3 [出典: `docs/eval/sheet-claude-opus-5-5.md`]。件数は少なく、案の文を変えれば結果も変わりうる
 - 地域の課題に関わる授業やインターンが地元就職を増やした、という評価は見つけられなかった。このアプリは就職が増えるとは言わず、地元の課題と窓口を知って案を出す機会をつくるところまでを言う
 - 市政提案が学生の提案を受け付けるかは、ページに書いていない。住所と氏名が要り、匿名は原則受け付けない
 - 公的な資料を AI の作るものに使ってよいかは、各提供元の規約で確かめきれていない。未確認
@@ -110,7 +110,9 @@ npm run eval                 # 確認役の測定。docs/eval/<モデル>.md に
 
 ### 公開と確認役
 
-- 公開先は GitHub Pages: https://ms-tech1015.github.io/hatsunichi/ 。静的書き出し（`output: "export"`）なので、Pages 上の確認役は鍵なしの demo の付箋を画面側で作る
+- 公開先は GitHub Pages: https://ms-tech1015.github.io/hatsunichi/ 。静的書き出し（`output: "export"`）でサーバーが無い。決めた 1 枚の左上に、確認役の出し方が 2 つ出る
+  - 「確認役の記録を見る」: 測定のときに Opus 5.5 が、その案（根拠は 1 つ目、前提は初期値）に書いた付箋。`data/notes-recorded.json` に日付とモデル名ごと入っていて、`npm run eval:sheet` で作り直す
+  - 「自分の鍵で見せる」: 遊ぶ人が自分の Anthropic の API キーを入れると、ブラウザから Anthropic へ直接送って、いま選んだ根拠と前提で読ませる。鍵は画面の変数にだけ置き、保存も、このリポジトリ側のサーバーへの送信もしない。読み込み直すと消える。SDK は鍵を入れた人だけが読み込む
 - 配備は `npm run deploy`。`out/` を gh-pages ブランチへ push する
 - 本物の確認役は手元で動かす。`.env` に `ANTHROPIC_API_KEY` を書き、`npm run review` で http://localhost:8787/review を立て、`NEXT_PUBLIC_REVIEW_URL=http://localhost:8787/review npm run dev` で画面を向ける。3D の町では決めた 1 枚の左上に「確認役に見せる」が出る。このとき提出文と 1 枚は Anthropic の API に送られる（学習には使われず、既定で 30 日以内に消える）
 
