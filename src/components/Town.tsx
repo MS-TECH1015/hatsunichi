@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { CALCS, defaults, type Calc } from "@/lib/calcs";
 import { clockText, facilityFind, markFind, rideFind, spotFind, targetAt, unsourcedNumbers, type Fact, type Facility, type Find, type Mark, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
 import { withBase } from "@/lib/base";
-import { OWN_MAX, answerFromRequest, sheetOf, type SheetRequest } from "@/lib/sheet";
+import { OWN_MAX, WHY_MAX, answerFromRequest, sheetOf, type SheetRequest } from "@/lib/sheet";
 import recordedNotes from "../../data/notes-recorded.json";
 import type { Note as Reviewed } from "@/lib/review";
 import type { TownScene } from "./town/TownScene";
@@ -14,9 +14,9 @@ import { play, setMuted } from "./town/sfx";
 type Props = { world: World };
 /** own は自分で書いた一行。選んだ案と違い付箋が無いので、確かめる問いだけを出す */
 /** fact は学生が選んだ根拠の数字。案は数字と出典を付けて窓口へ持っていく */
-type Answer = { spot: Spot; option: string; label: string; note: Note; own?: boolean; fact: Fact; calc?: string; knobs?: Record<string, number>; place?: Facility };
+type Answer = { spot: Spot; option: string; label: string; note: Note; own?: boolean; fact: Fact; calc?: string; knobs?: Record<string, number>; why?: string; place?: Facility };
 /** 計算の一文と、そのときの前提の値。確認役のサーバーは値から一文を作り直す */
-type Worked = { text: string; knobs: Record<string, number> };
+type Worked = { text: string; knobs: Record<string, number>; why?: string };
 
 /** 市の施設の使い方を民間から募る制度。施設を選んだ 1 枚に参考として添える。確認 2026-11-05 */
 
@@ -326,7 +326,7 @@ export function Town({ world }: Props) {
     if (panel?.type !== "spot" || !panel.pending) return;
     const { option: o, own } = panel.pending;
     play("choose");
-    setAnswers((prev) => [...prev.filter((x) => x.spot.id !== spot.id), { spot, option: o.text, label: o.label, note: o.note, own, fact, calc: calc?.text, knobs: calc?.knobs, place }]);
+    setAnswers((prev) => [...prev.filter((x) => x.spot.id !== spot.id), { spot, option: o.text, label: o.label, note: o.note, own, fact, calc: calc?.text, knobs: calc?.knobs, why: calc?.why, place }]);
     sceneRef.current?.markAnswered(spot.id);
     setStampedId(spot.id);
     window.setTimeout(() => play("stamp"), 300);
@@ -538,7 +538,8 @@ export function Town({ world }: Props) {
         </div>
       )}
 
-      {started && (
+      {/* 話している間は歩けないので、下の選択肢に重ならないよう隠す */}
+      {started && !panel && (
         <div className="dpad" aria-label="移動">
           <button {...hold([0, -1])} className="dpad-up" aria-label="上">▲</button>
           <button {...hold([-1, 0])} className="dpad-left" aria-label="左">◀</button>
@@ -795,6 +796,7 @@ function requestOf(a: Answer): SheetRequest {
     own: a.own ? a.option : undefined,
     fact: a.spot.facts.findIndex((f) => f.text === a.fact.text),
     knobs: a.knobs,
+    why: a.why,
     facility: a.place?.id,
   };
 }
@@ -1287,6 +1289,7 @@ function BookView({ book, world, onClose }: { book: Find[]; world: World; onClos
 /** 案の大きさを町の数字と比べる計算。動かす前提には「推定」と付け、結果は前提の値ごと 1 枚に載る */
 function CalcView({ calc, spot, world, guide, onDone, onBack }: { calc: Calc; spot: Spot; world: World; guide: string; onDone: (calc?: Worked) => void; onBack: () => void }) {
   const [k, setK] = useState(() => defaults(calc));
+  const [why, setWhy] = useState("");
   const text = calc.say(k);
   const used = [...new Set(calc.bases.map((b) => b.fact))].map((i) => spot.facts[i]);
   return (
@@ -1308,8 +1311,9 @@ function CalcView({ calc, spot, world, guide, onDone, onBack }: { calc: Calc; sp
           ))}
           <p className="calc-out">{text}</p>
           <small className="calc-src">根拠: {used.map((f) => world.sources[f.source]?.name ?? f.source).join(" / ")}</small>
+          <input className="calc-why" maxLength={WHY_MAX} value={why} onChange={(e) => setWhy(e.target.value)} placeholder="前提をなぜこの値にした？ 一言（なくてもよい）" aria-label="前提の置き方" />
         </div>
-        <button className="choice wide" onClick={() => onDone({ text, knobs: k })} onMouseEnter={() => play("select", 0.2)}>
+        <button className="choice wide" onClick={() => onDone({ text, knobs: k, why: why.trim() || undefined })} onMouseEnter={() => play("select", 0.2)}>
           この計算も1枚に載せて決める
         </button>
         <button className="choice why" onClick={() => onDone()}>

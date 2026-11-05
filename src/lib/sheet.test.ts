@@ -9,7 +9,7 @@ const stop = w.spots.find((s) => s.id === "stop")!;
 
 describe("確認役に送る 1 枚", () => {
   it("番号から 1 枚を組み直し、計算は前提の値から作り直す", () => {
-    const a = answerFromRequest(w, { spot: "stop", option: 0, fact: 0, knobs: { years: 10, slow: 0 }, facility: w.facilities[0].id }) as SheetAnswer;
+    const a = answerFromRequest(w, { spot: "stop", option: 0, fact: 0, knobs: { years: 10, slow: 0 }, why: "学科の同期の数から置いた", facility: w.facilities[0].id }) as SheetAnswer;
     expect(typeof a).toBe("object");
     const sheet = sheetOf(a, w);
     expect(sheet).toContain(`案: ${stop.quest.options[0].text}`);
@@ -17,6 +17,7 @@ describe("確認役に送る 1 枚", () => {
     expect(sheet).toContain("計算: 運転する人が");
     expect(sheet).toContain("計算の根拠: ");
     expect(sheet).toContain("計算の前提（推定）: 何年後");
+    expect(sheet).toContain("前提の置き方: 学科の同期の数から置いた");
     expect(sheet).toContain(`使う場所: ${w.facilities[0].name}`);
   });
 
