@@ -40,3 +40,5 @@ fetch "https://nlftp.mlit.go.jp/ksj/gml/data/P04/P04-20/P04-20_31_GML.zip" ksj_P
 fetch "https://nlftp.mlit.go.jp/ksj/gml/data/P29/P29-23/P29-23_31_GML.zip" ksj_P29-23_31.zip
 # 鳥取市 公共施設一覧のうち未活用施設 鳥取県オープンデータポータル（CC BY、出典と加工の表示）
 fetch "https://odp-pref-tottori.tori-info.co.jp/dataset/1652/url_resource/143/data_55-12_23.csv" odp_1652_mikatsuyo.csv
+# 厚生労働省 第9期介護保険事業計画に基づく介護職員の必要数について 別紙5 都道府県別 令和6年7月12日 https://www.mhlw.go.jp/stf/newpage_41379.html
+fetch "https://www.mhlw.go.jp/content/12004000/001274768.pdf" mhlw_kaigo_hitsuyosu_r6.pdf
