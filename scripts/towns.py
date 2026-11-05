@@ -17,7 +17,7 @@ SHELTER = (-6.0, -3.0)  # 乗れるバス停の屋根
 STOP = [-4.2, -2.4]  # 話しかける標識の位置。屋根の東の端に立つ
 LANE = -0.9  # バスが本通りを走る線
 
-STYLE = {"eki": "station", "kumoyama": "street", "koyama": "street", "fukube": "rural", "ketaka": "rural", "kawahara": "rural", "mochigase": "mountain", "sakyu": "dune"}
+STYLE = {"eki": "station", "kumoyama": "street", "koyama": "street", "fukube": "rural", "ketaka": "rural", "kawahara": "rural", "kokufu": "rural", "mochigase": "mountain", "sakyu": "dune"}
 
 # 重ならないように置くための半径
 RADIUS = {

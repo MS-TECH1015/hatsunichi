@@ -286,6 +286,37 @@ def build_workshop():
     export("workshop")
 
 
+def build_fire_shed():
+    """消防団の格納庫。ポンプ車を入れるシャッターと、横に火の見櫓"""
+    clear()
+    steel = mat("fs_steel", (0.42, 0.40, 0.38))
+    parts = [
+        box("base", (4.6, 4.2, 0.25), (0, 0, 0.13), mat("stone", STONE), bevel=0.04),
+        box("body", (4.2, 3.8, 2.8), (0, 0, 1.65), mat("wall", CREAM), bevel=0.05),
+        gable("roof", 4.8, 4.4, 1.0, 3.05, mat("roof", IBUSHI)),
+        gable_wall("gable", 4.2, 3.8, 3.05, 0.9, mat("wall", CREAM)),
+        box("shutter", (2.8, 0.1, 2.2), (0, -1.92, 1.35), mat("fs_shutter", (0.70, 0.20, 0.16)), bevel=0.02),
+        box("sign", (1.6, 0.06, 0.4), (0, -1.93, 2.75), mat("paper", WHITE), bevel=0.01),
+    ]
+    for i in range(5):
+        parts.append(box(f"slat{i}", (2.8, 0.04, 0.04), (0, -1.98, 0.55 + i * 0.4), mat("fs_slat", (0.55, 0.15, 0.12)), bevel=0.0))
+    # 火の見櫓。4 本の脚を上へすぼめ、見張り台と半鐘を載せる
+    tx, ty, h, lean = 3.4, 0.8, 7.0, math.atan2(0.45, 7.0)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            parts.append(cyl(f"leg{sx}{sy}", 0.07, h, (tx + sx * 0.525, ty + sy * 0.525, h / 2), steel, rot=(sy * lean, -sx * lean, 0), verts=6))
+    for z, r in ((2.4, 0.62), (4.7, 0.45)):
+        parts.append(box(f"ring{z}", (2 * r, 2 * r, 0.06), (tx, ty, z), steel, bevel=0.0))
+    parts += [
+        box("deck", (1.1, 1.1, 0.1), (tx, ty, h), steel, bevel=0.02),
+        cone("cap", 0.75, 0.8, (tx, ty, h + 1.0), mat("roof", IBUSHI), verts=4, rot=(0, 0, math.pi / 4)),
+        cyl("post", 0.04, 0.6, (tx, ty, h + 0.35), steel, verts=6),
+        cone("bell", 0.16, 0.3, (tx, ty, h + 0.45), mat("fs_bell", (0.55, 0.42, 0.20)), verts=10),
+    ]
+    join(parts, "fire_shed")
+    export("fire_shed")
+
+
 # ---- 自然と畑 ----
 
 def build_trees():
@@ -574,7 +605,7 @@ def build_rabbit():
 
 if __name__ == "__main__":  # town_parts.py から部品の道具だけ読むときは作らない
     for build in (
-        build_houses, build_shop, build_empty_house, build_school, build_workshop,
+        build_houses, build_shop, build_empty_house, build_school, build_workshop, build_fire_shed,
         build_trees, build_pear_trellis, build_field, build_ginger_cave, build_hill,
         build_fence, build_flowers, build_pole, build_vending, build_bench, build_road,
         build_bus, build_stop, build_person, build_player, build_rabbit, build_bus_sign, build_city_parts,

@@ -42,3 +42,5 @@ fetch "https://nlftp.mlit.go.jp/ksj/gml/data/P29/P29-23/P29-23_31_GML.zip" ksj_P
 fetch "https://odp-pref-tottori.tori-info.co.jp/dataset/1652/url_resource/143/data_55-12_23.csv" odp_1652_mikatsuyo.csv
 # 厚生労働省 第9期介護保険事業計画に基づく介護職員の必要数について 別紙5 都道府県別 令和6年7月12日 https://www.mhlw.go.jp/stf/newpage_41379.html
 fetch "https://www.mhlw.go.jp/content/12004000/001274768.pdf" mhlw_kaigo_hitsuyosu_r6.pdf
+# 鳥取県 鳥取県の消防 3 消防体制 令和4年4月1日現在（県の公式サイト。数字を事実として引くだけで、文や表は写さない）
+fetch "https://www.pref.tottori.lg.jp/secure/1323317/3syouboutaisei.pdf" pref_shoubou_taisei_r4.pdf

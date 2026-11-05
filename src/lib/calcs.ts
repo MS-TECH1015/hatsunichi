@@ -63,6 +63,25 @@ export const CALCS: Record<string, Calc> = {
       return `2040 年度に要る 12,745 人と、今の流れのままの 9,791 人の差は ${n(short)} 人。学生 ${people} 人が週に ${hours} 時間ずつ働くと、職員 約 ${n(fte, 1)} 人分で、差の ${pct(fte, short)}`;
     },
   },
+  fire1: {
+    ask: "学生が毎年消防団に入ると、何年後に条例の定員 1,354 人へ近づく？",
+    bases: [
+      { fact: 0, value: 1262 },
+      { fact: 0, value: 1354 },
+      { fact: 1, value: 39 },
+      { fact: 1, value: 45 },
+    ],
+    knobs: [
+      { id: "years", label: "何年後", unit: "年", min: 1, max: 20, step: 1, value: 10 },
+      { id: "people", label: "毎年入る学生", unit: "人", min: 1, max: 50, step: 1, value: 10 },
+      { id: "stay", label: "1 人が続ける年数", unit: "年", min: 1, max: 6, step: 1, value: 2 },
+    ],
+    say: ({ years, people, stay }) => {
+      const trend = 1262 + (39 - 45) * years;
+      const total = trend + people * Math.min(years, stay);
+      return `1 年に 39 人入り 45 人やめる流れのままだと、${years} 年後は 約 ${n(trend)} 人。学生が毎年 ${people} 人入って ${stay} 年ずつ続けると 約 ${n(total)} 人で、定員 1,354 人の ${pct(total, 1354)}`;
+    },
+  },
   shop1: {
     ask: "駅のまわりの空き店舗 65 のうち、学生の店でいくつ開く？",
     bases: [{ fact: 0, value: 65 }],
