@@ -46,6 +46,23 @@ export const CALCS: Record<string, Calc> = {
       return `学生 ${people} 人が月に ${times} 回、1 回 ${houses} 件ずつ見ると、1 年で ${n(perYear)} 件。4,207 件を 1 周するのに 約 ${n(4207 / perYear, 1)} 年`;
     },
   },
+  care1: {
+    ask: "学生が介護の仕事を週に何時間か受け持つと、2040 年度に県で足りなくなる人数のどれくらいに届く？",
+    bases: [
+      { fact: 0, value: 12745 },
+      { fact: 0, value: 9791 },
+    ],
+    knobs: [
+      { id: "people", label: "受け持つ学生", unit: "人", min: 10, max: 500, step: 10, value: 50 },
+      { id: "hours", label: "1 人が週に働く時間", unit: "時間", min: 1, max: 20, step: 1, value: 4 },
+      { id: "full", label: "職員 1 人が週に働く時間", unit: "時間", min: 30, max: 40, step: 1, value: 38 },
+    ],
+    say: ({ people, hours, full }) => {
+      const short = 12745 - 9791;
+      const fte = (people * hours) / full;
+      return `2040 年度に要る 12,745 人と、今の流れのままの 9,791 人の差は ${n(short)} 人。学生 ${people} 人が週に ${hours} 時間ずつ働くと、職員 約 ${n(fte, 1)} 人分で、差の ${pct(fte, short)}`;
+    },
+  },
   shop1: {
     ask: "駅のまわりの空き店舗 65 のうち、学生の店でいくつ開く？",
     bases: [{ fact: 0, value: 65 }],

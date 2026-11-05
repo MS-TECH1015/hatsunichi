@@ -14,10 +14,12 @@ description: data/raw/ の公式ファイルから、3D の町の data/world.jso
 
 ## 3D の町（data/world.json と public/city/）
 
-3. `python scripts/build_city.py` 標高・行政区域・GTFS・町別人口から city.json・mask.bin・地図の下絵・places の座標を作る
+町を新しく足すときは、先に `data/world.json` の places に id・name・geo（緯度経度）・hub・stop・geo_source を足し、`scripts/towns.py` の STYLE に町の見た目を足す。geo はその町のバス停か位置参照情報から取る。2026-11-05 に河原をこの手順で足した
+
+3. `python scripts/build_city.py`。続けて `"C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --python scripts/blender/city.py` で地形の glb を作り直す 標高・行政区域・GTFS・町別人口から city.json・mask.bin・地図の下絵・places の座標を作る
 4. `python scripts/build_marks.py` 町丁の「?」の札を world.json の marks に書く
 5. `python scripts/build_facilities.py` 鳥取市の未活用施設を world.json の facilities に書く
-6. 依頼の場所（spots）は手で書く。数字は facts に書き、各 fact の source を world.json の sources に置く。計算は `src/lib/calcs.ts` で、根拠の数字はその場所の facts の文にあるものだけ
+6. 依頼の場所（spots）は手で書く。数字は facts に書き、各 fact の source を world.json の sources に置く。計算は `src/lib/calcs.ts` で、根拠の数字はその場所の facts の文にあるものだけ。新しい依頼の場所には calcs.ts に計算を1つ足し、町の人を2〜3人、役割の違う人で書く。画面の文の長さはテストが見る
 7. `npm test` を通す。world.json の整合、札の位置、計算の根拠、確認役の数字の見張りを見る
 
 ## 作業台の町（data/town.json）

@@ -182,7 +182,7 @@ describe("町丁の印", () => {
 describe("町ごとの計算", () => {
   const nums = (t: string) => t.normalize("NFKC").replace(/(\d),(\d)/g, "$1$2").match(/\d+(\.\d+)?/g) ?? [];
 
-  it("7 つの依頼の場所すべてにあり、根拠の数字はその場所の文に書いてある", () => {
+  it("8 つの依頼の場所すべてにあり、根拠の数字はその場所の文に書いてある", () => {
     expect(Object.keys(CALCS).sort()).toEqual(w.spots.map((s) => s.id).sort());
     for (const [id, calc] of Object.entries(CALCS)) {
       const spot = w.spots.find((s) => s.id === id)!;
