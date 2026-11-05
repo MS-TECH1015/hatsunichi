@@ -293,3 +293,5 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .review-card p { margin: 0; }
 .review-card small { font-size: 11px; color: #6b5f4a; }
 .review-card .btn-game { align-self: flex-start; }
+.review-card form { display: flex; gap: 6px; }
+.review-card input { flex: 1; min-width: 0; font: inherit; font-size: 13px; padding: 4px 8px; border: 2px solid var(--ink); border-radius: 8px; background: #fffdf2; }

@@ -17,7 +17,9 @@ export function sheetOf(a: SheetAnswer, world: World): string {
     `案: ${a.option}`,
     `根拠: ${a.fact.text}`,
     `出典: ${src.name} ${src.url}`,
-    a.calc && `計算（前提は推定）: ${a.calc}`,
+    a.calc && `計算: ${a.calc}`,
+    a.calc && calcBasis(a, world),
+    a.calc && CALCS[a.spot.id] && `計算の前提（推定）: ${CALCS[a.spot.id].knobs.map((k) => k.label).join("、")}`,
     a.place && `使う場所: ${a.place.name}、${town}。鳥取市の未活用施設。今も使われていないかは未確認 出典: ${world.sources[a.place.sources[0]]?.name ?? ""}`,
     a.place && `参考: 市の施設の使い方は ${PROPOSAL.name} で民間から募っている。この施設の案を市が募っているわけではない ${PROPOSAL.url}`,
     `まだ確かめていないこと: ${a.spot.checks.join(" / ")}`,
@@ -49,6 +51,13 @@ export function answerFromRequest(world: World, req: SheetRequest): SheetAnswer 
   const calc = req.knobs ? calcText(spot.id, req.knobs) : undefined;
   if (req.knobs && !calc) return "計算の前提が範囲の外";
   return { spot, option: option?.text ?? own, own: !option, fact, calc, place };
+}
+
+/** 計算が使う出典の数字のうち、根拠の行に無いもの。出典の数字と、本人が動かした前提を読み手が分けられるようにする */
+function calcBasis(a: SheetAnswer, world: World): string | undefined {
+  const facts = [...new Set((CALCS[a.spot.id]?.bases ?? []).map((b) => a.spot.facts[b.fact]))].filter((f) => f && f.text !== a.fact.text);
+  if (facts.length === 0) return undefined;
+  return `計算の根拠: ${facts.map((f) => `${f.text} 出典: ${world.sources[f.source]?.name ?? ""}`).join(" / ")}`;
 }
 
 /** 前提の値から計算の一文を作り直す。画面と同じ範囲の外の値は受け付けない */

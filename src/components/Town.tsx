@@ -5,7 +5,8 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { CALCS, defaults, type Calc } from "@/lib/calcs";
 import { clockText, facilityFind, markFind, rideFind, spotFind, targetAt, unsourcedNumbers, type Fact, type Facility, type Find, type Mark, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
 import { withBase } from "@/lib/base";
-import { OWN_MAX, sheetOf, type SheetRequest } from "@/lib/sheet";
+import { OWN_MAX, answerFromRequest, sheetOf, type SheetRequest } from "@/lib/sheet";
+import recordedNotes from "../../data/notes-recorded.json";
 import type { Note as Reviewed } from "@/lib/review";
 import type { TownScene } from "./town/TownScene";
 import { play, setMuted } from "./town/sfx";
@@ -777,9 +778,14 @@ type SpotViewProps = {
   onClose: () => void;
 };
 
-/** 確認役は手元のサーバー（scripts/review-server.ts）。/map と同じ NEXT_PUBLIC_REVIEW_URL の隣の /sheet に送る */
+/** 確認役。手元のサーバー（scripts/review-server.ts）があれば /map と同じ NEXT_PUBLIC_REVIEW_URL の隣の /sheet に送る。
+ * 公開版では、遊ぶ人が入れた鍵でブラウザから Anthropic へ直接送る。鍵が無ければ、測定のときに Claude が書いた付箋の記録を見せる */
 const REVIEW_URL = process.env.NEXT_PUBLIC_REVIEW_URL;
 const SHEET_URL = REVIEW_URL && new URL("sheet", REVIEW_URL).toString();
+type Recorded = { model: string; date: string; notes: Record<string, Pick<Reviewed, "good" | "gap" | "question">> };
+const RECORDED = recordedNotes as Recorded;
+// 入れた鍵はこの変数にだけ置く。保存しないので、読み込み直すと消える
+let tabKey = "";
 
 /** 送るのは番号と前提の値だけ。サーバーが world.json から 1 枚を組み直す。自由な文は自分で書いた一行だけ */
 function requestOf(a: Answer): SheetRequest {
@@ -793,38 +799,106 @@ function requestOf(a: Answer): SheetRequest {
   };
 }
 
-/** 決めた 1 枚を確認役（Claude）に見せて、付箋を 1 枚もらう。確認役のサーバーを動かしているときだけ出る */
-function ReviewCard({ answer }: { answer: Answer }) {
-  const [state, setState] = useState<"idle" | "wait" | "fail">("idle");
-  const [note, setNote] = useState<Reviewed | null>(null);
-  if (!SHEET_URL) return null;
+async function askReviewer(answer: Answer, world: World, apiKey: string): Promise<Reviewed> {
+  if (SHEET_URL) {
+    const res = await fetch(SHEET_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(requestOf(answer)) });
+    if (!res.ok) throw new Error(String(res.status));
+    return ((await res.json()) as { note: Reviewed }).note;
+  }
+  const sheet = answerFromRequest(world, requestOf(answer));
+  if (typeof sheet === "string") throw new Error(sheet);
+  // SDK は鍵を入れた人だけが読み込む
+  const { reviewSheet } = await import("@/lib/review");
+  return reviewSheet(sheet, world, { apiKey });
+}
+
+function noteFoot(note: Reviewed & { recorded?: string }): string {
+  if (note.recorded) return `${note.recorded} に ${note.model} がこの案に書いた記録。根拠の数字や前提を変えると、付箋も変わる`;
+  if (note.demo) return "鍵が無いので、用意してある付箋";
+  return `${note.model}${note.retries ? `。出典に無い数字で ${note.retries} 回書き直した` : ""}`;
+}
+
+/** 決めた 1 枚を確認役（Claude）に見せて、付箋を 1 枚もらう */
+function ReviewCard({ answer, world }: { answer: Answer; world: World }) {
+  const [state, setState] = useState<"idle" | "key" | "wait" | "fail">("idle");
+  const [note, setNote] = useState<(Reviewed & { recorded?: string }) | null>(null);
+  const [key, setKey] = useState(tabKey);
+  const req = requestOf(answer);
+  const kept = req.option === undefined ? undefined : RECORDED.notes[`${req.spot}:${req.option}`];
   const ask = async () => {
     setState("wait");
+    tabKey = key.trim();
     try {
-      const res = await fetch(SHEET_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(requestOf(answer)) });
-      if (!res.ok) throw new Error(String(res.status));
-      setNote(((await res.json()) as { note: Reviewed }).note);
+      setNote(await askReviewer(answer, world, tabKey));
       play("stamp");
     } catch {
       setState("fail");
     }
   };
-  if (!note)
+  const showKept = () => {
+    setNote({ ...kept!, model: RECORDED.model, retries: 0, demo: false, recorded: RECORDED.date });
+    play("stamp");
+  };
+
+  if (note)
+    return (
+      <aside className="review-card" aria-live="polite">
+        <b>確認役の付箋</b>
+        <p>よい: {note.good}</p>
+        <p>足りない: {note.gap}</p>
+        <p>問い: {note.question}</p>
+        <small>{noteFoot(note)}</small>
+      </aside>
+    );
+
+  if (state === "wait")
     return (
       <aside className="review-card">
-        <button className="btn-game small" disabled={state === "wait"} onClick={ask}>
-          {state === "wait" ? "読んでもらっている…" : "確認役に見せる"}
+        <button className="btn-game small" disabled>
+          読んでもらっている…
+        </button>
+      </aside>
+    );
+
+  if (SHEET_URL)
+    return (
+      <aside className="review-card">
+        <button className="btn-game small" onClick={ask}>
+          確認役に見せる
         </button>
         {state === "fail" && <small>確認役に届かなかった。手元のサーバーが動いているか見る</small>}
       </aside>
     );
+
+  if (state === "key" || state === "fail")
+    return (
+      <aside className="review-card">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            ask();
+          }}
+        >
+          <input type="password" autoComplete="off" spellCheck={false} placeholder="Anthropic の API キー" value={key} onChange={(e) => setKey(e.target.value)} aria-label="Anthropic の API キー" />
+          <button className="btn-game small" disabled={!key.trim()}>
+            見せる
+          </button>
+        </form>
+        {state === "fail" && <small>届かなかった。鍵と、使える残高を見る</small>}
+        <small>鍵はこのタブの中だけに置き、Anthropic へ直接送る。保存はしない。1 枚で Claude を 1〜3 回呼ぶ</small>
+      </aside>
+    );
+
   return (
-    <aside className="review-card" aria-live="polite">
-      <b>確認役の付箋</b>
-      <p>よい: {note.good}</p>
-      <p>足りない: {note.gap}</p>
-      <p>問い: {note.question}</p>
-      <small>{note.demo ? "鍵が無いので、用意してある付箋" : `${note.model}${note.retries ? `。出典に無い数字で ${note.retries} 回書き直した` : ""}`}</small>
+    <aside className="review-card">
+      {kept && (
+        <button className="btn-game small" onClick={showKept}>
+          確認役の記録を見る
+        </button>
+      )}
+      <button className="btn-game small" onClick={() => setState("key")}>
+        自分の鍵で見せる
+      </button>
     </aside>
   );
 }
@@ -922,7 +996,7 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, on
   if (!answer) return null;
   return (
     <>
-      <ReviewCard key={`${spot.id}:${answer.option}`} answer={answer} />
+      <ReviewCard key={`${spot.id}:${answer.option}`} answer={answer} world={world} />
       <div className="result">
         <Stamp char={spot.stamp} big pop />
         <div className="result-label">{answer.label}</div>

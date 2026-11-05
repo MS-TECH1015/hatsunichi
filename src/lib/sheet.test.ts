@@ -14,7 +14,9 @@ describe("確認役に送る 1 枚", () => {
     const sheet = sheetOf(a, w);
     expect(sheet).toContain(`案: ${stop.quest.options[0].text}`);
     expect(sheet).toContain(`根拠: ${stop.facts[0].text}`);
-    expect(sheet).toContain("計算（前提は推定）: 運転する人が");
+    expect(sheet).toContain("計算: 運転する人が");
+    expect(sheet).toContain("計算の根拠: ");
+    expect(sheet).toContain("計算の前提（推定）: 何年後");
     expect(sheet).toContain(`使う場所: ${w.facilities[0].name}`);
   });
 

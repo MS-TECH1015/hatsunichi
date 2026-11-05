@@ -44,8 +44,9 @@ const NOTE_SCHEMA = {
 
 /** 付箋を 1 枚もらう。Opus 5.5 は道具の強制呼び出しを受け付けないので、出力の形を JSON スキーマで決める。
  * 安全の判定で断られたときは、API 側で別のモデルに回す（fallbacks: "default"） */
-async function askNote(content: string, model: string, system?: string): Promise<NoteText> {
-  const client = new Anthropic();
+async function askNote(content: string, model: string, system?: string, apiKey?: string): Promise<NoteText> {
+  // 公開版では遊ぶ人が自分の鍵を入れ、ブラウザから Anthropic へ直接送る。鍵はそのタブの中だけにある
+  const client = apiKey ? new Anthropic({ apiKey, dangerouslyAllowBrowser: true }) : new Anthropic();
   const res = await client.beta.messages.create({
     model,
     max_tokens: 16000,
@@ -151,12 +152,15 @@ export function demoSheetNote(a: SheetAnswer): Note {
   return { ...base, model: "demo", retries: 0, demo: true };
 }
 
-/** 窓口へ持っていく 1 枚に、確認役の付箋を 1 枚付ける */
-export async function reviewSheet(a: SheetAnswer, world: World): Promise<Note> {
-  if (!process.env.ANTHROPIC_API_KEY) return demoSheetNote(a);
+const env = (name: string) => (typeof process === "undefined" ? undefined : process.env[name]);
+
+/** 窓口へ持っていく 1 枚に、確認役の付箋を 1 枚付ける。apiKey を渡せばその鍵で、無ければ環境変数の鍵で読む */
+export async function reviewSheet(a: SheetAnswer, world: World, opts: { apiKey?: string; model?: string } = {}): Promise<Note> {
+  const apiKey = opts.apiKey ?? env("ANTHROPIC_API_KEY");
+  if (!apiKey) return demoSheetNote(a);
   // 自分で書いた一行に <sheet> の閉じ札を書かれても、囲みの外に出られないようにする
   const sheet = sheetOf(a, world).replace(/<\/?sheet>/gi, "");
-  const model = process.env.REVIEW_MODEL ?? "claude-opus-5-5";
+  const model = opts.model ?? env("REVIEW_MODEL") ?? "claude-opus-5-5";
   const content = (feedback?: string) => `<sheet>\n${sheet}\n</sheet>${feedback ? `\n\n前の付箋はやり直し。理由: ${feedback}` : ""}`;
-  return noteWithSources((feedback) => askNote(content(feedback), model, SHEET_SYSTEM), (n) => sheetNumbers(n, sheet), model);
+  return noteWithSources((feedback) => askNote(content(feedback), model, SHEET_SYSTEM, opts.apiKey), (n) => sheetNumbers(n, sheet), model);
 }
