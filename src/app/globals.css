@@ -199,7 +199,7 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .detail a { color: var(--ink); text-decoration-thickness: 2px; text-decoration-color: var(--accent); }
 
 /* 終業 */
-.end { position: absolute; inset: 0; display: flex; flex-direction: column; overflow-y: auto; background: rgba(43,38,34,.35); padding: 16px; }
+.end { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; overflow-y: auto; background: rgba(43,38,34,.35); padding: 16px; }
 .end > * { margin: auto; }
 .end-card { width: min(520px, 100%); background: var(--paper); border: 4px solid var(--ink); border-radius: 26px; padding: 26px; box-shadow: 0 8px 0 var(--ink); text-align: center; animation: rise2 .3s ease-out both; }
 @keyframes rise2 { from { transform: translateY(24px); opacity: 0; } }
@@ -219,6 +219,7 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .concern-result { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: #fff7d6; font-size: 13px; }
 .concern-result p { margin: 0 0 6px; font-weight: 700; }
 .concern-result small { display: block; margin: 0 0 8px; color: #6b5f4a; font-weight: 700; }
+@media (max-width: 640px) { .concern-examples button:nth-child(n+4) { display: none; } }
 .concern-key { margin: 8px 0 0; font: inherit; font-size: 12px; font-weight: 700; background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; color: var(--ink); }
 .choice.fact.suggest { outline: 4px solid var(--accent); }
 .suggest-tag { flex: none; margin-left: auto; padding: 2px 8px; border-radius: 999px; background: var(--accent); white-space: nowrap; font-size: 12px; font-weight: 900; }
