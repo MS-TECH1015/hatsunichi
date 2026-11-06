@@ -561,7 +561,9 @@ export function Town({ world }: Props) {
       {!started && (
         <div className="title">
           <h1 className="logo">はつにち</h1>
-          <p className="tagline">鳥取市を歩いて、町の困りごとを見つける。</p>
+          <p className="tagline">
+            鳥取市を歩いて、<wbr />町の困りごとに<wbr />市へ出せる案を{" 1 "}枚。
+          </p>
           <p className="title-problem">{world.problem.map((p) => p.text).join("。")}。</p>
           <p className="title-stats">
             {stats.towns} つの町、{stats.blocks} の町丁に住む {stats.people.toLocaleString()} 人の数字。{changeText(stats.change)}。根拠 {stats.facts} 件、出典 {stats.sources} 件。数字はすべて公的な資料から
