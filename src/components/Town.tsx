@@ -562,7 +562,7 @@ export function Town({ world }: Props) {
         <div className="title">
           <h1 className="logo">はつにち</h1>
           <p className="tagline">
-            鳥取市を歩いて、<wbr />町の困りごとに<wbr />市へ出せる案を{" 1 "}枚。
+            鳥取市を歩いて、<wbr />町の困りごとに<wbr />市へ出せる案を 1&nbsp;枚。
           </p>
           <p className="title-problem">{world.problem.map((p) => p.text).join("。")}。</p>
           <p className="title-stats">
