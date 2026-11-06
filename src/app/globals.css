@@ -120,6 +120,9 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .tagline { margin: 0 0 18px; font-size: 18px; font-weight: 800; background: var(--paper); border: 3px solid var(--ink); border-radius: 999px; padding: 6px 18px; }
 .title-keys { margin: 12px 0 0; font-size: 14px; font-weight: 700; background: rgba(255,250,240,.85); border-radius: 12px; padding: 6px 12px; }
 .title-note { position: absolute; bottom: 12px; margin: 0; font-size: 11px; color: var(--ink); background: rgba(255,250,240,.75); border-radius: 8px; padding: 3px 8px; }
+/* 縦長や低い画面では、注記がボタンに重ならないよう、題の画面ごと縦に流してスクロールさせる */
+@media (max-width: 640px), (max-height: 760px) { .title { justify-content: flex-start; overflow-y: auto; } .title-note { position: static; margin-top: 8px; } }
+@media (pointer: coarse) { .title-keys { display: none; } }
 @keyframes float { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-10px) rotate(1.5deg); } }
 
 /* HUD */
