@@ -3,7 +3,7 @@ import { Zen_Maru_Gothic } from "next/font/google";
 import "./globals.css";
 
 // 町の画面の丸ゴシック。ビルド時に取り込み、閲覧時に Google へは問い合わせない
-const maru = Zen_Maru_Gothic({ weight: ["500", "700", "900"], subsets: ["latin"], variable: "--font-maru", display: "swap" });
+const maru = Zen_Maru_Gothic({ weight: ["700", "900"], subsets: ["latin"], variable: "--font-maru", display: "swap" });
 
 export const metadata: Metadata = {
   title: "hatsunichi — 鳥取の町を歩いて、困りごとを見つける",

@@ -39,7 +39,7 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .slider input { flex: 1; }
 .formula { color: var(--muted); font-size: 11px; margin-top: 4px; }
 .trips { width: 100%; border-collapse: collapse; }
-.trips th { text-align: left; font-weight: 500; color: var(--muted); font-size: 11px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.trips th { text-align: left; font-weight: 700; color: var(--muted); font-size: 11px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
 .trips td { padding: 5px 8px; border-bottom: 1px solid #f1f3f5; vertical-align: middle; }
 .trips tr.off td { background: #fff4e6; text-decoration: line-through; }
 .trips tr.off td:last-child { text-decoration: none; }
