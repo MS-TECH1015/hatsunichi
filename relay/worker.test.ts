@@ -23,6 +23,11 @@ describe("確認役の中継", () => {
     expect(ok.status).toBe(200);
     expect(((await ok.json()) as { route: { spot: string } }).route.spot).toBe("fire1");
   });
+  it("公開版からの事前確認には、本文なしで CORS の許可を返す", async () => {
+    const res = await worker.fetch(new Request("https://relay.example/route", { method: "OPTIONS", headers: { origin: ORIGIN } }), envOf());
+    expect(res.status).toBe(204);
+    expect(res.headers.get("access-control-allow-origin")).toBe(ORIGIN);
+  });
   it("日本の外からは断る", async () => {
     const req = Object.assign(post("/route", { text: "バスが減った" }), { cf: { country: "US" } });
     expect((await worker.fetch(req, envOf())).status).toBe(403);

@@ -20,8 +20,9 @@ const PER_HOUR = 10;
 const DEFAULT_DAILY = 100;
 const w = world as unknown as World;
 
+const cors = (origin: string) => ({ "access-control-allow-origin": origin, "access-control-allow-headers": "content-type", "access-control-allow-methods": "POST, OPTIONS", vary: "Origin" });
 const json = (status: number, body: unknown, origin: string) =>
-  new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "access-control-allow-origin": origin, "access-control-allow-headers": "content-type", vary: "Origin" } });
+  new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...cors(origin) } });
 
 const hits = async (kv: KV, key: string) => Number((await kv.get(key)) ?? "0");
 
@@ -30,7 +31,8 @@ export default {
     const origin = req.headers.get("origin") ?? "";
     const allowed = (env.ALLOWED_ORIGIN ?? "https://ms-tech1015.github.io").split(",").map((s) => s.trim());
     if (!allowed.includes(origin)) return new Response("origin", { status: 403 });
-    if (req.method === "OPTIONS") return json(204, null, origin);
+    // 204 は本文を持てない。本文を付けると Workers が例外を投げ、ブラウザの事前確認が通らない
+    if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors(origin) });
     const path = new URL(req.url).pathname;
     if (req.method !== "POST" || !["/sheet", "/rehearse", "/route"].includes(path)) return json(404, { error: "POST /sheet・/rehearse・/route だけ" }, origin);
     if (Number(req.headers.get("content-length") ?? "0") > BODY_MAX) return json(413, { error: "本文が大きい" }, origin);
