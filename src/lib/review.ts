@@ -146,7 +146,7 @@ const SHEET_SYSTEM = [
 ].join("\n");
 
 /** 付箋の数字のうち 1 枚に無いもの。1 桁と時刻は案の中の決めごとに多いので拾わない */
-export const sheetNumbers = (n: NoteText, sheet: string) => looseNumbers(`${n.good} ${n.gap} ${n.question}`, [{ text: sheet, source: "" }]);
+export const sheetNumbers = (n: NoteText, sheet: string) => looseNumbers(`${n.good} ${n.gap} ${n.question}`, [{ text: sheet }]);
 
 /** 鍵が無いときの付箋。選んだ案には用意してある付箋、自分で書いた案には、まだ確かめていないことから作る */
 export function demoSheetNote(a: SheetAnswer): Note {
@@ -191,7 +191,7 @@ const REPLY_SYSTEM = [
 ].join("\n");
 
 /** 予行の問いの数字のうち 1 枚に無いもの */
-export const replyNumbers = (r: Pick<Reply, "asks">, sheet: string) => looseNumbers(r.asks.join(" "), [{ text: sheet, source: "" }]);
+export const replyNumbers = (r: Pick<Reply, "asks">, sheet: string) => looseNumbers(r.asks.join(" "), [{ text: sheet }]);
 
 /** 鍵が無いときの予行。依頼の場所の「まだ確かめていないこと」をそのまま問いにする */
 export function demoReply(a: SheetAnswer): Reply {
@@ -276,7 +276,7 @@ export async function routeConcern(text: string, world: World, opts: { apiKey?: 
     retries = attempt;
     const content = `依頼:\n${spotsText(world)}\n\n<concern>\n${concern}\n</concern>${feedback ? `\n\n前の答えはやり直し。理由: ${feedback}` : ""}`;
     last = await askJson<{ spot: string; fact: string; reason: string }>(content, model, schema, ROUTE_SYSTEM, opts.apiKey);
-    const bad = looseNumbers(last.reason, [{ text: concern, source: "" }]);
+    const bad = looseNumbers(last.reason, [{ text: concern }]);
     if (bad.length === 0) break;
     feedback = `reason に数字 ${bad.join("、")} が入っていた。数字を書かない`;
     if (attempt === 2) last = { ...last, reason: last.reason.replace(/\d+/g, "〔数字は伏せた〕") };

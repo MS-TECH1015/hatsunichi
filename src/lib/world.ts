@@ -8,7 +8,7 @@ export type Option = { text: string; label: string; note: Note };
 export type Fact = { text: string; source: string };
 
 /** 文の中の数字のうち、調べた数字に無いもの。1 桁と時刻は、案の中の決めごとに多いので拾わない */
-export function unsourcedNumbers(text: string, facts: Fact[]): string[] {
+export function unsourcedNumbers(text: string, facts: Pick<Fact, "text">[]): string[] {
   const numbers = (t: string) => t.normalize("NFKC").replace(/(\d),(\d)/g, "$1$2").match(/\d+(\.\d+)?(?![\d.]|\s?[時分])/g) ?? [];
   const known = new Set(facts.flatMap((f) => numbers(f.text)));
   return [...new Set(numbers(text))].filter((n) => n.length > 1 && !known.has(n));

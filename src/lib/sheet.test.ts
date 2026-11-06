@@ -3,7 +3,7 @@ import raw from "../../data/world.json";
 import { demoReply, demoRoute, demoSheetNote, replyNumbers, sheetNumbers } from "./review";
 import routes from "../../data/routes-recorded.json";
 import { OWN_MAX, answerFromRequest, sheetOf, type SheetAnswer } from "./sheet";
-import type { World } from "./world";
+import { unsourcedNumbers, type World } from "./world";
 
 const w = raw as unknown as World;
 const stop = w.spots.find((s) => s.id === "stop")!;
@@ -71,6 +71,12 @@ describe("返事の予行", () => {
     expect(r.asks.length).toBeLessThanOrEqual(3);
     expect(replyNumbers(r, sheetOf(a, w, "city"))).toEqual([]);
     expect(replyNumbers({ asks: ["学生 9999 人で足りますか"] }, sheetOf(a, w, "city"))).toEqual(["9999"]);
+  });
+  it("問いに書いておいた答えも、1 枚に無い数字だけを名指しする", () => {
+    const a = answerFromRequest(w, { spot: "fire1", option: 0, fact: 0 }) as SheetAnswer;
+    const sheet = sheetOf(a, w, "city");
+    expect(unsourcedNumbers("国府に住む 774 人の中から、まず大学の近くの町丁で声をかける", [{ text: sheet }])).toEqual([]);
+    expect(unsourcedNumbers("学生を 30 人集める", [{ text: sheet }])).toEqual(["30"]);
   });
 });
 

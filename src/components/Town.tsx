@@ -147,6 +147,8 @@ export function Town({ world }: Props) {
   const [use, setUse] = useState<SheetUse>("city");
   // 自分の鍵で読ませた返事の予行。依頼の場所の id ごと
   const [rehearsed, setRehearsed] = useState<Record<string, Rehearsed>>({});
+  // 予行の問いに書いておいた答え。依頼の場所の id ごとに、問いの順で
+  const [prepared, setPrepared] = useState<Record<string, string[]>>({});
   const [sent, setSent] = useState<Sent[]>([]);
   const [showSent, setShowSent] = useState(false);
   const [marked, setMarked] = useState(false);
@@ -534,7 +536,9 @@ export function Town({ world }: Props) {
         const sheet = sheetOf({ ...a, review: a.review && { question: a.review.question, model: a.review.model, date: a.review.recorded } }, world, use);
         const reply = use === "city" ? (rehearsed[a.spot.id] ?? rehearsalOf(a)) : undefined;
         if (!reply) return sheet;
-        return `${sheet}\n返事の予行（市の担当者役の ${reply.model}${reply.recorded ? `、${reply.recorded} の記録` : ""}。架空で、市の返事ではない）:\n${reply.asks.map((q, i) => `${i + 1}. ${q}`).join("\n")}`;
+        const mine = prepared[a.spot.id] ?? [];
+        const asks = reply.asks.map((q, i) => `${i + 1}. ${q}${mine[i]?.trim() ? `\n   用意した答え: ${mine[i].trim()}` : ""}`).join("\n");
+        return `${sheet}\n返事の予行（市の担当者役の ${reply.model}${reply.recorded ? `、${reply.recorded} の記録` : ""}。架空で、市の返事ではない）:\n${asks}`;
       })
       .join("\n\n");
     const found = extraFinds.map((f) => `- ${f.text} 出典: ${f.source}`).join("\n");
@@ -832,7 +836,14 @@ export function Town({ world }: Props) {
                 に出すと、市から返事が来る。{world.submit.reply}。{world.submit.listed.text}
               </p>
             )}
-            {answers.length > 0 && use === "city" && <Rehearsal answers={answers} rehearsed={rehearsed} onAsk={rehearse} />}
+            {answers.length > 0 && use === "city" && <Rehearsal
+                answers={answers}
+                rehearsed={rehearsed}
+                prepared={prepared}
+                sheetText={(a) => sheetOf({ ...a, review: a.review && { question: a.review.question, model: a.review.model, date: a.review.recorded } }, world, use)}
+                onPrepare={(id, i, text) => setPrepared((prev) => ({ ...prev, [id]: Object.assign([...(prev[id] ?? [])], { [i]: text }) }))}
+                onAsk={rehearse}
+              />}
             {answers.length > 0 && use === "business" && (
               <p className="end-meta">
                 事業の相談は{" "}
@@ -1163,7 +1174,21 @@ async function askReviewer(answer: Answer, world: World, apiKey: string): Promis
 
 /** 返事の予行。市の担当者役の Claude が 1 枚を読んで聞き返しそうなことを、窓口に出す前に見せる。
  * 用意した案には測定のときの記録が最初からあり、自分の一行は確認役に入れた鍵で読ませる。実在の市の返事ではない */
-function Rehearsal({ answers, rehearsed, onAsk }: { answers: Answer[]; rehearsed: Record<string, Rehearsed>; onAsk: (a: Answer) => Promise<void> }) {
+function Rehearsal({
+  answers,
+  rehearsed,
+  prepared,
+  sheetText,
+  onPrepare,
+  onAsk,
+}: {
+  answers: Answer[];
+  rehearsed: Record<string, Rehearsed>;
+  prepared: Record<string, string[]>;
+  sheetText: (a: Answer) => string;
+  onPrepare: (id: string, i: number, text: string) => void;
+  onAsk: (a: Answer) => Promise<void>;
+}) {
   const [waiting, setWaiting] = useState<string | null>(null);
   const rows = answers.map((a) => ({ a, reply: rehearsed[a.spot.id] ?? rehearsalOf(a) }));
   if (rows.every((r) => !r.reply) && !tabKey && !REHEARSE_URL) return null;
@@ -1171,15 +1196,15 @@ function Rehearsal({ answers, rehearsed, onAsk }: { answers: Answer[]; rehearsed
     <div className="end-rehearsal" aria-label="返事の予行">
       <h3>
         返事の予行
-        <small>市の担当者役の {REPLIES.model} が、この 1 枚を読んで聞き返しそうなこと。架空の練習で、市の返事ではない。答えを用意してから出せる</small>
+        <small>市の担当者役の {REPLIES.model} が、この 1 枚を読んで聞き返しそうなこと。架空の練習で、市の返事ではない。答えを書いておくと写しに載る</small>
       </h3>
       {rows.map(({ a, reply }) => (
         <div key={a.spot.id} className="end-rehearsal-row">
           <strong>{a.label}</strong>
           {reply ? (
             <ol>
-              {reply.asks.map((q) => (
-                <li key={q}>{q}</li>
+              {reply.asks.map((q, i) => (
+                <PreparedAnswer key={q} ask={q} text={prepared[a.spot.id]?.[i] ?? ""} sheet={sheetText(a)} onChange={(t) => onPrepare(a.spot.id, i, t)} />
               ))}
             </ol>
           ) : waiting === a.spot.id ? (
@@ -1199,6 +1224,20 @@ function Rehearsal({ answers, rehearsed, onAsk }: { answers: Answer[]; rehearsed
         </div>
       ))}
     </div>
+  );
+}
+
+const PREPARED_MAX = 140;
+
+/** 予行の問い 1 つと、出す前に書いておく答え。答えに 1 枚に無い数字があれば、その数字を名指しする */
+function PreparedAnswer({ ask, text, sheet, onChange }: { ask: string; text: string; sheet: string; onChange: (t: string) => void }) {
+  const loose = unsourcedNumbers(text, [{ text: sheet }]);
+  return (
+    <li>
+      {ask}
+      <textarea className="end-prepare" rows={2} maxLength={PREPARED_MAX} value={text} onChange={(e) => onChange(e.target.value)} placeholder="答えを書いておく（任意）" aria-label={`答え: ${ask}`} />
+      {loose.length > 0 && <small className="end-prepare-warn">{loose.map((n) => `「${n}」`).join("")}は 1 枚に無い数字。調べた数字なら出典を足す。見込みなら、見込みと書き添える</small>}
+    </li>
   );
 }
 

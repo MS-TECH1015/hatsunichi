@@ -233,7 +233,10 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .end-rehearsal-row { margin: 8px 0 0; font-size: 13px; }
 .end-rehearsal-row strong { display: block; font-weight: 900; }
 .end-rehearsal-row ol { margin: 2px 0 0; padding-left: 20px; font-weight: 600; }
-.end-rehearsal-row li { margin: 2px 0; }
+.end-rehearsal-row li { margin: 2px 0 8px; }
+.end-prepare { display: block; width: 100%; box-sizing: border-box; margin: 4px 0 0; font: inherit; font-size: 13px; font-weight: 600; padding: 6px 8px; border: 2px solid #e1d6c0; border-radius: 8px; resize: vertical; background: #fff; }
+.end-prepare:focus { border-color: var(--ink); outline: none; }
+.end-prepare-warn { display: block; margin-top: 2px; font-size: 12px; font-weight: 800; color: #9a3412; }
 .end-rehearsal-row p { margin: 2px 0 0; font-weight: 700; }
 .end-finds h3 { margin: 0 0 6px; font-size: 15px; font-weight: 900; }
 .end-finds ul { list-style: none; margin: 0; padding: 0; max-height: 28vh; overflow-y: auto; }
