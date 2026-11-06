@@ -53,3 +53,6 @@ fetch "https://www.pref.tottori.lg.jp/295378.htm" pref_nagashibina.html         
 fetch "https://www.pref.tottori.lg.jp/153169.htm" pref_sakyu.html                        # 鳥取砂丘
 # 事業として持ち帰る人の相談先。鳥取市 令和8年度 中小企業・小規模企業支援制度のお知らせ（robots.txt なし、市の利用規約は PDL1.0 準拠）
 fetch "https://www.city.tottori.lg.jp/page/5160.html" city_shien_r8.html
+# 町のむかし（河原・気高）。鳥取県埋蔵文化財センターの遺跡の年表。県の著作権のページ 9314.htm に従い、事実を自分の言葉で短く引くだけで、文と表は写さない
+fetch "https://www.pref.tottori.lg.jp/secure/76301/maibunj8.pdf" pref_maibun_j8.pdf
+fetch "https://www.pref.tottori.lg.jp/secure/76301/maibunj9.pdf" pref_maibun_j9.pdf
