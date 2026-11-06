@@ -1491,6 +1491,15 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, su
             <summary>窓口がすでにしていること</summary>
             {spot.window.doing}
           </details>
+          {spot.heard && (
+            <details className="doing" open={!window.matchMedia("(max-width: 640px)").matches}>
+              <summary>市政提案に出た近い提案と、市の回答</summary>
+              「{spot.heard.title}」{spot.heard.received} 受付。{spot.heard.answer}
+              <a href={spot.heard.url} target="_blank" rel="noreferrer">
+                市のページ
+              </a>
+            </details>
+          )}
           {spot.quest.options.map((o, i) => (
             <button key={o.label} className="choice" onClick={() => onChoose(spot, o)} onMouseEnter={() => play("select", 0.2)}>
               <kbd>{i + 1}</kbd>

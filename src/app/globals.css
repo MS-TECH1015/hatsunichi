@@ -225,6 +225,8 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .concern-carry { grid-column: 1 / -1; margin: 0; padding: 8px 12px; border-radius: 12px; background: #fff7d6; border: 2px solid var(--ink); font-size: 14px; font-weight: 800; }
 .doing { grid-column: 1 / -1; margin: 0; padding: 8px 12px; border-radius: 12px; background: #eef4ec; border: 2px dashed var(--ink); font-size: 13px; line-height: 1.6; }
 .doing summary { font-size: 12px; font-weight: 800; cursor: pointer; }
+.doing a { margin-left: 6px; font-weight: 800; }
+@media (max-width: 640px) { .doing { padding: 3px 10px; } }
 .choice.fact.suggest { outline: 4px solid var(--accent); }
 .suggest-tag { flex: none; margin-left: auto; padding: 2px 8px; border-radius: 999px; background: var(--accent); white-space: nowrap; font-size: 12px; font-weight: 900; }
 .quick-back { position: absolute; z-index: 3; right: 12px; bottom: 16px; }

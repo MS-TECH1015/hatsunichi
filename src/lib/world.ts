@@ -7,14 +7,61 @@ export type Note = { good: string; gap: string; question: string };
 export type Option = { text: string; label: string; note: Note };
 export type Fact = { text: string; source: string };
 
-/** 文の中の数字のうち、調べた数字に無いもの。1 桁と時刻は、案の中の決めごとに多いので拾わない */
+/** 文の中の数字のうち、調べた数字に無いもの。1 桁と時刻は、案の中の決めごとに多いので拾わない。
+ * 「三十人」のような漢数字と「3 割」も数にして比べ、名指しは書いたままの形で返す */
 export function unsourcedNumbers(text: string, facts: Pick<Fact, "text">[]): string[] {
-  const numbers = (t: string) => t.normalize("NFKC").replace(/(\d),(\d)/g, "$1$2").match(/\d+(\.\d+)?(?![\d.]|\s?[時分])/g) ?? [];
-  const known = new Set(facts.flatMap((f) => numbers(f.text)));
-  return [...new Set(numbers(text))].filter((n) => n.length > 1 && !known.has(n));
+  const known = new Set(facts.flatMap((f) => numbersIn(f.text).map((n) => n.value)));
+  const found = numbersIn(text).filter((n) => n.value.length > 1 && !known.has(n.value));
+  return [...new Set(found.map((n) => n.raw))];
+}
+
+type Found = { raw: string; value: string };
+// 漢数字は後ろに数え方が付くときだけ数とみる。「千代川」「十分」を拾わないため
+const KANJI_NUMBER = /([〇一二三四五六七八九十百千万]+)(?=\s?(人|本|件|軒|年|か月|ヶ月|日|回|円|割|歳|台|戸|世帯|校|便|町丁|%))/g;
+const DIGITS = "〇一二三四五六七八九";
+const UNITS: Record<string, number> = { 十: 10, 百: 100, 千: 1000 };
+
+function numbersIn(t: string): Found[] {
+  const s = t.normalize("NFKC").replace(/(\d),(\d)/g, "$1$2");
+  const found: Found[] = [];
+  for (const m of s.matchAll(/(\d+(?:\.\d+)?)(?![\d.]|\s?[時分])(\s?割)?/g)) {
+    const value = m[2] ? String(Math.round(Number(m[1]) * 10000) / 1000) : m[1];
+    found.push({ raw: m[2] ? m[0] : m[1], value });
+  }
+  for (const m of s.matchAll(KANJI_NUMBER)) {
+    const share = m[2] === "割";
+    const n = kanjiValue(m[1]) * (share ? 10 : 1);
+    if (n >= 10) found.push({ raw: share ? `${m[1]}割` : m[1], value: String(n) });
+  }
+  return found;
+}
+
+/** 「三十」「二百五十」「千二百六十二」「二〇三〇」を数にする */
+function kanjiValue(s: string): number {
+  if (!/[十百千万]/.test(s)) return Number([...s].map((c) => DIGITS.indexOf(c)).join(""));
+  let total = 0;
+  let section = 0;
+  let digit = 0;
+  for (const c of s) {
+    if (DIGITS.includes(c)) {
+      digit = DIGITS.indexOf(c);
+      continue;
+    }
+    if (c === "万") {
+      total += (section + digit || 1) * 10000;
+      section = 0;
+      digit = 0;
+      continue;
+    }
+    section += (digit || 1) * UNITS[c];
+    digit = 0;
+  }
+  return total + section + digit;
 }
 /** doing は窓口がすでにしていること。窓口のページを読んで、事実だけを自分の言葉で書いた */
 export type Window = { name: string; url: string; checked: string; note: string; doing: string };
+/** 市政提案に出た、依頼に近い過去の提案。題と日付はページのまま、回答は要旨を自分の言葉で書いた。updated はページの更新日で、回答の日ではない */
+export type Heard = { title: string; received: string; updated: string; url: string; answer: string };
 
 /** 物語を置く町。at は build_city.py が緯度経度から求めた位置。stop はバスに乗れる標識の位置（場所の中の座標） */
 /** past はその町のむかし。公的な資料の事実を短く引いたもので、地元を探す画面で今の数字と並べる */
@@ -120,6 +167,7 @@ export type Spot = {
   /** 案を出したあと、頼んだ人が本人に聞く一問。自分ならどこまでするか。答えは 1 枚の「自分は」の行に載る */
   self?: { ask: string; options: string[] };
   window: Window;
+  heard?: Heard;
   /** もっと深く解く画面。バス停なら地図の作業台 */
   deeper?: { label: string; href: string };
 };

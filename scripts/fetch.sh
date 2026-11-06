@@ -66,3 +66,10 @@ fetch "https://www.pref.tottori.lg.jp/318584.htm" win_care1_soudan.html
 fetch "https://www.pref.tottori.lg.jp/281025.htm" win_fire1_shoubou.html
 # 消防団の窓口のページから案内されている、県の若者・女性の地域防災参画補助金（2026-11-06）
 fetch "https://www.pref.tottori.lg.jp/328533.htm" win_fire1_hojokin.html
+# 市政提案の入口と、令和8年度の提案と回答の一覧。依頼に近い過去の提案と市の回答を探す（2026-11-06）
+fetch "https://www.city.tottori.lg.jp/site/shiseiteian/" shiseiteian_top.html
+fetch "https://www.city.tottori.lg.jp/site/shiseiteian/list97-628.html" shiseiteian_r8.html
+# 依頼に近い令和8年度の市政提案と回答（2026-11-06）。空き家、バス停、防火水槽
+fetch "https://www.city.tottori.lg.jp/shiseiteian/shiseiteian/51228.html" teian_51228_akiya.html
+fetch "https://www.city.tottori.lg.jp/shiseiteian/shiseiteian/47036.html" teian_47036_basutei.html
+fetch "https://www.city.tottori.lg.jp/shiseiteian/shiseiteian/42044.html" teian_42044_bouka.html

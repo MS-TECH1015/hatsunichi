@@ -41,12 +41,17 @@ export function sheetOf(a: SheetAnswer, world: World, use: SheetUse = "city"): s
 }
 
 function cityLines(a: SheetAnswer, { submit }: World) {
-  return [`出す先: ${submit.name} ${submit.url}`, a.spot.window.url !== submit.url && `担当の窓口: ${a.spot.window.name} ${a.spot.window.url}`, doingLine(a)];
+  return [`出す先: ${submit.name} ${submit.url}`, a.spot.window.url !== submit.url && `担当の窓口: ${a.spot.window.name} ${a.spot.window.url}`, doingLine(a), heardLine(a)];
 }
 
 /** 持ち帰る人には、この困りごとの担当課と、市の事業者向け制度の一覧だけを渡す。合う制度を名指しはしない */
 function businessLines(a: SheetAnswer, { business }: World) {
-  return [`この困りごとの担当: ${a.spot.window.name} ${a.spot.window.url}`, doingLine(a), `事業の相談先: ${business.name} ${business.url}`, `相談先について: ${business.note}`];
+  return [`この困りごとの担当: ${a.spot.window.name} ${a.spot.window.url}`, doingLine(a), heardLine(a), `事業の相談先: ${business.name} ${business.url}`, `相談先について: ${business.note}`];
+}
+
+function heardLine({ spot: { heard } }: SheetAnswer) {
+  if (!heard) return false;
+  return `市政提案に出た近い提案: 「${heard.title}」${heard.received} 受付、${heard.updated} にページ更新。市の回答の要旨: ${heard.answer} ${heard.url}`;
 }
 
 function doingLine(a: SheetAnswer) {

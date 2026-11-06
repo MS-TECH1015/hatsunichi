@@ -33,6 +33,11 @@ SHA256 は取得時の `data/raw/fetch.log` から写した。
 | win_care1 | 各種相談窓口（地域包括支援センター等） | 鳥取県 長寿社会課 | https://www.pref.tottori.lg.jp/318584.htm | 2026-11-06 | 869ed352d5877c088cb6be1c0555a8c8eb47b44ca61f4606b1184653371d469f | 県のページは著作物（https://www.pref.tottori.lg.jp/9314.htm）。生成 AI での利用は未確認 | 窓口がすでにしていること（world.json の spots[].window.doing）を、事実だけ自分の言葉で 1〜3 文に書いた。文と表は写さない |
 | win_fire1 | 消防団について | 鳥取県 | https://www.pref.tottori.lg.jp/281025.htm | 2026-11-06 | a43cfc15bc5ee4df4d5ab04656ff7a2a73f474dee3b2a7e3eb78a3c3f665fbe0 | 県のページは著作物（https://www.pref.tottori.lg.jp/9314.htm）。生成 AI での利用は未確認 | 窓口がすでにしていること（world.json の spots[].window.doing）を、事実だけ自分の言葉で 1〜3 文に書いた。文と表は写さない |
 | win_fire1_hojokin | 鳥取県若者・女性の地域防災参画補助金 | 鳥取県 | https://www.pref.tottori.lg.jp/328533.htm | 2026-11-06 | 8fe73516336610e9dfa0dab1b1b9eddf03eb21187826ab72918466734577dbac | 県のページは著作物（https://www.pref.tottori.lg.jp/9314.htm）。生成 AI での利用は未確認 | 窓口がすでにしていること（world.json の spots[].window.doing）を、事実だけ自分の言葉で 1〜3 文に書いた。文と表は写さない |
+| teian_51228 | 2026年10月19日 空き家（長年放置状態）の活用 | 鳥取市 | https://www.city.tottori.lg.jp/shiseiteian/shiseiteian/51228.html | 2026-11-06 | 87c564dbbe4a6dab7385f6421482d9fb4556810e74457a942c4678481ba9aad0 | 鳥取市ウェブサイト利用規約（PDL1.0 準拠）。robots.txt は置いていない。生成 AI での利用は未確認 | 題と受付日とページの更新日をそのまま、市の回答は要旨を自分の言葉で 1〜2 文に書いた（world.json の spots[].heard）。提案した人の文と、地名・人の手がかりは写さない |
+| teian_47036 | 2026年8月3日 用瀬駅前バス停について | 鳥取市 | https://www.city.tottori.lg.jp/shiseiteian/shiseiteian/47036.html | 2026-11-06 | 3ddb775f3e968b3063dee4c2e95df215ef940b5bd991ed792f68e02b47d162ec | 鳥取市ウェブサイト利用規約（PDL1.0 準拠）。robots.txt は置いていない。生成 AI での利用は未確認 | 題と受付日とページの更新日をそのまま、市の回答は要旨を自分の言葉で 1〜2 文に書いた（world.json の spots[].heard）。提案した人の文と、地名・人の手がかりは写さない |
+| teian_42044 | 2026年5月18日 早急に「防火水槽」設置を切望ー防火水源確保 | 鳥取市 | https://www.city.tottori.lg.jp/shiseiteian/shiseiteian/42044.html | 2026-11-06 | 8ec5e9a6022b79aba594c88ec356a9da12c1f3e8f6b4afb6109ce0eb5b4294c6 | 鳥取市ウェブサイト利用規約（PDL1.0 準拠）。robots.txt は置いていない。生成 AI での利用は未確認 | 題と受付日とページの更新日をそのまま、市の回答は要旨を自分の言葉で 1〜2 文に書いた（world.json の spots[].heard）。提案した人の文と、地名・人の手がかりは写さない |
+| shiseiteian_r8_again | 市政提案 令和8年度の提案と回答の一覧（題を見るため 2 回目） | 鳥取市 | https://www.city.tottori.lg.jp/site/shiseiteian/list97-628.html | 2026-11-06 | d6a483655fa1c6fc21309f37081299f29a76a3df0f109253419720d9c3fcede2 | 鳥取市ウェブサイト利用規約（PDL1.0 準拠）。robots.txt は置いていない。生成 AI での利用は未確認 | 2026-11-04 に件数を数えたときはファイルを残していなかった。依頼に近い題を探すため、もう 1 回だけ取った。SHA256 は 11-04 と同じで、ページは変わっていなかった。80 件の題から、依頼の言葉に近い 3 件を選んだ |
+| shiseiteian_top | 市政提案～市長への手紙～ 入口 | 鳥取市 | https://www.city.tottori.lg.jp/site/shiseiteian/ | 2026-11-06 | 67d7ce3f86035f0ca558952142cbb516760c5c39c696c8cdc3b4cb1f02b09cd1 | 鳥取市ウェブサイト利用規約（PDL1.0 準拠）。robots.txt は置いていない。生成 AI での利用は未確認 | 分野ごとの一覧があることを確かめただけ。分野の一覧は取っていない |
 
 取得したがまだ使っていないもの
 - 鳥取県介護サービス事業所一覧 CSV（CC BY、/dataset/1888、SHA256 51d10aaecefb04195b4da7b4424622a610bd8876090e68482dbe6a2d7bc286a8）
@@ -66,7 +71,7 @@ SHA256 は取得時の `data/raw/fetch.log` から写した。
 ## robots.txt と著作権のページ（2026-11-06 に読んだ）
 
 取った 28 件の URL は、どれも各サイトの robots.txt の Disallow に当たらない。robots.txt は各サイトで 1 回ずつ取った。
-2026-11-06 に足した窓口のページ 8 件も、県のサイトの Disallow（/dde.aspx、/secure/221685/ など）に当たらない。市のサイトは robots.txt を置いていない。1 件ごとに 10 秒あけて取った。
+2026-11-06 に足した市政提案のページ 5 件と、窓口のページ 8 件も、県のサイトの Disallow（/dde.aspx、/secure/221685/ など）に当たらない。市のサイトは robots.txt を置いていない。1 件ごとに 10 秒あけて取った。
 
 | サイト | robots.txt | 著作権・利用のページ |
 |---|---|---|

@@ -77,11 +77,22 @@ describe("返事の予行", () => {
     const sheet = sheetOf(a, w, "city");
     expect(unsourcedNumbers("国府に住む 774 人の中から、まず大学の近くの町丁で声をかける", [{ text: sheet }])).toEqual([]);
     expect(unsourcedNumbers("学生を 30 人集める", [{ text: sheet }])).toEqual(["30"]);
+    expect(unsourcedNumbers("学生を三十人集めて、3 割の家を回る", [{ text: sheet }])).toEqual(["3 割", "三十"]);
+    expect(unsourcedNumbers("七百七十四人のうち、千代川の近くは十分に回れる", [{ text: sheet }])).toEqual([]);
+    expect(unsourcedNumbers("町の三割、四十 人に声をかける", [{ text: sheet }])).toEqual(["三割", "四十"]);
+    expect(unsourcedNumbers("二〇三〇年までに", [{ text: "2030 年の目標" }])).toEqual([]);
   });
   it("1 枚には窓口がすでにしていることと、それを確かめた日が載る。持ち帰る 1 枚にも載る", () => {
     const a = answerFromRequest(w, { spot: "fire1", option: 0, fact: 0 }) as SheetAnswer;
     for (const use of ["city", "business"] as const) expect(sheetOf(a, w, use)).toContain(`窓口がすでにしていること（${a.spot.window.checked} にページで確認）: ${a.spot.window.doing}`);
     expect(unsourcedNumbers("18 歳の学生 3 人で団体をつくる", [{ text: sheetOf(a, w, "city") }])).toEqual([]);
+  });
+  it("市政提案に近い過去の提案がある依頼は、題と受付日と回答の要旨が 1 枚に載る。無い依頼には載らない", () => {
+    const a = answerFromRequest(w, { spot: "empty1", option: 0, fact: 0 }) as SheetAnswer;
+    expect(sheetOf(a, w, "city")).toContain(`市政提案に出た近い提案: 「${a.spot.heard!.title}」${a.spot.heard!.received} 受付`);
+    expect(a.spot.heard!.url.startsWith(w.submit.url.replace("/site/shiseiteian/", "/shiseiteian/"))).toBe(true);
+    const b = answerFromRequest(w, { spot: "kiosk", option: 0, fact: 0 }) as SheetAnswer;
+    expect(sheetOf(b, w, "city")).not.toContain("市政提案に出た近い提案");
   });
 });
 
