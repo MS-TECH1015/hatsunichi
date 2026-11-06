@@ -10,8 +10,8 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 ALLOWED_ORIGIN = "https://ms-tech1015.github.io"
-DAILY_MAX = "200"
+DAILY_MAX = "100"
 
 [[kv_namespaces]]
 binding = "HITS"
-id = "ここに kv namespace create で出た id"
+id = "eda4b8c3d50741bd87f2e48bc358dcae"

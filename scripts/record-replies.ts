@@ -1,7 +1,7 @@
 // 返事の予行の記録。依頼の場所ごとの案 × 根拠の全部を、市の担当者役の Claude に読ませ、聞き返す問いを記録する。
 // 鍵の無い人に終業の画面で見せるためのもの。見るのは、問いに 1 枚に無い数字が残らないか、書き直しの回数。
 // 使い方: npm run record:replies （.env があれば読む。REVIEW_MODEL と ANTHROPIC_API_KEY は環境変数。RECORD=1 で data/replies-recorded.json を書く）
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import raw from "../data/world.json" with { type: "json" };
 import { rehearseReply, replyNumbers } from "../src/lib/review.ts";
 import { answerFromRequest, sheetOf, type SheetAnswer, type SheetRequest } from "../src/lib/sheet.ts";
@@ -20,11 +20,21 @@ const rows: string[] = [];
 let leaked = 0;
 let retries = 0;
 
+// ONLY=stop:2,field1:2 なら、その案だけ Claude に読ませ、ほかの案は前の記録を使う。1 枚を少し直したときに API を呼びすぎないため
+const only = process.env.ONLY?.split(",").filter(Boolean);
+const prev = only ? (JSON.parse(readFileSync("data/replies-recorded.json", "utf8")) as { replies: Record<string, { asks: string[] }> }).replies : {};
+const keyOf = (c: (typeof cases)[number]) => `${c.req.spot}:${c.req.option}:${c.req.fact}`;
+const fresh = cases.filter((c) => !only || only.some((o) => keyOf(c).startsWith(`${o}:`)) || !prev[keyOf(c)]);
 // 4 件ずつ同時に送る。1 件ずつだと 81 件で 20 分を超えるため
 const ran = await Promise.all(
-  cases.map(async (c, i) => {
-    await new Promise((r) => setTimeout(r, (i % 4) * 1500 + Math.floor(i / 4) * 6000));
+  cases.map(async (c) => {
     const a = answerFromRequest(w, c.req) as SheetAnswer;
+    const i = fresh.indexOf(c);
+    if (i < 0) {
+      const reply = { asks: prev[keyOf(c)].asks, model, retries: 0, demo: false };
+      return { c, reply, bad: replyNumbers(reply, sheetOf(a, w, "city")) };
+    }
+    await new Promise((r) => setTimeout(r, (i % 4) * 1500 + Math.floor(i / 4) * 6000));
     const reply = await rehearseReply(a, w);
     const bad = replyNumbers(reply, sheetOf(a, w, "city"));
     return { c, reply, bad };

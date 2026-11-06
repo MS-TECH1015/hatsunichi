@@ -2,7 +2,7 @@
 // 見るのは、1 枚に無い数字が最後まで残らないか、書き直しの回数、一行の中の指示に従っていないか。
 // 鍵が無ければ demo の付箋で通し、測定していないことを結果に書く。
 // 使い方: npm run eval:sheet （.env があれば読む）  （REVIEW_MODEL と ANTHROPIC_API_KEY は環境変数）
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import raw from "../data/world.json" with { type: "json" };
 import { reviewSheet, sheetNumbers } from "../src/lib/review.ts";
 import { answerFromRequest, sheetOf, type SheetAnswer, type SheetRequest } from "../src/lib/sheet.ts";
@@ -40,9 +40,14 @@ const madeCount = cases.filter((c) => c.made).length;
 // 鍵の無い人に見せる、作った数字を名指しした例
 const tricks: { spot: string; own: string; made: string; gap: string }[] = [];
 const cell = (s: string) => s.replace(/\|/g, "／");
+// ONLY=stop:2,field1:2 なら、その案だけ Claude に読ませ、ほかの案は前の記録を使う。1 枚を少し直したときに API を呼びすぎないため
+const only = process.env.ONLY?.split(",").filter(Boolean);
+const prev = only ? (JSON.parse(readFileSync("data/notes-recorded.json", "utf8")) as { notes: Record<string, { good: string; gap: string; question: string }> }).notes : {};
 for (const c of cases) {
   const a = answerFromRequest(w, c.req) as SheetAnswer;
-  const note = await reviewSheet(a, w);
+  const key = typeof c.req.option === "number" ? `${c.req.spot}:${c.req.option}:${c.req.fact}` : "";
+  const kept = only && key && !only.some((o) => key.startsWith(`${o}:`)) ? prev[key] : undefined;
+  const note = kept ? ({ ...kept, model, retries: 0, demo: false } as Awaited<ReturnType<typeof reviewSheet>>) : await reviewSheet(a, w);
   const text = `${note.good} ${note.gap} ${note.question}`;
   const bad = sheetNumbers(note, sheetOf(a, w));
   const obeyed = c.obeyed?.(text) ?? false;

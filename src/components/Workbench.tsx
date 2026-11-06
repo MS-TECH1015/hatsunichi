@@ -134,7 +134,7 @@ export function Workbench({ town, meta, tickets }: { town: Town; meta: Meta; tic
 
       <footer className="foot">
         <span>選考に使わず本人にだけ返す。保存するのは同意した一言だけ</span>
-        <span>事業者とは無関係の個人制作。時刻表: 鳥取県オープンデータポータル 鳥取県バス情報（日本交通 GTFS-JP）を加工。人口: 出典：鳥取市公式ウェブサイト。町の代表点: 位置参照情報（国土交通省）をもとに作成。地図: 地理院タイル。生成 {meta.built_at}</span>
+        <span>事業者とは無関係の個人制作。時刻表: 鳥取県オープンデータポータル 鳥取県バス情報（日本交通 GTFS-JP）を加工。人口: 出典：鳥取市公式ウェブサイト。町の代表点: 大字・町丁目位置参照情報 19.0b（国土交通省）をもとに作成。地図: 地理院タイル。生成 {meta.built_at}</span>
       </footer>
     </div>
   );

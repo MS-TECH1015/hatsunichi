@@ -6,7 +6,7 @@ import { CALCS, defaults, type Calc } from "@/lib/calcs";
 import { clockText, facilityFind, markFind, rideFind, spotFind, targetAt, unsourcedNumbers, type Fact, type Facility, type Find, type Mark, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
 import { withBase } from "@/lib/base";
 import { PastIcon } from "./PastIcon";
-import { changeText, nearestSpot, placeStats, placeWorld, worldStats, type Vec2 } from "@/lib/world";
+import { changeText, checksOf, nearestSpot, placeStats, placeWorld, worldStats, type Vec2 } from "@/lib/world";
 import { OWN_MAX, WHY_MAX, answerFromRequest, sheetOf, type SheetRequest, type SheetUse } from "@/lib/sheet";
 import recordedNotes from "../../data/notes-recorded.json";
 import recordedReplies from "../../data/replies-recorded.json";
@@ -133,6 +133,7 @@ export function Town({ world }: Props) {
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [talked, setTalked] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
+  const [copiedCity, setCopiedCity] = useState(false);
   const [muted, setMute] = useState(false);
   const [stampedId, setStampedId] = useState<string | null>(null);
   const [bigMap, setBigMap] = useState(false);
@@ -530,6 +531,26 @@ export function Town({ world }: Props) {
 
   const firstMinutes = () => Math.max(1, Math.round(((firstAt.current ?? startedAt.current) - startedAt.current) / 60000));
 
+  /** 市に出す本文。1 枚の行から練習用の行（確認役の問い・出す先）を外し、自分が手伝えることと、聞かれそうなことに自分で書いた答えだけを足す。
+   * Claude の問いのモデル名、手帳、白兎への答え、かかった分数は載せない。それらは「自分の記録」の写しに残す */
+  function cityText() {
+    return answers
+      .map((a) => {
+        const lines = sheetOf({ ...a, review: undefined }, world, "city")
+          .split("\n")
+          .filter((l) => !/^(確認役の問い|出す先): /.test(l));
+        const reply = rehearsed[a.spot.id] ?? rehearsalOf(a) ?? checksReply(a);
+        const mine = prepared[a.spot.id] ?? [];
+        const qa = reply.asks.flatMap((q, i) => (mine[i]?.trim() ? [`- ${q}\n  → ${mine[i].trim()}`] : []));
+        return [...lines, help.trim() && `自分が手伝えること: ${help.trim()}`, qa.length > 0 && `聞かれそうなことへの答え:\n${qa.join("\n")}`].filter(Boolean).join("\n");
+      })
+      .join("\n\n");
+  }
+
+  function copyCity() {
+    void navigator.clipboard.writeText(`${cityText()}\n`).then(() => setCopiedCity(true));
+  }
+
   function copyAnswers() {
     const body = answers
       .map((a) => {
@@ -591,13 +612,18 @@ export function Town({ world }: Props) {
             </button>
           )}
           <p className="title-note">
-            数字・施設・窓口は実在の公開情報。町の人・家・店・事業者は架空。試作で、市・県・バス事業者とは関係ない
+            数字・施設・窓口は実在の公開情報。町の人・家・店・事業者は架空。試作で、市・県・バス事業者とは関係ない。対象は 18 歳以上の大学生
             <br />
-            選んだ案や答えはどこにも送らない。人に渡すのは「書き写す」で写して自分で貼ったときだけ。自分の鍵で確認役に見せると、その 1 枚だけ Anthropic へ送る
+            {REVIEW_URL
+              ? "困りごとから探す・確認役に見せる・予行を頼むときだけ、その一行か、1 枚の番号と自分で書いた文を、作者の中継（Cloudflare）を通して Anthropic の Claude へ送る。中継は回数を数えるために IP を 1 時間置く。名前・住所・病名は書かない。ほかはどこにも送らない。"
+              : "選んだ案や答えはどこにも送らない。自分の鍵で確認役に見せると、その 1 枚だけ Anthropic へ送る。"}
+            人に渡すのは「書き写す」で写して自分で貼ったときだけ。Claude の文は間違えることがある。事実は出典で確かめてから使う
             <br />
-            地形: 国土地理院 標高タイルを加工 ・ 市の境: 国土数値情報（行政区域）を加工
+            地形: 国土地理院 標高タイル（<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noreferrer">地理院タイル</a>）を加工 ・ 市の境: 国土数値情報（行政区域データ）（国土交通省）を加工 ・ 町の代表点: 大字・町丁目位置参照情報 19.0b（国土交通省）をもとに作成
             <br />
-            町の「?」: 政府統計の総合窓口(e-Stat)「国勢調査」（総務省）と国土数値情報（医療機関・学校）を加工。緑の札: 鳥取市「未活用施設」（鳥取県オープンデータポータル）を加工
+            道とバス: 鳥取県オープンデータポータル 鳥取県バス情報（日本交通・日ノ丸自動車 GTFS-JP）を加工 ・ 家の数: 鳥取市公式ウェブサイト「町別世帯数、年齢（5歳階級）別人口」を加工
+            <br />
+            町の「?」: 政府統計の総合窓口(e-Stat)「国勢調査」（総務省）と国土数値情報（医療機関・学校）（国土交通省）を加工。緑の札: 鳥取市「未活用施設」（鳥取県オープンデータポータル）を加工。URL とライセンスは<a href="https://github.com/MS-TECH1015/hatsunichi/blob/master/data/SOURCES.md" target="_blank" rel="noreferrer">出典の一覧</a>、使ったライブラリと書体のライセンスは<a href={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/licenses/README.txt`} target="_blank" rel="noreferrer">licenses</a>
           </p>
         </div>
       )}
@@ -689,7 +715,7 @@ export function Town({ world }: Props) {
       {started && (
         <div className={bigMap ? "minimap big" : "minimap"}>
           <canvas ref={mapRef} onClick={() => setBigMap(!bigMap)} aria-label="鳥取市の地図" />
-          <small>国土地理院・国土数値情報・e-Stat・鳥取市 を加工</small>
+          <small>国土地理院・国土数値情報・位置参照情報・e-Stat・鳥取市 を加工</small>
         </div>
       )}
 
@@ -893,7 +919,12 @@ export function Town({ world }: Props) {
             <div className="end-actions">
               {(answers.length > 0 || finds.length > 0) && (
                 <button className="btn-game ghost" onClick={copyAnswers}>
-                  {copied ? "写しました" : "書き写す"}
+                  {copied ? "写しました" : use === "city" && answers.length > 0 ? "自分の記録を写す" : "書き写す"}
+                </button>
+              )}
+              {answers.length > 0 && use === "city" && (
+                <button className="btn-game" onClick={copyCity}>
+                  {copiedCity ? "写しました" : "市に出す本文を写す"}
                 </button>
               )}
               {answers.length > 0 && use === "city" && (
@@ -1151,7 +1182,7 @@ function rehearsalOf(a: Answer): Rehearsed | undefined {
 }
 /** 鍵が無く記録も無い 1 枚には、その依頼のまだ確かめていないことを問いにする。Claude の問いではない */
 function checksReply(a: Answer): Rehearsed {
-  return { asks: a.spot.checks.slice(0, 3), model: "", retries: 0, demo: true };
+  return { asks: checksOf(a.spot, a.option).slice(0, 3), model: "", retries: 0, demo: true };
 }
 // 入れた鍵はこの変数にだけ置く。保存しないので、読み込み直すと消える
 let tabKey = "";
@@ -1171,7 +1202,8 @@ function requestOf(a: Answer): SheetRequest {
 }
 
 async function askReviewer(answer: Answer, world: World, apiKey: string): Promise<Reviewed> {
-  if (SHEET_URL) {
+  // 自分の鍵を入れた人は、中継を通さず自分の鍵で読む
+  if (SHEET_URL && !apiKey) {
     const res = await fetch(SHEET_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(requestOf(answer)) });
     if (!res.ok) throw new Error(String(res.status));
     return ((await res.json()) as { note: Reviewed }).note;
@@ -1210,7 +1242,7 @@ function Rehearsal({
         <small>
           {allDemo
             ? "鍵が無く記録も無いので、依頼のまだ確かめていないことを問いにした。Claude の問いではない。答えを書いておくと写しに載る"
-            : `市の担当者役の ${REPLIES.model} が、この 1 枚を読んで聞き返しそうなこと。架空の練習で、市の返事ではない。答えを書いておくと写しに載る`}
+            : `市の担当者役の ${REPLIES.model} が、この 1 枚を読んで聞き返しそうなこと。架空の練習で、市の返事ではない。Claude の文は間違えることがある。答えを書いておくと写しに載る`}
         </small>
       </h3>
       {rows.map(({ a, reply }) => (
@@ -1260,7 +1292,7 @@ function PreparedAnswer({ ask, text, sheet, onChange }: { ask: string; text: str
 const REHEARSE_URL = REVIEW_URL && new URL("rehearse", REVIEW_URL).toString();
 
 async function askRehearsal(answer: Answer, world: World, apiKey: string): Promise<Reply> {
-  if (REHEARSE_URL) {
+  if (REHEARSE_URL && !apiKey) {
     const res = await fetch(REHEARSE_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(requestOf(answer)) });
     if (!res.ok) throw new Error(String(res.status));
     return ((await res.json()) as { reply: Reply }).reply;
@@ -1269,6 +1301,17 @@ async function askRehearsal(answer: Answer, world: World, apiKey: string): Promi
   if (typeof sheet === "string") throw new Error(sheet);
   const { rehearseReply } = await import("@/lib/review");
   return rehearseReply(sheet, world, { apiKey });
+}
+
+const ROUTE_URL = REVIEW_URL && new URL("route", REVIEW_URL).toString();
+
+/** 困りごとの案内。自分の鍵があれば直接、無ければ中継の Claude に。中継に届かなければ言葉の一致で選び、画面にそう書く */
+async function askRoute(line: string, world: World, apiKey: string): Promise<Route> {
+  const { routeConcern, demoRoute } = await import("@/lib/review");
+  if (apiKey || !ROUTE_URL) return routeConcern(line, world, { apiKey: apiKey || undefined });
+  const res = await fetch(ROUTE_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: line }) }).catch(() => undefined);
+  if (!res?.ok) return demoRoute(line, world);
+  return ((await res.json()) as { route: Route }).route;
 }
 
 function noteFoot(note: Reviewed & { recorded?: string }): string {
@@ -1345,7 +1388,7 @@ function ReviewCard({ answer, world, onReview }: { answer: Answer; world: World;
             見せる
           </button>
         </form>
-        {state === "fail" && <small>届かなかった。鍵と、使える残高を見る</small>}
+        {state === "fail" && <small>{SHEET_URL && !key.trim() ? "中継に届かなかった。1 日の回数を使い切ったかもしれない。自分の鍵があれば読める" : "届かなかった。鍵と、使える残高を見る"}</small>}
         <small>鍵はこのタブの中だけに置き、Anthropic へ直接送る。保存はしない。1 枚で Claude を 1〜3 回呼ぶ</small>
       </aside>
     );
@@ -1358,7 +1401,7 @@ function ReviewCard({ answer, world, onReview }: { answer: Answer; world: World;
           <p>よい: {note.good}</p>
           <p>足りない: {note.gap}</p>
           <p>問い: {note.question}</p>
-          <small>{noteFoot(note)}</small>
+          <small>{noteFoot(note)}{!note.demo && "。Claude の文は間違えることがある。事実は出典で確かめてから使う"}</small>
         </>
       ) : (
         <small>
@@ -1685,11 +1728,11 @@ function Detail({ spot, answer, voices, world, onClose }: { spot: Spot; answer?:
         </>
       )}
 
-      {answer && spot.checks.length > 0 && (
+      {answer && (
         <>
           <h3>出す前に</h3>
           <ul className="facts">
-            {spot.checks.map((c) => (
+            {checksOf(spot, answer.option).map((c) => (
               <li key={c}>{c}</li>
             ))}
           </ul>
@@ -1740,8 +1783,7 @@ function ConcernFinder({ world, onOwn }: { world: World; onOwn: (s: Spot, line: 
     if (kept) return setResult({ line, route: { ...kept, model: ROUTES.model, retries: 0, demo: false, recorded: ROUTES.date } });
     setState("wait");
     try {
-      const { routeConcern } = await import("@/lib/review");
-      setResult({ line, route: await routeConcern(line, world, { apiKey: apiKey || undefined }) });
+      setResult({ line, route: await askRoute(line, world, apiKey) });
       setState("idle");
     } catch {
       setState("fail");
@@ -1806,7 +1848,9 @@ function ConcernFinder({ world, onOwn }: { world: World; onOwn: (s: Spot, line: 
           <p>理由: {result.route.reason}</p>
           <small>
             {result.route.demo
-              ? "鍵が無いので、Claude ではなく言葉の一致で選んだ。"
+              ? ROUTE_URL
+                ? "中継の Claude に届かなかったので、言葉の一致で選んだ。"
+                : "鍵が無いので、Claude ではなく言葉の一致で選んだ。"
               : `${result.route.model} が選んだ${result.route.recorded ? `。${result.route.recorded} の記録` : ""}。`}
             選べるのは 9 つの依頼の id と根拠の番号だけで、数字は書かせていない
           </small>

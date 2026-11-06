@@ -102,6 +102,21 @@ describe("返事の予行", () => {
   });
 });
 
+describe("案ごとのまだ確かめていないこと", () => {
+  it("案が持っていればそれを、無ければ依頼の場所のものを 1 枚に載せる", () => {
+    const driver = answerFromRequest(w, { spot: "stop", option: 2, fact: 0 }) as SheetAnswer;
+    expect(sheetOf(driver, w)).toContain(`まだ確かめていないこと: ${stop.quest.options[2].checks!.join(" / ")}`);
+    expect(sheetOf(driver, w)).not.toContain("外した便");
+    const cut = answerFromRequest(w, { spot: "stop", option: 0, fact: 0 }) as SheetAnswer;
+    expect(sheetOf(cut, w)).toContain(`まだ確かめていないこと: ${stop.checks.join(" / ")}`);
+    expect(demoReply(driver).asks[0]).toBe(`${stop.quest.options[2].checks![0]}。`);
+  });
+  it("1 枚の案の行に、架空の住民の名前を入れない", () => {
+    const names = w.npcs.map((n) => n.name.replace(/さん$/, ""));
+    for (const s of w.spots) for (const o of s.quest.options) for (const n of names) expect(o.text, s.id).not.toContain(n);
+  });
+});
+
 describe("困りごとの案内", () => {
   it("鍵が無ければ言葉の一致で選び、重ならなければ近い依頼は無いとする", () => {
     expect(demoRoute("地元のバスが減って、祖母が病院に行きにくくなった", w).spot).toBe("stop");

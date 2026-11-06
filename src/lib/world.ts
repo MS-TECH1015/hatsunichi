@@ -4,8 +4,14 @@ export type Vec2 = [number, number];
 
 export type Note = { good: string; gap: string; question: string };
 /** label は画面の選択肢に出す短い言い方。text は詳細と記録に残す言い方 */
-export type Option = { text: string; label: string; note: Note };
+/** checks は、依頼の場所の「まだ確かめていないこと」が案に合わないときだけ持つ */
+export type Option = { text: string; label: string; note: Note; checks?: string[] };
 export type Fact = { text: string; source: string };
+
+/** 案に合う「まだ確かめていないこと」。案が持っていればそれ、無ければ依頼の場所のもの */
+export function checksOf(spot: { checks: string[]; quest: { options: Option[] } }, option: string): string[] {
+  return spot.quest.options.find((o) => o.text === option)?.checks ?? spot.checks;
+}
 
 /** 文の中の数字のうち、調べた数字に無いもの。1 桁と時刻は、案の中の決めごとに多いので拾わない。
  * 「三十人」のような漢数字と「3 割」も数にして比べ、名指しは書いたままの形で返す */

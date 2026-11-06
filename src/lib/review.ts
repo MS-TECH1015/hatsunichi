@@ -3,7 +3,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { Ticket } from "./ticket";
 import { sheetOf, type SheetAnswer } from "./sheet.ts";
-import { unsourcedNumbers as looseNumbers, type World } from "./world.ts";
+import { checksOf, unsourcedNumbers as looseNumbers, type World } from "./world.ts";
 
 export type Submission = {
   removed: { trip_id: string; family: string; departure: string; headsign: string }[];
@@ -195,7 +195,7 @@ export const replyNumbers = (r: Pick<Reply, "asks">, sheet: string) => looseNumb
 
 /** 鍵が無いときの予行。依頼の場所の「まだ確かめていないこと」をそのまま問いにする */
 export function demoReply(a: SheetAnswer): Reply {
-  return { asks: a.spot.checks.slice(0, 3).map((c) => `${c}。`), model: "demo", retries: 0, demo: true };
+  return { asks: checksOf(a.spot, a.option).slice(0, 3).map((c) => `${c}。`), model: "demo", retries: 0, demo: true };
 }
 
 /** 市政提案に出す 1 枚に、担当者役の問いを付ける。数字の見張りは付箋と同じ */
