@@ -6,7 +6,7 @@ import type { Facility, Fact, Spot, World } from "./world.ts";
 
 export const PROPOSAL = { name: "鳥取市 公共施設マネジメント民間提案制度", url: "https://www.city.tottori.lg.jp/page/48913.html" };
 
-export type SheetAnswer = { spot: Spot; option: string; own?: boolean; fact: Fact; calc?: string; why?: string; self?: string; place?: Facility; review?: SheetReview };
+export type SheetAnswer = { spot: Spot; option: string; own?: boolean; concern?: string; fact: Fact; calc?: string; why?: string; self?: string; place?: Facility; review?: SheetReview };
 
 /** 確認役（Claude）が 1 枚に付けた問い。記録なら date が入る。受け手に、学生がどこまで確かめたかを見せる */
 export type SheetReview = { question: string; model: string; date?: string };
@@ -20,6 +20,7 @@ export function sheetOf(a: SheetAnswer, world: World, use: SheetUse = "city"): s
   const town = world.places.find((p) => p.id === a.place?.place)?.name ?? "";
   return [
     use === "business" ? `■ ${a.spot.title}（事業の構想として）` : `■ ${a.spot.title}`,
+    a.concern && `きっかけ（自分の困りごと）: ${a.concern}`,
     `案: ${a.option}`,
     `根拠: ${a.fact.text}`,
     `出典: ${src.name} ${src.url}`,

@@ -19,7 +19,7 @@ type Props = { world: World };
 /** own は自分で書いた一行。選んだ案と違い付箋が無いので、確かめる問いだけを出す */
 /** fact は学生が選んだ根拠の数字。案は数字と出典を付けて窓口へ持っていく */
 /** review は確認役（Claude）の付箋。記録なら recorded に日付が入る。1 枚の「確認役の問い」の行になる */
-type Answer = { spot: Spot; option: string; label: string; note: Note; own?: boolean; fact: Fact; calc?: string; knobs?: Record<string, number>; why?: string; self?: string; place?: Facility; review?: Reviewed & { recorded?: string } };
+type Answer = { spot: Spot; option: string; label: string; note: Note; own?: boolean; concern?: string; fact: Fact; calc?: string; knobs?: Record<string, number>; why?: string; self?: string; place?: Facility; review?: Reviewed & { recorded?: string } };
 /** 計算の一文と、そのときの前提の値。確認役のサーバーは値から一文を作り直す */
 type Worked = { text: string; knobs: Record<string, number>; why?: string };
 
@@ -34,7 +34,7 @@ const introLines = (lines: string[], world: World) => [lines[0], ...world.proble
 type Stage = "hint" | "ask" | "write" | "basis" | "calc" | "place" | "self" | "result";
 type Panel =
   | { type: "talk"; speaker: string; role?: string; lines: string[]; i: number }
-  | { type: "spot"; spot: Spot; stage: Stage; detail?: boolean; draft?: string; pending?: { option: Option; own: boolean; fact?: Fact; calc?: Worked; suggest?: number } }
+  | { type: "spot"; spot: Spot; stage: Stage; detail?: boolean; draft?: string; pending?: { option: Option; own: boolean; fact?: Fact; calc?: Worked }; from?: { concern: string; suggest?: number } }
   | { type: "bus"; from: Place }
   | { type: "ride"; to: Place; minutes: number }
   | { type: "end" }
@@ -275,7 +275,7 @@ export function Town({ world }: Props) {
     open({ type: "spot", spot: { ...spot, at } });
   }
 
-  /** 困りごとの一行から選ばれた依頼を、その一行を自分の案にして開く。根拠は自分で選び、案内役の候補には印が付く */
+  /** 困りごとの一行から選ばれた依頼を、案を選ぶところから開く。困りごとは 1 枚の「きっかけ」に載り、根拠の段では案内役の候補に印が付く */
   function openQuickOwn(spot: Spot, line: string, suggest?: number) {
     const at = placed.spots.find((s) => s.id === spot.id)?.at;
     if (!at) return;
@@ -284,8 +284,7 @@ export function Town({ world }: Props) {
     sceneRef.current?.faceTo(at);
     jot(spotFind(spot, world.sources));
     play("open");
-    const option = { text: line, label: line, note: { good: "", gap: "", question: spot.checks[0] } };
-    setPanel({ type: "spot", spot: { ...spot, at }, stage: "basis", pending: { option, own: true, suggest } });
+    setPanel({ type: "spot", spot: { ...spot, at }, stage: "ask", from: { concern: line, suggest } });
   }
 
   function walkFromQuick() {
@@ -400,7 +399,7 @@ export function Town({ world }: Props) {
   /** 案を決めたら、次は根拠の数字を選ぶ。数字の無い案は窓口で使えないので、ここを通らないと判子は押されない */
   function choose(spot: Spot, o: Option, own = false) {
     play("select");
-    setPanel({ type: "spot", spot, stage: "basis", pending: { option: o, own } });
+    setPanel({ type: "spot", spot, stage: "basis", pending: { option: o, own }, from: panel?.type === "spot" ? panel.from : undefined });
   }
 
   /** 根拠を選んだら、その町の計算で案の大きさを見る。計算の無い場所はそのまま決まる */
@@ -425,9 +424,10 @@ export function Town({ world }: Props) {
   function finish(spot: Spot, fact: Fact, calc?: Worked, place?: Facility) {
     if (panel?.type !== "spot" || !panel.pending) return;
     const { option: o, own } = panel.pending;
+    const concern = panel.from?.concern;
     if (firstAt.current === null) firstAt.current = performance.now();
     play("choose");
-    setAnswers((prev) => [...prev.filter((x) => x.spot.id !== spot.id), { spot, option: o.text, label: o.label, note: o.note, own, fact, calc: calc?.text, knobs: calc?.knobs, why: calc?.why, place }]);
+    setAnswers((prev) => [...prev.filter((x) => x.spot.id !== spot.id), { spot, option: o.text, label: o.label, note: o.note, own, concern, fact, calc: calc?.text, knobs: calc?.knobs, why: calc?.why, place }]);
     sceneRef.current?.markAnswered(spot.id);
     setStampedId(spot.id);
     window.setTimeout(() => play("stamp"), 300);
@@ -568,13 +568,13 @@ export function Town({ world }: Props) {
           </p>
           <p className="title-problem">{world.problem.map((p) => p.text).join("。")}。</p>
           <p className="title-stats">
-            {stats.towns} つの町、{stats.blocks} の町丁に住む {stats.people.toLocaleString()} 人の数字。{changeText(stats.change)}。根拠 {stats.facts} 件、出典 {stats.sources} 件。数字はすべて公的な資料から
+            {stats.towns} つの町、{stats.blocks} の町丁に住む {stats.people.toLocaleString()} 人の数字。{changeText(stats.change)}。根拠 {stats.facts} 件、出典 {stats.sources} 件。数字はすべて公的な資料から。1 枚は確認役の Claude が読み、出典に無い数字を名指しする
           </p>
-          <button className="btn-game big" disabled={!ready} onClick={begin}>
-            {ready ? "はじめる" : "よみこみ中…"}
+          <button className="btn-game big" disabled={!ready} onClick={quickStart}>
+            {ready ? "歩かずに案を出す" : "よみこみ中…"}
           </button>
-          <button className="btn-game ghost" disabled={!ready} onClick={quickStart}>
-            歩かずに案を出す
+          <button className="btn-game ghost" disabled={!ready} onClick={begin}>
+            町を歩いてはじめる
           </button>
           <button className="btn-game ghost" onClick={() => setHome("list")}>
             自分の地元を探す
@@ -723,7 +723,8 @@ export function Town({ world }: Props) {
           draft={panel.draft}
           guide={guide}
           world={world}
-          suggest={panel.pending?.suggest}
+          suggest={panel.from?.suggest}
+          concern={panel.from?.concern}
           onStage={(stage, draft) => setPanel({ ...panel, stage, draft })}
           onDetail={(detail) => {
             play(detail ? "open" : "talk");
@@ -784,7 +785,7 @@ export function Town({ world }: Props) {
               ))}
             </div>
             <p className="end-line">
-              {guide}「{answers.length === 0 ? "明日は一つ、出してみよう" : "出したら、市から返事が来るよ"}」
+              {guide}「{answers.length === 0 ? "明日は一つ、出してみよう" : "市政提案は、2 週間をめどに返事をすると書いてるよ"}」
             </p>
             <ul className="end-list">
               {answers.map((a) => (
@@ -837,7 +838,7 @@ export function Town({ world }: Props) {
                 <a href={world.submit.url} target="_blank" rel="noreferrer">
                   {world.submit.name}
                 </a>{" "}
-                に出すと、市から返事が来る。{world.submit.reply}。{world.submit.listed.text}
+                に出せる。市のページには「{world.submit.reply}」とある。{world.submit.listed.text}
               </p>
             )}
             {answers.length > 0 && use === "city" && <Rehearsal
@@ -1122,6 +1123,8 @@ type SpotViewProps = {
   onChoose: (s: Spot, o: Option, own?: boolean) => void;
   /** 困りごとの案内役が選んだ根拠の番号。印を付けるだけで、選ぶのは本人 */
   suggest?: number;
+  /** 困りごとから来たときの、本人の一行。案を選ぶ段の上に出す */
+  concern?: string;
   onSettle: (s: Spot, f: Fact) => void;
   onCalc: (calc?: Worked) => void;
   facilities: Facility[];
@@ -1249,7 +1252,7 @@ function PreparedAnswer({ ask, text, sheet, onChange }: { ask: string; text: str
     <li>
       {ask}
       <textarea className="end-prepare" rows={2} maxLength={PREPARED_MAX} value={text} onChange={(e) => onChange(e.target.value)} placeholder="答えを書いておく（任意）" aria-label={`答え: ${ask}`} />
-      {loose.length > 0 && <small className="end-prepare-warn">{loose.map((n) => `「${n}」`).join("")}は 1 枚に無い数字。調べた数字なら出典を足す。見込みなら、見込みと書き添える</small>}
+      {loose.length > 0 && <small className="end-prepare-warn">{loose.map((n) => `「${n}」`).join("")}は 1 枚に無い数字。調べた事実なら出典を足す。自分の計画の数字なら、このままでよい</small>}
     </li>
   );
 }
@@ -1384,7 +1387,7 @@ function ReviewCard({ answer, world, onReview }: { answer: Answer; world: World;
 
 /** 調べる → 頼まれる → 町の人の声を見て、案を選ぶか自分で書く → 判子と問い。理由と出典は「くわしく」に。
  * 3つの案は正解ではなく方向の違う出発点。考えるのは遊んでいる学生で、ゲームは材料と問いだけを渡す */
-function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, suggest, onStage, onDetail, onChoose, onSettle, onCalc, facilities, onPlace, onSelf, onReview, onClose }: SpotViewProps) {
+function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, suggest, concern, onStage, onDetail, onChoose, onSettle, onCalc, facilities, onPlace, onSelf, onReview, onClose }: SpotViewProps) {
   useEffect(() => {
     if (detail || (stage !== "ask" && stage !== "basis" && stage !== "self")) return;
     const onKey = (e: KeyboardEvent) => {
@@ -1468,6 +1471,11 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, su
     return (
       <>
         <div className="choices">
+          {concern && (
+            <p className="concern-carry">
+              自分の困りごと「{concern}」から来た。この依頼の案を選ぶか、自分で書く。困りごとは 1 枚の「きっかけ」に載る
+            </p>
+          )}
           {voices.length > 0 && (
             <ul className="voices" aria-label="町の人の声">
               {voices.map((v) => (
@@ -1789,7 +1797,7 @@ function ConcernFinder({ world, onOwn }: { world: World; onOwn: (s: Spot, line: 
           </small>
           {spot && (
             <button className="btn-game small" onClick={() => onOwn(spot, result.line, result.route.fact ?? undefined)}>
-              この一行を自分の案にする
+              この依頼で案を考える
             </button>
           )}
         </div>

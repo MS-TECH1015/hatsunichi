@@ -26,7 +26,7 @@ for (const net of [null, { down: 1.6e6 / 8, up: 750e3 / 8, lat: 150 }]) {
   page.on("response", async (r) => { const l = Number(r.headers()["content-length"] ?? 0); if (l > 200e3) big.push(r.url().split("/").pop() + " " + l); });
   const t0 = Date.now();
   await page.goto("http://localhost:4173/");
-  await page.getByRole("button", { name: "はじめる" }).waitFor({ timeout: 300000 });
+  await page.getByRole("button", { name: "歩かずに案を出す" }).waitFor({ timeout: 300000 });
   await page.waitForFunction(() => !document.querySelector(".title .btn-game.big")?.disabled, null, { timeout: 300000 });
   console.log(net ? "slow3g-ish" : "local", ((Date.now() - t0) / 1000).toFixed(1) + "s", (bytes / 1e6).toFixed(1) + "MB");
   if (!net) console.log(big.join("\n"));

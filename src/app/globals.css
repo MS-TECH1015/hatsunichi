@@ -118,6 +118,7 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .title { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 16px; text-align: center; background: radial-gradient(ellipse at center, rgba(255,250,240,.0) 30%, rgba(43,38,34,.18) 100%); }
 .logo { margin: 0; font-size: clamp(64px, 14vw, 132px); font-weight: 900; letter-spacing: .06em; color: var(--paper); -webkit-text-stroke: 7px var(--ink); paint-order: stroke fill; text-shadow: 0 8px 0 var(--ink); animation: float 3.2s ease-in-out infinite; }
 .tagline { word-break: keep-all; margin: 0 0 18px; font-size: 18px; font-weight: 800; background: var(--paper); border: 3px solid var(--ink); border-radius: 999px; padding: 6px 18px; }
+@media (hover: none) { .title-keys { display: none; } }
 .title-keys { margin: 12px 0 0; font-size: 14px; font-weight: 700; background: rgba(255,250,240,.85); border-radius: 12px; padding: 6px 12px; }
 .title-note { position: absolute; bottom: 12px; margin: 0; font-size: 11px; color: var(--ink); background: rgba(255,250,240,.75); border-radius: 8px; padding: 3px 8px; }
 /* 縦長や低い画面では、注記がボタンに重ならないよう、題の画面ごと縦に流してスクロールさせる */
@@ -221,6 +222,7 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .concern-result small { display: block; margin: 0 0 8px; color: #6b5f4a; font-weight: 700; }
 @media (max-width: 640px) { .concern-examples button:nth-child(n+4) { display: none; } }
 .concern-key { margin: 8px 0 0; font: inherit; font-size: 12px; font-weight: 700; background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; color: var(--ink); }
+.concern-carry { grid-column: 1 / -1; margin: 0; padding: 8px 12px; border-radius: 12px; background: #fff7d6; border: 2px solid var(--ink); font-size: 14px; font-weight: 800; }
 .choice.fact.suggest { outline: 4px solid var(--accent); }
 .suggest-tag { flex: none; margin-left: auto; padding: 2px 8px; border-radius: 999px; background: var(--accent); white-space: nowrap; font-size: 12px; font-weight: 900; }
 .quick-back { position: absolute; z-index: 3; right: 12px; bottom: 16px; }
@@ -238,7 +240,7 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .end-rehearsal-row li { margin: 2px 0 8px; }
 .end-prepare { display: block; width: 100%; box-sizing: border-box; margin: 4px 0 0; font: inherit; font-size: 13px; font-weight: 600; padding: 6px 8px; border: 2px solid #e1d6c0; border-radius: 8px; resize: vertical; background: #fff; }
 .end-prepare:focus { border-color: var(--ink); outline: none; }
-.end-prepare-warn { display: block; margin-top: 2px; font-size: 12px; font-weight: 800; color: #9a3412; }
+.end-prepare-warn { display: block; margin-top: 2px; font-size: 12px; font-weight: 800; color: #6b5f4a; }
 .end-rehearsal-row p { margin: 2px 0 0; font-weight: 700; }
 .end-finds h3 { margin: 0 0 6px; font-size: 15px; font-weight: 900; }
 .end-finds ul { list-style: none; margin: 0; padding: 0; max-height: 28vh; overflow-y: auto; }
