@@ -86,7 +86,7 @@ function placeLine(a: SheetAnswer, world: World): string | undefined {
   const town = world.places.find((p) => p.id === a.spot.place)?.name ?? "";
   const src = s.sources.map((id) => world.sources[id]?.name ?? id).join(" / ");
   const all = worldStats(world);
-  return `関わる人: ${town}の ${s.blocks} の町丁に住む ${s.people.toLocaleString()} 人。65 歳以上が ${s.oldShare}%、${all.towns} つの町の ${all.blocks} 町丁の合計では ${all.oldShare}%。${changeText(s.change)} 出典: ${src}`;
+  return `関わる人: ${town}の ${s.blocks} 町丁に住む ${s.people.toLocaleString()} 人。65 歳以上が ${s.oldShare}%、${all.towns} つの町の ${all.blocks} 町丁の合計では ${all.oldShare}%。${changeText(s.change)} 出典: ${src}`;
 }
 
 /** 計算が使う出典の数字のうち、根拠の行に無いもの。出典の数字と、本人が動かした前提を読み手が分けられるようにする */

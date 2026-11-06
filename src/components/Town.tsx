@@ -568,7 +568,7 @@ export function Town({ world }: Props) {
           </p>
           <p className="title-problem">{world.problem.map((p) => p.text).join("。")}。</p>
           <p className="title-stats">
-            {stats.towns} つの町、{stats.blocks} の町丁に住む {stats.people.toLocaleString()} 人の数字。{changeText(stats.change)}。根拠 {stats.facts} 件、出典 {stats.sources} 件。数字はすべて公的な資料から。1 枚は確認役の Claude が読み、出典に無い数字を名指しする
+            {stats.towns} つの町、{stats.blocks} 町丁に住む {stats.people.toLocaleString()} 人の数字。{changeText(stats.change)}。根拠 {stats.facts} 件、出典 {stats.sources} 件。数字はすべて公的な資料から。1 枚は確認役の Claude が読み、出典に無い数字を名指しする
           </p>
           <button className="btn-game big" disabled={!ready} onClick={quickStart}>
             {ready ? "歩かずに案を出す" : "よみこみ中…"}
@@ -989,7 +989,7 @@ function HomeView({ home, world, ready, onPick, onBegin, onClose }: { home: Plac
         <h3>いま</h3>
         {sum.people > 0 && (
           <p className="home-sum">
-            {sum.blocks} の町丁に住む {sum.people.toLocaleString()} 人。65 歳以上が {sum.oldShare}%、{all.towns} つの町の合計では {all.oldShare}%。{changeText(sum.change)}
+            {sum.blocks} 町丁に住む {sum.people.toLocaleString()} 人。65 歳以上が {sum.oldShare}%、{all.towns} つの町の合計では {all.oldShare}%。{changeText(sum.change)}
             <small>{sum.sources.map((s) => sourceOf(s)?.name).join("、")}</small>
           </p>
         )}
