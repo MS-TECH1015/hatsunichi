@@ -1762,7 +1762,11 @@ function ConcernFinder({ world, onOwn }: { world: World; onOwn: (s: Spot, line: 
             </>
           ) : (
             <p>
-              <b>9 つの依頼に近いものが無かった。</b>今は、この 9 つの外の困りごとは扱えない
+              <b>9 つの依頼に近いものが無かった。</b>このアプリには根拠の数字が無いので、1 枚にはできない。困りごとそのものは、
+              <a href={world.submit.url} target="_blank" rel="noreferrer">
+                {world.submit.name}
+              </a>
+              へ自分で書いて出せる。{world.submit.reply}
             </p>
           )}
           <p>理由: {result.route.reason}</p>
