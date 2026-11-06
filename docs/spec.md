@@ -206,6 +206,16 @@
 
 ## 10. 公開
 
+### 10.1 確認役の中継（置き場所が決まったら）
+
+公開版で、鍵の無い人も自分の一行を live の Claude に読ませられるようにする Cloudflare Worker が `relay/worker.ts`。作者の鍵で呼ぶので、置くには Cloudflare のアカウントが要る。手順は `relay/wrangler.toml` の冒頭。
+
+- 受け取るのは `POST /sheet`（付箋）と `POST /rehearse`（返事の予行）。中身は手元のサーバーと同じ番号だけで、1 枚の文は Worker が world.json から組み直す
+- 守り: Origin は `ALLOWED_ORIGIN`（既定は公開先）だけ。本文 4KB まで。同じ IP は 1 時間に 10 回まで。1 日の合計は `DAILY_MAX` 回（既定 200）まで。回数は KV に置き、期限で消える
+- 鍵は `wrangler secret put ANTHROPIC_API_KEY`。コードにもリポジトリにも置かない
+- 画面側は `NEXT_PUBLIC_REVIEW_URL=https://<Worker の URL>/review` を付けて build と deploy。決めた 1 枚に「確認役に見せる」、終業の画面の自分の一行に「自分の鍵で予行」が出て、どちらも中継へ送る
+
+
 - `npm run deploy` が `NEXT_PUBLIC_BASE_PATH=/hatsunichi` で静的に書き出し、gh-pages ブランチへ上げる。https://ms-tech1015.github.io/hatsunichi/
 - 確認役のサーバーは公開しない
 

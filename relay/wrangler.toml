@@ -1,0 +1,17 @@
+# 確認役の中継の置き方。Cloudflare のアカウントで:
+#   npx wrangler kv namespace create HITS          → 出た id を下の id に書く
+#   npx wrangler secret put ANTHROPIC_API_KEY      → 鍵を入れる（リポジトリには置かない）
+#   npx wrangler deploy                            → 出た URL を控える
+# 画面側は NEXT_PUBLIC_REVIEW_URL=https://<出た URL>/review を付けて npm run build && npm run deploy
+name = "hatsunichi-relay"
+main = "worker.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ALLOWED_ORIGIN = "https://ms-tech1015.github.io"
+DAILY_MAX = "200"
+
+[[kv_namespaces]]
+binding = "HITS"
+id = "ここに kv namespace create で出た id"

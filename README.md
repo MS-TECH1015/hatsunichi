@@ -131,6 +131,7 @@ npm run eval                 # 確認役の測定。docs/eval/<モデル>.md に
   - 鍵が無い人には、決めた 1 枚の左上に、測定のときに Opus 5.5 がその案とその根拠（前提は初期値）に書いた付箋が最初から出る。9 つの依頼 × 3 つの案 × 3 つの根拠の 81 通りぶんが `data/notes-recorded.json` に日付とモデル名ごと入っていて、`npm run eval:sheet` で作り直す。付箋の問いは 1 枚の「確認役の問い」の行にも載る
   - 「自分の鍵で見せる」: 遊ぶ人が自分の Anthropic の API キーを入れると、ブラウザから Anthropic へ直接送って、いま選んだ根拠と前提で読ませる。鍵は画面の変数にだけ置き、保存も、このリポジトリ側のサーバーへの送信もしない。読み込み直すと消える。SDK は鍵を入れた人だけが読み込む
 - 配備は `npm run deploy`。`out/` を gh-pages ブランチへ push する
+- 鍵の無い人にも自分の一行を live の Claude に読ませたいときは、`relay/worker.ts` を Cloudflare Workers に置く。作者の鍵で呼び、Origin・本文の大きさ・IP ごとの回数・1 日の合計で絞る。置き方は `relay/wrangler.toml` の冒頭と docs/spec.md の 10.1
 - 本物の確認役は手元で動かす。`.env` に `ANTHROPIC_API_KEY` を書き、`npm run review` で http://localhost:8787/review を立て、`NEXT_PUBLIC_REVIEW_URL=http://localhost:8787/review npm run dev` で画面を向ける。3D の町では決めた 1 枚の左上に「確認役に見せる」が出る。このとき提出文と 1 枚は Anthropic の API に送られる（学習には使われず、既定で 30 日以内に消える）
 
 ## 数字の出し方

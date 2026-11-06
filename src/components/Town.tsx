@@ -469,12 +469,9 @@ export function Town({ world }: Props) {
   /** 案を出した場所の数字は案の中に載っているので、手帳の一覧からは外す */
   const extraFinds = finds.filter((f) => !answers.some((a) => a.spot.id === f.spot));
 
-  /** 自分の一行の予行。確認役に入れた鍵でブラウザから読ませる */
+  /** 自分の一行の予行。中継があればそこへ、無ければ確認役に入れた鍵でブラウザから読ませる */
   async function rehearse(a: Answer) {
-    const sheet = answerFromRequest(world, requestOf(a));
-    if (typeof sheet === "string") return;
-    const { rehearseReply } = await import("@/lib/review");
-    const got = await rehearseReply(sheet, world, { apiKey: tabKey }).catch(() => null);
+    const got = await askRehearsal(a, world, tabKey).catch(() => null);
     if (got) setRehearsed((prev) => ({ ...prev, [a.spot.id]: got }));
   }
 
@@ -1092,7 +1089,7 @@ async function askReviewer(answer: Answer, world: World, apiKey: string): Promis
 function Rehearsal({ answers, rehearsed, onAsk }: { answers: Answer[]; rehearsed: Record<string, Rehearsed>; onAsk: (a: Answer) => Promise<void> }) {
   const [waiting, setWaiting] = useState<string | null>(null);
   const rows = answers.map((a) => ({ a, reply: rehearsed[a.spot.id] ?? rehearsalOf(a) }));
-  if (rows.every((r) => !r.reply) && !tabKey) return null;
+  if (rows.every((r) => !r.reply) && !tabKey && !REHEARSE_URL) return null;
   return (
     <div className="end-rehearsal" aria-label="返事の予行">
       <h3>
@@ -1126,6 +1123,20 @@ function Rehearsal({ answers, rehearsed, onAsk }: { answers: Answer[]; rehearsed
       ))}
     </div>
   );
+}
+
+const REHEARSE_URL = REVIEW_URL && new URL("rehearse", REVIEW_URL).toString();
+
+async function askRehearsal(answer: Answer, world: World, apiKey: string): Promise<Reply> {
+  if (REHEARSE_URL) {
+    const res = await fetch(REHEARSE_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(requestOf(answer)) });
+    if (!res.ok) throw new Error(String(res.status));
+    return ((await res.json()) as { reply: Reply }).reply;
+  }
+  const sheet = answerFromRequest(world, requestOf(answer));
+  if (typeof sheet === "string") throw new Error(sheet);
+  const { rehearseReply } = await import("@/lib/review");
+  return rehearseReply(sheet, world, { apiKey });
 }
 
 function noteFoot(note: Reviewed & { recorded?: string }): string {
