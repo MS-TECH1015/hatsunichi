@@ -1493,7 +1493,8 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, su
           </details>
           {spot.heard && (
             <details className="doing" open={!window.matchMedia("(max-width: 640px)").matches}>
-              <summary>市政提案に出た近い提案と、市の回答</summary>
+              <summary>{spot.heard.gap ? "市政提案に同じ話はまだ無い。近い 1 件と市の回答" : "市政提案に出た近い提案と、市の回答"}</summary>
+              {spot.heard.gap && `${spot.heard.gap}その 1 件は `}
               「{spot.heard.title}」{spot.heard.received} 受付。{spot.heard.answer}
               <a href={spot.heard.url} target="_blank" rel="noreferrer">
                 市のページ

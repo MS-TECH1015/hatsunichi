@@ -73,3 +73,5 @@ fetch "https://www.city.tottori.lg.jp/site/shiseiteian/list97-628.html" shiseite
 fetch "https://www.city.tottori.lg.jp/shiseiteian/shiseiteian/51228.html" teian_51228_akiya.html
 fetch "https://www.city.tottori.lg.jp/shiseiteian/shiseiteian/47036.html" teian_47036_basutei.html
 fetch "https://www.city.tottori.lg.jp/shiseiteian/shiseiteian/42044.html" teian_42044_bouka.html
+# 雲山のバス停に近い過去の提案を探す。令和8年度の一覧に便の数や路線の話が無かったので、令和7年度の一覧も読む（2026-11-06）
+fetch "https://www.city.tottori.lg.jp/site/shiseiteian/list97-383.html" shiseiteian_r7.html

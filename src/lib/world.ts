@@ -61,7 +61,8 @@ function kanjiValue(s: string): number {
 /** doing は窓口がすでにしていること。窓口のページを読んで、事実だけを自分の言葉で書いた */
 export type Window = { name: string; url: string; checked: string; note: string; doing: string };
 /** 市政提案に出た、依頼に近い過去の提案。題と日付はページのまま、回答は要旨を自分の言葉で書いた。updated はページの更新日で、回答の日ではない */
-export type Heard = { title: string; received: string; updated: string; url: string; answer: string };
+/** gap は、同じ話の提案が無く、近い話の 1 件を出すときに、何が無かったかを書く */
+export type Heard = { gap?: string; title: string; received: string; updated: string; url: string; answer: string };
 
 /** 物語を置く町。at は build_city.py が緯度経度から求めた位置。stop はバスに乗れる標識の位置（場所の中の座標） */
 /** past はその町のむかし。公的な資料の事実を短く引いたもので、地元を探す画面で今の数字と並べる */

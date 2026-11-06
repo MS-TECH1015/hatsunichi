@@ -94,6 +94,12 @@ describe("返事の予行", () => {
     const b = answerFromRequest(w, { spot: "kiosk", option: 0, fact: 0 }) as SheetAnswer;
     expect(sheetOf(b, w, "city")).not.toContain("市政提案に出た近い提案");
   });
+  it("同じ話の提案が無い依頼は、何が無かったかを先に書いてから近い 1 件を載せる", () => {
+    const a = answerFromRequest(w, { spot: "stop", option: 0, fact: 0 }) as SheetAnswer;
+    expect(sheetOf(a, w, "city")).toContain(`市政提案に出た近い提案: ${a.spot.heard!.gap}その 1 件は 「`);
+    const e = answerFromRequest(w, { spot: "empty1", option: 0, fact: 0 }) as SheetAnswer;
+    expect(e.spot.heard!.gap).toBeUndefined();
+  });
 });
 
 describe("困りごとの案内", () => {

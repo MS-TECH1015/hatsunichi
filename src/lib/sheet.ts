@@ -51,7 +51,7 @@ function businessLines(a: SheetAnswer, { business }: World) {
 
 function heardLine({ spot: { heard } }: SheetAnswer) {
   if (!heard) return false;
-  return `市政提案に出た近い提案: 「${heard.title}」${heard.received} 受付、${heard.updated} にページ更新。市の回答の要旨: ${heard.answer} ${heard.url}`;
+  return `市政提案に出た近い提案: ${heard.gap ? `${heard.gap}その 1 件は ` : ""}「${heard.title}」${heard.received} 受付、${heard.updated} にページ更新。市の回答の要旨: ${heard.answer} ${heard.url}`;
 }
 
 function doingLine(a: SheetAnswer) {
