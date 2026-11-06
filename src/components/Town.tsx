@@ -38,6 +38,7 @@ type Panel =
   | { type: "ride"; to: Place; minutes: number }
   | { type: "end" }
   | { type: "book" }
+  | { type: "quick" }
   | null;
 
 const MUTE_KEY = "hatsunichi-muted";
@@ -165,6 +166,11 @@ export function Town({ world }: Props) {
   }, []);
   /** 町を歩くだけ。白兎の初日も時計の終業も無い */
   const [walk, setWalk] = useState(false);
+  /** 歩かずに 1 枚を作る。依頼の一覧から選んで、その場所へ飛ぶ */
+  const [quick, setQuick] = useState(false);
+  // はじめてから 1 枚目を決めるまでの実時間。試用で、1 枚を作るのにかかった時間を測るため
+  const startedAt = useRef(0);
+  const firstAt = useRef<number | null>(null);
   /** 地元を探す画面。list は町の一覧、Place はその町のむかしといま */
   const [home, setHome] = useState<Place | "list" | null>(null);
   const goTo = useRef<Place | null>(null);
@@ -226,6 +232,7 @@ export function Town({ world }: Props) {
     if (!ready || started) return;
     play("start");
     setStarted(true);
+    startedAt.current = performance.now();
     sceneRef.current?.play();
     if (!rabbit) {
       sceneRef.current?.setPaused(false);
@@ -243,6 +250,30 @@ export function Town({ world }: Props) {
     setWalk(true);
     setStarted(true);
     sceneRef.current?.play();
+    sceneRef.current?.setPaused(false);
+  }
+
+  function quickStart() {
+    if (!ready || started) return;
+    play("start");
+    setQuick(true);
+    setStarted(true);
+    startedAt.current = performance.now();
+    sceneRef.current?.play();
+    setPanel({ type: "quick" });
+  }
+
+  /** 一覧で選んだ依頼の場所の手前へ移って、依頼を開く */
+  function openQuick(spot: Spot) {
+    const at = placed.spots.find((s) => s.id === spot.id)?.at;
+    if (!at) return;
+    sceneRef.current?.warpTo([at[0], at[1] + 1.5]);
+    jot(spotFind(spot, world.sources));
+    open({ type: "spot", spot: { ...spot, at } });
+  }
+
+  function walkFromQuick() {
+    setPanel(null);
     sceneRef.current?.setPaused(false);
   }
 
@@ -317,6 +348,11 @@ export function Town({ world }: Props) {
 
   function close() {
     closedAt.current = performance.now();
+    // 歩かずに作る人は、依頼を閉じたら一覧へ戻る。3 つそろえば終業
+    if (quick && panel?.type === "spot") {
+      setPanel(answers.length >= 3 ? { type: "end" } : { type: "quick" });
+      return;
+    }
     setPanel(null);
     sceneRef.current?.setPaused(false);
     // 地元から始めた人は、白兎の話のあとにその町へバスで行く
@@ -373,6 +409,7 @@ export function Town({ world }: Props) {
   function finish(spot: Spot, fact: Fact, calc?: Worked, place?: Facility) {
     if (panel?.type !== "spot" || !panel.pending) return;
     const { option: o, own } = panel.pending;
+    if (firstAt.current === null) firstAt.current = performance.now();
     play("choose");
     setAnswers((prev) => [...prev.filter((x) => x.spot.id !== spot.id), { spot, option: o.text, label: o.label, note: o.note, own, fact, calc: calc?.text, knobs: calc?.knobs, why: calc?.why, place }]);
     sceneRef.current?.markAnswered(spot.id);
@@ -475,6 +512,8 @@ export function Town({ world }: Props) {
     if (got) setRehearsed((prev) => ({ ...prev, [a.spot.id]: got }));
   }
 
+  const firstMinutes = () => Math.max(1, Math.round(((firstAt.current ?? startedAt.current) - startedAt.current) / 60000));
+
   function copyAnswers() {
     const body = answers
       .map((a) => {
@@ -487,7 +526,8 @@ export function Town({ world }: Props) {
     const found = extraFinds.map((f) => `- ${f.text} 出典: ${f.source}`).join("\n");
     const said = END_ASKS.flatMap((q, i) => (ends[i] ? [`- ${q.ask} ${ends[i]}`] : [])).join("\n");
     const used = new Set(answers.map((a) => a.fact.source)).size;
-    const text = ["はつにち 初日の記録", used > 0 && `案 ${answers.length} 件。数字の出典 ${used} 件、すべて公的な資料。出典に無い数字は確認役の Claude が名指しする`, help.trim() && `自分が手伝えること: ${help.trim()}`, body, found && `■ 見つけたこと\n${found}`, said && `■ ${guide}に答えたこと\n${said}`]
+    const took = firstAt.current === null ? "" : `はじめてから 1 枚目まで約 ${firstMinutes()} 分`;
+    const text = ["はつにち 初日の記録", took, used > 0 && `案 ${answers.length} 件。数字の出典 ${used} 件、すべて公的な資料。出典に無い数字は確認役の Claude が名指しする`, help.trim() && `自分が手伝えること: ${help.trim()}`, body, found && `■ 見つけたこと\n${found}`, said && `■ ${guide}に答えたこと\n${said}`]
       .filter(Boolean)
       .join("\n\n");
     void navigator.clipboard.writeText(`${text}\n`).then(() => setCopied(true));
@@ -510,6 +550,9 @@ export function Town({ world }: Props) {
           </p>
           <button className="btn-game big" disabled={!ready} onClick={begin}>
             {ready ? "はじめる" : "よみこみ中…"}
+          </button>
+          <button className="btn-game ghost" disabled={!ready} onClick={quickStart}>
+            歩かずに案を出す
           </button>
           <button className="btn-game ghost" onClick={() => setHome("list")}>
             自分の地元を探す
@@ -692,6 +735,22 @@ export function Town({ world }: Props) {
 
       {panel?.type === "book" && <BookView book={book} world={world} onClose={close} />}
 
+      {panel?.type === "quick" && (
+        <QuickList world={world} done={new Set(answers.map((a) => a.spot.id))} onPick={openQuick} onWalk={walkFromQuick} onEnd={() => setPanel({ type: "end" })} />
+      )}
+
+      {quick && started && !panel && (
+        <button
+          className="btn-game small quick-back"
+          onClick={() => {
+            sceneRef.current?.setPaused(true);
+            setPanel({ type: "quick" });
+          }}
+        >
+          依頼の一覧
+        </button>
+      )}
+
       {panel?.type === "end" && (
         <div className="end">
           <div className="end-card">
@@ -770,6 +829,7 @@ export function Town({ world }: Props) {
             )}
             <p className="end-meta">
               {clockText(minutes)} ・ 話した人 {people}
+              {firstAt.current !== null && ` ・ 1 枚目まで約 ${firstMinutes()} 分`}
             </p>
             {answers.length > 0 && (
               <label className="end-help">
@@ -1565,6 +1625,45 @@ function Detail({ spot, answer, voices, world, onClose }: { spot: Spot; answer?:
           {spot.deeper.label}
         </a>
       )}
+    </div>
+  );
+}
+
+/** 歩かずに案を出す人の依頼の一覧。困りごとの題と町の名前だけを並べ、選ぶとその場所へ飛ぶ */
+function QuickList({ world, done, onPick, onWalk, onEnd }: { world: World; done: Set<string>; onPick: (s: Spot) => void; onWalk: () => void; onEnd: () => void }) {
+  const placeName = (id: string) => world.places.find((p) => p.id === id)?.name ?? id;
+  return (
+    <div className="end">
+      <div className="end-card quick-card">
+        <h2>依頼の一覧</h2>
+        <p className="end-meta">鳥取市の {new Set(world.spots.map((s) => s.place)).size} つの町の、人手の困りごと。選ぶとその場所へ行き、頼んだ人の話を聞いて案を 1 枚にする。3 つで終業</p>
+        <ul className="end-list">
+          {world.spots.map((s) => (
+            <li key={s.id}>
+              <Stamp char={done.has(s.id) ? s.stamp : undefined} />
+              <span className="end-label">
+                「{s.quest.ask}」
+                <small>
+                  {placeName(s.place)} ・ {s.title}
+                </small>
+              </span>
+              <button className="btn-game small" onClick={() => onPick(s)}>
+                {done.has(s.id) ? "見直す" : "えらぶ"}
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div className="end-actions">
+          <button className="btn-game ghost" onClick={onWalk}>
+            このあたりを歩く
+          </button>
+          {done.size > 0 && (
+            <button className="btn-game" onClick={onEnd}>
+              終業にする
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

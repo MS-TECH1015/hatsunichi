@@ -199,6 +199,12 @@ export class TownScene {
     this.player.rotation.y = this.heading;
   }
 
+  /** 歩かずに依頼の場所へ移る。カメラは次の描画から追う */
+  warpTo(at: Vec2) {
+    this.playerPos = [...at] as Vec2;
+    this.player.position.set(at[0], this.groundY(this.playerPos), at[1]);
+  }
+
   setTouchDir(dir: Vec2) {
     this.touchDir = dir;
   }
