@@ -14,7 +14,7 @@ import { play, setMuted } from "./town/sfx";
 type Props = { world: World };
 /** own は自分で書いた一行。選んだ案と違い付箋が無いので、確かめる問いだけを出す */
 /** fact は学生が選んだ根拠の数字。案は数字と出典を付けて窓口へ持っていく */
-type Answer = { spot: Spot; option: string; label: string; note: Note; own?: boolean; fact: Fact; calc?: string; knobs?: Record<string, number>; why?: string; place?: Facility };
+type Answer = { spot: Spot; option: string; label: string; note: Note; own?: boolean; fact: Fact; calc?: string; knobs?: Record<string, number>; why?: string; self?: string; place?: Facility };
 /** 計算の一文と、そのときの前提の値。確認役のサーバーは値から一文を作り直す */
 type Worked = { text: string; knobs: Record<string, number>; why?: string };
 
@@ -24,7 +24,7 @@ type Worked = { text: string; knobs: Record<string, number>; why?: string };
 const townTotal = (world: World, place: string) =>
   world.spots.filter((s) => s.place === place).length + world.marks.filter((m) => m.place === place).length + world.facilities.filter((f) => f.place === place).length;
 type Voice = { name: string; role: string; view: string; heard: boolean };
-type Stage = "hint" | "ask" | "write" | "basis" | "calc" | "place" | "result";
+type Stage = "hint" | "ask" | "write" | "basis" | "calc" | "place" | "self" | "result";
 type Panel =
   | { type: "talk"; speaker: string; role?: string; lines: string[]; i: number }
   | { type: "spot"; spot: Spot; stage: Stage; detail?: boolean; draft?: string; pending?: { option: Option; own: boolean; fact?: Fact; calc?: Worked } }
@@ -91,6 +91,14 @@ function replyBy(at: string): string {
 }
 const LINE_MAX = OWN_MAX;
 
+/** 終業で白兎が聞く問い。答えは「書き写す」の記録にだけ載り、どこにも送らない。docs/trial.md の問い 3・4・6・7 と同じ */
+const END_ASKS = [
+  { ask: "この1枚、窓口に出してもいいと思う？", options: ["思う", "思わない", "わからない"] },
+  { ask: "この窓口、使う前から知ってた？", options: ["知ってた", "知らなかった"] },
+  { ask: "2週間で市から返事が来るなら、出す？", options: ["出す", "出さない", "わからない"] },
+  { ask: "案と返事が就活で話せるなら、また使う？", options: ["使う", "使わない", "わからない"] },
+];
+
 export function Town({ world }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mapRef = useRef<HTMLCanvasElement>(null);
@@ -115,6 +123,8 @@ export function Town({ world }: Props) {
   const [fresh, setFresh] = useState<Find | null>(null);
   /** 本人が手伝えること。案の文は AI でも書けるが、手伝いに行くのは本人なので 1 枚の頭に載せる */
   const [help, setHelp] = useState("");
+  /** 終業の問いへの答え。END_ASKS の順 */
+  const [ends, setEnds] = useState<(string | undefined)[]>([]);
   const [sent, setSent] = useState<Sent[]>([]);
   const [showSent, setShowSent] = useState(false);
   const [marked, setMarked] = useState(false);
@@ -330,6 +340,13 @@ export function Town({ world }: Props) {
     sceneRef.current?.markAnswered(spot.id);
     setStampedId(spot.id);
     window.setTimeout(() => play("stamp"), 300);
+    setPanel({ type: "spot", spot, stage: spot.self ? "self" : "result" });
+  }
+
+  /** 頼んだ人の一問に答えたら、1 枚の「自分は」に載せる。答えないで進んでもよい */
+  function answerSelf(spot: Spot, self?: string) {
+    if (self) setAnswers((prev) => prev.map((a) => (a.spot.id === spot.id ? { ...a, self } : a)));
+    play("select");
     setPanel({ type: "spot", spot, stage: "result" });
   }
 
@@ -413,7 +430,10 @@ export function Town({ world }: Props) {
   function copyAnswers() {
     const body = answers.map((a) => sheetOf(a, world)).join("\n\n");
     const found = extraFinds.map((f) => `- ${f.text} 出典: ${f.source}`).join("\n");
-    const text = ["はつにち 初日の記録", help.trim() && `自分が手伝えること: ${help.trim()}`, body, found && `■ 見つけたこと\n${found}`].filter(Boolean).join("\n\n");
+    const said = END_ASKS.flatMap((q, i) => (ends[i] ? [`- ${q.ask} ${ends[i]}`] : [])).join("\n");
+    const text = ["はつにち 初日の記録", help.trim() && `自分が手伝えること: ${help.trim()}`, body, found && `■ 見つけたこと\n${found}`, said && `■ ${guide}に答えたこと\n${said}`]
+      .filter(Boolean)
+      .join("\n\n");
     void navigator.clipboard.writeText(`${text}\n`).then(() => setCopied(true));
   }
   const day = Math.min(Math.max((minutes - start_hour * 60) / ((end_hour - start_hour) * 60), 0), 1);
@@ -443,6 +463,8 @@ export function Town({ world }: Props) {
           )}
           <p className="title-note">
             数字・施設・窓口は実在の公開情報。町の人・家・店・事業者は架空。試作で、市・県・バス事業者とは関係ない
+            <br />
+            選んだ案や答えはどこにも送らない。人に渡すのは「書き写す」で写して自分で貼ったときだけ。自分の鍵で確認役に見せると、その 1 枚だけ Anthropic へ送る
             <br />
             地形: 国土地理院 標高タイルを加工 ・ 市の境: 国土数値情報（行政区域）を加工
             <br />
@@ -578,6 +600,7 @@ export function Town({ world }: Props) {
           onCalc={(calc) => panel.pending?.fact && toPlace(panel.spot, panel.pending.fact, calc)}
           facilities={foundFacilities}
           onPlace={(f) => panel.pending?.fact && finish(panel.spot, panel.pending.fact, panel.pending.calc, f)}
+          onSelf={(self) => answerSelf(panel.spot, self)}
           onClose={close}
         />
       )}
@@ -656,6 +679,28 @@ export function Town({ world }: Props) {
                 自分が手伝えること
                 <input value={help} onChange={(e) => setHelp(e.target.value)} maxLength={60} placeholder="例: 月に一度、土曜の午前なら行ける" />
               </label>
+            )}
+            {answers.length > 0 && (
+              <div className="end-asks" aria-label={`${guide}の問い`}>
+                {END_ASKS.map((q, i) => (
+                  <div key={q.ask} className="end-ask">
+                    <span>{q.ask}</span>
+                    {q.options.map((o) => (
+                      <button
+                        key={o}
+                        className={ends[i] === o ? "on" : undefined}
+                        aria-pressed={ends[i] === o}
+                        onClick={() => {
+                          setEnds((prev) => Object.assign([...prev], { [i]: o }));
+                          setCopied(false);
+                        }}
+                      >
+                        {o}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
             )}
             <div className="end-actions">
               {(answers.length > 0 || finds.length > 0) && (
@@ -776,6 +821,7 @@ type SpotViewProps = {
   onCalc: (calc?: Worked) => void;
   facilities: Facility[];
   onPlace: (f?: Facility) => void;
+  onSelf: (self?: string) => void;
   onClose: () => void;
 };
 
@@ -797,6 +843,7 @@ function requestOf(a: Answer): SheetRequest {
     fact: a.spot.facts.findIndex((f) => f.text === a.fact.text),
     knobs: a.knobs,
     why: a.why,
+    self: a.self ? a.spot.self?.options.indexOf(a.self) : undefined,
     facility: a.place?.id,
   };
 }
@@ -907,11 +954,16 @@ function ReviewCard({ answer, world }: { answer: Answer; world: World }) {
 
 /** 調べる → 頼まれる → 町の人の声を見て、案を選ぶか自分で書く → 判子と問い。理由と出典は「くわしく」に。
  * 3つの案は正解ではなく方向の違う出発点。考えるのは遊んでいる学生で、ゲームは材料と問いだけを渡す */
-function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, onStage, onDetail, onChoose, onSettle, onCalc, facilities, onPlace, onClose }: SpotViewProps) {
+function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, onStage, onDetail, onChoose, onSettle, onCalc, facilities, onPlace, onSelf, onClose }: SpotViewProps) {
   useEffect(() => {
-    if (detail || (stage !== "ask" && stage !== "basis")) return;
+    if (detail || (stage !== "ask" && stage !== "basis" && stage !== "self")) return;
     const onKey = (e: KeyboardEvent) => {
       const i = Number(e.key) - 1;
+      if (stage === "self") {
+        const o = spot.self?.options[i];
+        if (o) onSelf(o);
+        return;
+      }
       if (stage === "basis") {
         const f = spot.facts[i];
         if (f) onSettle(spot, f);
@@ -923,7 +975,7 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, on
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [stage, detail, spot, onChoose, onSettle, onStage]);
+  }, [stage, detail, spot, onChoose, onSettle, onStage, onSelf]);
 
   if (detail) return <Detail spot={spot} answer={answer} voices={voices} world={world} onClose={() => onDetail(false)} />;
 
@@ -942,6 +994,24 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, on
   if (stage === "hint") return <Dialog text={spot.hint} onNext={() => onStage("ask")} />;
 
   if (stage === "place") return <PlaceView spot={spot} facilities={facilities} world={world} guide={guide} onDone={onPlace} />;
+
+  if (stage === "self" && spot.self)
+    return (
+      <>
+        <div className="choices">
+          {spot.self.options.map((o, i) => (
+            <button key={o} className="choice" onClick={() => onSelf(o)} onMouseEnter={() => play("select", 0.2)}>
+              <kbd>{i + 1}</kbd>
+              {o}
+            </button>
+          ))}
+          <button className="choice why" onClick={() => onSelf()}>
+            言わんでおく
+          </button>
+        </div>
+        <Dialog speaker={spot.asker} text={spot.self.ask} />
+      </>
+    );
 
   if (stage === "calc" && CALCS[spot.id]) return <CalcView calc={CALCS[spot.id]} spot={spot} world={world} guide={guide} onDone={onCalc} onBack={() => onStage("basis")} />;
 

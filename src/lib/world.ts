@@ -38,6 +38,8 @@ export type Spot = {
   quest: { ask: string; write: string; options: Option[] };
   /** 自分の案を窓口へ持っていく前に、本人が確かめる問い。正解を言わずに考える手がかりにする */
   checks: string[];
+  /** 案を出したあと、頼んだ人が本人に聞く一問。自分ならどこまでするか。答えは 1 枚の「自分は」の行に載る */
+  self?: { ask: string; options: string[] };
   window: Window;
   /** もっと深く解く画面。バス停なら地図の作業台 */
   deeper?: { label: string; href: string };

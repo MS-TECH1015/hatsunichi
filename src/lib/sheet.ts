@@ -5,7 +5,7 @@ import type { Facility, Fact, Spot, World } from "./world.ts";
 
 export const PROPOSAL = { name: "鳥取市 公共施設マネジメント民間提案制度", url: "https://www.city.tottori.lg.jp/page/48913.html" };
 
-export type SheetAnswer = { spot: Spot; option: string; own?: boolean; fact: Fact; calc?: string; why?: string; place?: Facility };
+export type SheetAnswer = { spot: Spot; option: string; own?: boolean; fact: Fact; calc?: string; why?: string; self?: string; place?: Facility };
 
 /** 町の住民は架空なので、その声は載せない */
 export function sheetOf(a: SheetAnswer, world: World): string {
@@ -21,6 +21,7 @@ export function sheetOf(a: SheetAnswer, world: World): string {
     a.calc && calcBasis(a, world),
     a.calc && CALCS[a.spot.id] && `計算の前提（推定）: ${CALCS[a.spot.id].knobs.map((k) => k.label).join("、")}`,
     a.calc && a.why && `前提の置き方: ${a.why}`,
+    a.self && `自分は: ${a.self}`,
     a.place && `使う場所: ${a.place.name}、${town}。鳥取市の未活用施設。今も使われていないかは未確認 出典: ${world.sources[a.place.sources[0]]?.name ?? ""}`,
     a.place && `参考: 市の施設の使い方は ${PROPOSAL.name} で民間から募っている。この施設の案を市が募っているわけではない ${PROPOSAL.url}`,
     `まだ確かめていないこと: ${a.spot.checks.join(" / ")}`,
@@ -32,7 +33,7 @@ export function sheetOf(a: SheetAnswer, world: World): string {
 }
 
 /** 画面から確認役へ送るもの。option は選んだ案の番号、own は自分で書いた一行。どちらか一方 */
-export type SheetRequest = { spot: string; option?: number; own?: string; fact: number; knobs?: Record<string, number>; why?: string; facility?: string };
+export type SheetRequest = { spot: string; option?: number; own?: string; fact: number; knobs?: Record<string, number>; why?: string; self?: number; facility?: string };
 
 /** 計算の前提をそう置いた理由の一言の上限 */
 export const WHY_MAX = 40;
@@ -56,7 +57,9 @@ export function answerFromRequest(world: World, req: SheetRequest): SheetAnswer 
   if (req.knobs && !calc) return "計算の前提が範囲の外";
   const why = calc && typeof req.why === "string" ? req.why.trim() : "";
   if (why.length > WHY_MAX) return `前提の置き方は ${WHY_MAX} 字まで`;
-  return { spot, option: option?.text ?? own, own: !option, fact, calc, why: why || undefined, place };
+  const self = typeof req.self === "number" ? spot.self?.options[req.self] : undefined;
+  if (typeof req.self === "number" && !self) return "自分の答えの番号が無い";
+  return { spot, option: option?.text ?? own, own: !option, fact, calc, why: why || undefined, self, place };
 }
 
 /** 計算が使う出典の数字のうち、根拠の行に無いもの。出典の数字と、本人が動かした前提を読み手が分けられるようにする */

@@ -251,6 +251,11 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .choice.fact { grid-column: 1 / -1; font-size: 15px; font-weight: 700; padding: 10px 14px; }
 .result-label { max-width: min(640px, 90vw); text-align: center; }
 .end-label small { display: block; font-size: 12px; font-weight: 700; color: #8a7f70; }
+.end-asks { margin: 0 0 14px; text-align: left; font-size: 13px; font-weight: 900; }
+.end-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
+.end-ask span { flex-basis: 100%; }
+.end-ask button { padding: 4px 10px; border: 2px solid var(--ink); border-radius: 999px; font: inherit; font-weight: 700; background: #fff; cursor: pointer; }
+.end-ask button.on { background: var(--ink); color: #fff; }
 .end-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
 .end-actions .btn-game { white-space: nowrap; }
 @media (max-width: 640px) { .choice.own { grid-column: 1; } .write { flex-wrap: wrap; bottom: 148px; } .voices { font-size: 13px; } }

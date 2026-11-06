@@ -9,7 +9,7 @@ const stop = w.spots.find((s) => s.id === "stop")!;
 
 describe("確認役に送る 1 枚", () => {
   it("番号から 1 枚を組み直し、計算は前提の値から作り直す", () => {
-    const a = answerFromRequest(w, { spot: "stop", option: 0, fact: 0, knobs: { years: 10, slow: 0 }, why: "学科の同期の数から置いた", facility: w.facilities[0].id }) as SheetAnswer;
+    const a = answerFromRequest(w, { spot: "stop", option: 0, fact: 0, knobs: { years: 10, slow: 0 }, why: "学科の同期の数から置いた", self: 1, facility: w.facilities[0].id }) as SheetAnswer;
     expect(typeof a).toBe("object");
     const sheet = sheetOf(a, w);
     expect(sheet).toContain(`案: ${stop.quest.options[0].text}`);
@@ -18,6 +18,7 @@ describe("確認役に送る 1 枚", () => {
     expect(sheet).toContain("計算の根拠: ");
     expect(sheet).toContain("計算の前提（推定）: 何年後");
     expect(sheet).toContain("前提の置き方: 学科の同期の数から置いた");
+    expect(sheet).toContain(`自分は: ${stop.self?.options[1]}`);
     expect(sheet).toContain(`使う場所: ${w.facilities[0].name}`);
   });
 
@@ -25,6 +26,7 @@ describe("確認役に送る 1 枚", () => {
     expect(answerFromRequest(w, { spot: "nowhere", option: 0, fact: 0 })).toBe("依頼の場所が無い");
     expect(answerFromRequest(w, { spot: "stop", option: 0, fact: 99 })).toBe("根拠の番号が無い");
     expect(answerFromRequest(w, { spot: "stop", option: 99, fact: 0 })).toBe("案が無い");
+    expect(answerFromRequest(w, { spot: "stop", option: 0, fact: 0, self: 9 })).toBe("自分の答えの番号が無い");
     expect(answerFromRequest(w, { spot: "stop", own: "あ".repeat(OWN_MAX + 1), fact: 0 })).toContain("字まで");
     expect(answerFromRequest(w, { spot: "stop", option: 0, fact: 0, knobs: { years: 999, slow: 0 } })).toBe("計算の前提が範囲の外");
     expect(answerFromRequest(w, { spot: "stop", option: 0, fact: 0, facility: "fac-none" })).toBe("施設が無い");

@@ -120,6 +120,10 @@ describe("world", () => {
       for (const t of short) expect(t.length, `${s.id}: ${t}`).toBeLessThanOrEqual(18);
       expect(s.checks.length, s.id).toBeLessThanOrEqual(2);
       expect(s.why.length, s.id).toBeLessThanOrEqual(80);
+      // 頼んだ人が本人に聞く一問。答えは 1 枚に載るので、それだけで意味が通る文にする
+      expect(s.self?.ask.length ?? 0, s.id).toBeLessThanOrEqual(18);
+      expect(s.self?.options.length, s.id).toBe(3);
+      for (const o of s.self?.options ?? []) expect(o.length, `${s.id}: ${o}`).toBeLessThanOrEqual(12);
     }
   });
 
