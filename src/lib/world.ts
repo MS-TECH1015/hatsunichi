@@ -29,14 +29,17 @@ export type PastFact = Fact & { era?: string; icon: PastIcon };
  * 町丁の人口は国勢調査の札の文から数える。札の無い町丁は入らない */
 export function worldStats(world: World) {
   const people = world.marks.reduce((n, m) => n + (peopleOf(m.text) ?? 0), 0);
+  const change = world.marks.reduce((n, m) => n + changeOf(m.text), 0);
   const facts = world.spots.reduce((n, s) => n + s.facts.length, 0);
-  return { towns: world.places.length, blocks: world.marks.length, people, facts, sources: Object.keys(world.sources).length };
+  return { towns: world.places.length, blocks: world.marks.length, people, change, facts, sources: Object.keys(world.sources).length };
 }
 
-/** 1 枚に書く、その町の町丁に住む人の数。案が関わる人の規模を出典のある数で添える。65 歳以上の割合は人口で重みづけ */
+/** 1 枚に書く、その町の町丁に住む人の数。案が関わる人の規模を出典のある数で添える。65 歳以上の割合は人口で重みづけ。
+ * change は 5 年の増減の合計で、減った町丁は負の数 */
 export function placeStats(world: World, placeId: string) {
   let people = 0;
   let old = 0;
+  let change = 0;
   let blocks = 0;
   const sources = new Set<string>();
   for (const m of world.marks) {
@@ -45,15 +48,29 @@ export function placeStats(world: World, placeId: string) {
     if (n === undefined) continue;
     blocks++;
     people += n;
+    change += changeOf(m.text);
     old += (n * (Number(m.text.match(/65歳以上が (\d+)%/)?.[1]) || 0)) / 100;
     for (const s of m.sources) sources.add(s);
   }
-  return { blocks, people, oldShare: people ? Math.round((old / people) * 100) : 0, sources: [...sources] };
+  return { blocks, people, change, oldShare: people ? Math.round((old / people) * 100) : 0, sources: [...sources] };
+}
+
+/** 増減の数を文にする。札の文と同じ言い方にそろえる */
+export function changeText(change: number): string {
+  if (change === 0) return "5 年で変わらない";
+  return `5 年で ${Math.abs(change).toLocaleString()} 人${change < 0 ? "減った" : "増えた"}`;
 }
 
 function peopleOf(text: string): number | undefined {
   const hit = text.match(/住む人 ([\d,]+) 人/);
   return hit ? Number(hit[1].replace(/,/g, "")) : undefined;
+}
+
+function changeOf(text: string): number {
+  const hit = text.match(/5年で ([\d,]+) 人(減った|増えた)/);
+  if (!hit) return 0;
+  const n = Number(hit[1].replace(/,/g, ""));
+  return hit[2] === "減った" ? -n : n;
 }
 
 export type Spot = {

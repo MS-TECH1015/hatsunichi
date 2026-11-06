@@ -6,7 +6,7 @@ import { CALCS, defaults, type Calc } from "@/lib/calcs";
 import { clockText, facilityFind, markFind, rideFind, spotFind, targetAt, unsourcedNumbers, type Fact, type Facility, type Find, type Mark, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
 import { withBase } from "@/lib/base";
 import { PastIcon } from "./PastIcon";
-import { worldStats } from "@/lib/world";
+import { changeText, placeStats, worldStats } from "@/lib/world";
 import { OWN_MAX, WHY_MAX, answerFromRequest, sheetOf, type SheetRequest, type SheetUse } from "@/lib/sheet";
 import recordedNotes from "../../data/notes-recorded.json";
 import type { Note as Reviewed } from "@/lib/review";
@@ -479,7 +479,7 @@ export function Town({ world }: Props) {
           <h1 className="logo">はつにち</h1>
           <p className="tagline">鳥取市を歩いて、町の困りごとを見つける。</p>
           <p className="title-stats">
-            {stats.towns} つの町、{stats.blocks} の町丁に住む {stats.people.toLocaleString()} 人の数字。根拠 {stats.facts} 件、出典 {stats.sources} 件。数字はすべて公的な資料から
+            {stats.towns} つの町、{stats.blocks} の町丁に住む {stats.people.toLocaleString()} 人の数字。{changeText(stats.change)}。根拠 {stats.facts} 件、出典 {stats.sources} 件。数字はすべて公的な資料から
           </p>
           <button className="btn-game big" disabled={!ready} onClick={begin}>
             {ready ? "はじめる" : "よみこみ中…"}
@@ -820,6 +820,7 @@ function HomeView({ home, world, ready, onPick, onBegin, onClose }: { home: Plac
   const past = home.past ?? [];
   const marks = world.marks.filter((m) => m.place === home.id);
   const now = moreNow ? marks : marks.slice(0, 1);
+  const sum = placeStats(world, home.id);
   const sourceOf = (id: string) => world.sources[id];
   // 出典は札ごとに繰り返さず、むかしの下にまとめて 1 回だけ出す
   const pastSources = [...new Set(past.map((f) => f.source))].map(sourceOf).filter(Boolean);
@@ -863,6 +864,12 @@ function HomeView({ home, world, ready, onPick, onBegin, onClose }: { home: Plac
           </p>
         )}
         <h3>いま</h3>
+        {sum.people > 0 && (
+          <p className="home-sum">
+            {sum.blocks} の町丁に住む {sum.people.toLocaleString()} 人。65 歳以上が {sum.oldShare}%。{changeText(sum.change)}
+            <small>{sum.sources.map((s) => sourceOf(s)?.name).join("、")}</small>
+          </p>
+        )}
         <ul className="home-facts">
           {now.map((m) => (
             <li key={m.id}>
