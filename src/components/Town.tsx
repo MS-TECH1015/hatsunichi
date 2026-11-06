@@ -9,7 +9,8 @@ import { PastIcon } from "./PastIcon";
 import { changeText, nearestSpot, placeStats, placeWorld, worldStats, type Vec2 } from "@/lib/world";
 import { OWN_MAX, WHY_MAX, answerFromRequest, sheetOf, type SheetRequest, type SheetUse } from "@/lib/sheet";
 import recordedNotes from "../../data/notes-recorded.json";
-import type { Note as Reviewed } from "@/lib/review";
+import recordedReplies from "../../data/replies-recorded.json";
+import type { Note as Reviewed, Reply } from "@/lib/review";
 import type { TownScene } from "./town/TownScene";
 import { play, setMuted } from "./town/sfx";
 
@@ -142,6 +143,8 @@ export function Town({ world }: Props) {
   const [ends, setEnds] = useState<(string | undefined)[]>([]);
   /** 案を市に出すか、事業の構想として持ち帰るか。書き写す 1 枚の終わりの行が変わる */
   const [use, setUse] = useState<SheetUse>("city");
+  // 自分の鍵で読ませた返事の予行。依頼の場所の id ごと
+  const [rehearsed, setRehearsed] = useState<Record<string, Rehearsed>>({});
   const [sent, setSent] = useState<Sent[]>([]);
   const [showSent, setShowSent] = useState(false);
   const [marked, setMarked] = useState(false);
@@ -466,8 +469,24 @@ export function Town({ world }: Props) {
   /** 案を出した場所の数字は案の中に載っているので、手帳の一覧からは外す */
   const extraFinds = finds.filter((f) => !answers.some((a) => a.spot.id === f.spot));
 
+  /** 自分の一行の予行。確認役に入れた鍵でブラウザから読ませる */
+  async function rehearse(a: Answer) {
+    const sheet = answerFromRequest(world, requestOf(a));
+    if (typeof sheet === "string") return;
+    const { rehearseReply } = await import("@/lib/review");
+    const got = await rehearseReply(sheet, world, { apiKey: tabKey }).catch(() => null);
+    if (got) setRehearsed((prev) => ({ ...prev, [a.spot.id]: got }));
+  }
+
   function copyAnswers() {
-    const body = answers.map((a) => sheetOf({ ...a, review: a.review && { question: a.review.question, model: a.review.model, date: a.review.recorded } }, world, use)).join("\n\n");
+    const body = answers
+      .map((a) => {
+        const sheet = sheetOf({ ...a, review: a.review && { question: a.review.question, model: a.review.model, date: a.review.recorded } }, world, use);
+        const reply = use === "city" ? (rehearsed[a.spot.id] ?? rehearsalOf(a)) : undefined;
+        if (!reply) return sheet;
+        return `${sheet}\n返事の予行（市の担当者役の ${reply.model}${reply.recorded ? `、${reply.recorded} の記録` : ""}。架空で、市の返事ではない）:\n${reply.asks.map((q, i) => `${i + 1}. ${q}`).join("\n")}`;
+      })
+      .join("\n\n");
     const found = extraFinds.map((f) => `- ${f.text} 出典: ${f.source}`).join("\n");
     const said = END_ASKS.flatMap((q, i) => (ends[i] ? [`- ${q.ask} ${ends[i]}`] : [])).join("\n");
     const used = new Set(answers.map((a) => a.fact.source)).size;
@@ -742,6 +761,7 @@ export function Town({ world }: Props) {
                 に出すと、市から返事が来る。{world.submit.reply}。{world.submit.listed.text}
               </p>
             )}
+            {answers.length > 0 && use === "city" && <Rehearsal answers={answers} rehearsed={rehearsed} onAsk={rehearse} />}
             {answers.length > 0 && use === "business" && (
               <p className="end-meta">
                 事業の相談は{" "}
@@ -1028,6 +1048,15 @@ const REVIEW_URL = process.env.NEXT_PUBLIC_REVIEW_URL;
 const SHEET_URL = REVIEW_URL && new URL("sheet", REVIEW_URL).toString();
 type Recorded = { model: string; date: string; summary?: { cases: number; made: number; caught: number }; tricks?: { spot: string; own: string; made: string; gap: string }[]; notes: Record<string, Pick<Reviewed, "good" | "gap" | "question">> };
 const RECORDED = recordedNotes as Recorded;
+type RecordedReplies = { model: string; date: string; summary?: { cases: number; leaked: number; retries: number }; replies: Record<string, { asks: string[] }> };
+const REPLIES = recordedReplies as RecordedReplies;
+type Rehearsed = Reply & { recorded?: string };
+/** 返事の予行の記録。用意した案と根拠の組だけにある。自分の一行には無い */
+function rehearsalOf(a: Answer): Rehearsed | undefined {
+  const req = requestOf(a);
+  const kept = req.option === undefined ? undefined : REPLIES.replies[`${req.spot}:${req.option}:${req.fact}`];
+  return kept && { asks: kept.asks, model: REPLIES.model, retries: 0, demo: false, recorded: REPLIES.date };
+}
 // 入れた鍵はこの変数にだけ置く。保存しないので、読み込み直すと消える
 let tabKey = "";
 
@@ -1056,6 +1085,47 @@ async function askReviewer(answer: Answer, world: World, apiKey: string): Promis
   // SDK は鍵を入れた人だけが読み込む
   const { reviewSheet } = await import("@/lib/review");
   return reviewSheet(sheet, world, { apiKey });
+}
+
+/** 返事の予行。市の担当者役の Claude が 1 枚を読んで聞き返しそうなことを、窓口に出す前に見せる。
+ * 用意した案には測定のときの記録が最初からあり、自分の一行は確認役に入れた鍵で読ませる。実在の市の返事ではない */
+function Rehearsal({ answers, rehearsed, onAsk }: { answers: Answer[]; rehearsed: Record<string, Rehearsed>; onAsk: (a: Answer) => Promise<void> }) {
+  const [waiting, setWaiting] = useState<string | null>(null);
+  const rows = answers.map((a) => ({ a, reply: rehearsed[a.spot.id] ?? rehearsalOf(a) }));
+  if (rows.every((r) => !r.reply) && !tabKey) return null;
+  return (
+    <div className="end-rehearsal" aria-label="返事の予行">
+      <h3>
+        返事の予行
+        <small>市の担当者役の {REPLIES.model} が、この 1 枚を読んで聞き返しそうなこと。架空の練習で、市の返事ではない。答えを用意してから出せる</small>
+      </h3>
+      {rows.map(({ a, reply }) => (
+        <div key={a.spot.id} className="end-rehearsal-row">
+          <strong>{a.label}</strong>
+          {reply ? (
+            <ol>
+              {reply.asks.map((q) => (
+                <li key={q}>{q}</li>
+              ))}
+            </ol>
+          ) : waiting === a.spot.id ? (
+            <p>読んでもらっている…</p>
+          ) : (
+            <button
+              className="btn-game small"
+              onClick={async () => {
+                setWaiting(a.spot.id);
+                await onAsk(a);
+                setWaiting(null);
+              }}
+            >
+              自分の鍵で予行
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function noteFoot(note: Reviewed & { recorded?: string }): string {

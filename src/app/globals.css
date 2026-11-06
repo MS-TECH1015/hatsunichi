@@ -210,6 +210,14 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .end-line { font-weight: 700; }
 .end-meta { margin: 0 0 16px; font-weight: 700; font-size: 14px; }
 .end-finds { text-align: left; margin: 0 0 12px; }
+.end-rehearsal { text-align: left; margin: 0 0 14px; padding: 10px 14px; border: 2px dashed #e1d6c0; border-radius: 12px; }
+.end-rehearsal h3 { margin: 0 0 6px; font-size: 15px; font-weight: 900; }
+.end-rehearsal h3 small { display: block; margin-top: 2px; font-size: 12px; font-weight: 700; color: #6b5f4a; }
+.end-rehearsal-row { margin: 8px 0 0; font-size: 13px; }
+.end-rehearsal-row strong { display: block; font-weight: 900; }
+.end-rehearsal-row ol { margin: 2px 0 0; padding-left: 20px; font-weight: 600; }
+.end-rehearsal-row li { margin: 2px 0; }
+.end-rehearsal-row p { margin: 2px 0 0; font-weight: 700; }
 .end-finds h3 { margin: 0 0 6px; font-size: 15px; font-weight: 900; }
 .end-finds ul { list-style: none; margin: 0; padding: 0; max-height: 28vh; overflow-y: auto; }
 .end-finds li { padding: 6px 4px; border-top: 2px dashed #e1d6c0; font-size: 13px; font-weight: 700; }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import raw from "../../data/world.json";
-import { demoSheetNote, sheetNumbers } from "./review";
+import { demoReply, demoSheetNote, replyNumbers, sheetNumbers } from "./review";
 import { OWN_MAX, answerFromRequest, sheetOf, type SheetAnswer } from "./sheet";
 import type { World } from "./world";
 
@@ -58,5 +58,17 @@ describe("確認役の付箋", () => {
     expect(demoSheetNote(chosen).question).toBe(stop.quest.options[1].note.question);
     expect(demoSheetNote(own).gap).toContain(stop.checks[0]);
     expect(demoSheetNote(own).demo).toBe(true);
+  });
+});
+
+describe("返事の予行", () => {
+  it("鍵が無ければ、まだ確かめていないことを担当者役の問いにする。数字は 1 枚の中のものだけ", () => {
+    const a = answerFromRequest(w, { spot: "stop", option: 0, fact: 0 }) as SheetAnswer;
+    const r = demoReply(a);
+    expect(r.demo).toBe(true);
+    expect(r.asks.length).toBeGreaterThan(0);
+    expect(r.asks.length).toBeLessThanOrEqual(3);
+    expect(replyNumbers(r, sheetOf(a, w, "city"))).toEqual([]);
+    expect(replyNumbers({ asks: ["学生 9999 人で足りますか"] }, sheetOf(a, w, "city"))).toEqual(["9999"]);
   });
 });
