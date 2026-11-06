@@ -534,10 +534,12 @@ export function Town({ world }: Props) {
     const body = answers
       .map((a) => {
         const sheet = sheetOf({ ...a, review: a.review && { question: a.review.question, model: a.review.model, date: a.review.recorded } }, world, use);
-        const reply = use === "city" ? (rehearsed[a.spot.id] ?? rehearsalOf(a)) : undefined;
+        const reply = use === "city" ? (rehearsed[a.spot.id] ?? rehearsalOf(a) ?? checksReply(a)) : undefined;
         if (!reply) return sheet;
         const mine = prepared[a.spot.id] ?? [];
         const asks = reply.asks.map((q, i) => `${i + 1}. ${q}${mine[i]?.trim() ? `\n   用意した答え: ${mine[i].trim()}` : ""}`).join("\n");
+        // 問いが「まだ確かめていないこと」と同じなら、答えを書いたときだけ載せる
+        if (reply.demo) return mine.some((t) => t?.trim()) ? `${sheet}\nまだ確かめていないことへの答え:\n${asks}` : sheet;
         return `${sheet}\n返事の予行（市の担当者役の ${reply.model}${reply.recorded ? `、${reply.recorded} の記録` : ""}。架空で、市の返事ではない）:\n${asks}`;
       })
       .join("\n\n");
@@ -1144,6 +1146,10 @@ function rehearsalOf(a: Answer): Rehearsed | undefined {
   const kept = req.option === undefined ? undefined : REPLIES.replies[`${req.spot}:${req.option}:${req.fact}`];
   return kept && { asks: kept.asks, model: REPLIES.model, retries: 0, demo: false, recorded: REPLIES.date };
 }
+/** 鍵が無く記録も無い 1 枚には、その依頼のまだ確かめていないことを問いにする。Claude の問いではない */
+function checksReply(a: Answer): Rehearsed {
+  return { asks: a.spot.checks.slice(0, 3), model: "", retries: 0, demo: true };
+}
 // 入れた鍵はこの変数にだけ置く。保存しないので、読み込み直すと消える
 let tabKey = "";
 
@@ -1192,8 +1198,7 @@ function Rehearsal({
   onAsk: (a: Answer) => Promise<void>;
 }) {
   const [waiting, setWaiting] = useState<string | null>(null);
-  const rows = answers.map((a) => ({ a, reply: rehearsed[a.spot.id] ?? rehearsalOf(a) }));
-  if (rows.every((r) => !r.reply) && !tabKey && !REHEARSE_URL) return null;
+  const rows = answers.map((a) => ({ a, reply: rehearsed[a.spot.id] ?? rehearsalOf(a) ?? (tabKey || REHEARSE_URL ? undefined : checksReply(a)) }));
   return (
     <div className="end-rehearsal" aria-label="返事の予行">
       <h3>
@@ -1203,6 +1208,7 @@ function Rehearsal({
       {rows.map(({ a, reply }) => (
         <div key={a.spot.id} className="end-rehearsal-row">
           <strong>{a.label}</strong>
+          {reply?.demo && <small>自分で書いた一行の記録は無い。鍵が無いので、この依頼のまだ確かめていないことを問いにした</small>}
           {reply ? (
             <ol>
               {reply.asks.map((q, i) => (
