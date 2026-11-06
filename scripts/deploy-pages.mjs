@@ -3,7 +3,9 @@
 import { execSync } from "node:child_process";
 import { writeFileSync, rmSync } from "node:fs";
 
-const run = (cmd, cwd = ".") => execSync(cmd, { cwd, stdio: "inherit", env: { ...process.env, NEXT_PUBLIC_BASE_PATH: "/hatsunichi" } });
+// 鍵の無い人の分を Claude に読ませる中継。relay/worker.ts を wrangler deploy で置いた先
+const RELAY = process.env.NEXT_PUBLIC_REVIEW_URL ?? "https://hatsunichi-relay.moriyama-mizukusa-map.workers.dev/review";
+const run = (cmd, cwd = ".") => execSync(cmd, { cwd, stdio: "inherit", env: { ...process.env, NEXT_PUBLIC_BASE_PATH: "/hatsunichi", NEXT_PUBLIC_REVIEW_URL: RELAY } });
 const remote = execSync("git remote get-url origin").toString().trim();
 
 run("npx next build");

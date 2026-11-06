@@ -7,6 +7,9 @@ name = "hatsunichi-relay"
 main = "worker.ts"
 compatibility_date = "2026-10-01"
 compatibility_flags = ["nodejs_compat"]
+# 公開するのは workers.dev の 1 つだけ。版ごとの確認用 URL は出さない
+workers_dev = true
+preview_urls = false
 
 [vars]
 ALLOWED_ORIGIN = "https://ms-tech1015.github.io"

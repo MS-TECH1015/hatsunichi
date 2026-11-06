@@ -47,10 +47,18 @@ for (const { c, reply, bad } of ran) {
   rows.push(`| ${c.name} | ${reply.retries} | ${bad.join("、") || "なし"} | ${cell(reply.asks.join(" ／ "))} |`);
 }
 
+// 言葉で数える。規則は下の正規表現だけで、意味の判定はしていない
+const heardSpots = new Set(w.spots.filter((s) => s.heard).map((s) => s.id));
+const keys = Object.keys(replies);
+const heardKeys = keys.filter((k) => heardSpots.has(k.split(":")[0]));
+const said = (re: RegExp, ks: string[]) => ks.filter((k) => re.test(replies[k].asks.join(" "))).length;
+const touched = `窓口がすでにしていることに触れた件 ${said(/すでに|既に|取り組/, keys)}（問いに「すでに」「既に」「取り組」のどれかがある件）。過去の提案のある依頼の ${heardKeys.length} 件のうち、提案か回答に触れた件 ${said(/提案|回答/, heardKeys)}（「提案」「回答」のどちらかがある件）。`;
+
 const md = [
   `# 返事の予行の記録（市の担当者役）: ${model}`,
   "",
   model === "demo" ? "鍵が無いので demo の問いで通した。Claude の測定はしていない。" : `${today}、${cases.length} 件。問いに 1 枚に無い数字が残った件 ${leaked}、書き直しの合計 ${retries} 回。実在の市の返事ではない。`,
+  model === "demo" ? "" : touched,
   "",
   "| 件 | 書き直し | 問いに残った 1 枚に無い数字 | 担当者役の問い |",
   "|---|---|---|---|",
