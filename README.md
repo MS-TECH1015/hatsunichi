@@ -7,7 +7,7 @@
 <p>
 <img src="docs/img/list.jpg" width="32%" alt="依頼の一覧の上の困りごとから探す。祖母が病院に行きにくいという一行に、案内役の Claude が雲山のバス停の依頼と運転者の減少の根拠を選んでいる">
 <img src="docs/img/note.jpg" width="32%" alt="案を決めた画面。確認役の Claude の付箋が、良い点・足りない点・問いを返している">
-<img src="docs/img/rehearsal.jpg" width="32%" alt="終業の画面。市の担当者役の Claude が聞き返しそうなことを 3 つ並べ、学生が書いた答えのうち 1 枚に無い数字 30 を名指ししている">
+<img src="docs/img/rehearsal.jpg" width="32%" alt="終わりの画面。市の担当者役の Claude が聞き返しそうなことを 3 つ並べ、学生が書いた答えのうち 1 枚に無い数字 30 を名指ししている">
 </p>
 
 左から、困りごとから探す、確認役の付箋、返事の予行と用意した答え。
