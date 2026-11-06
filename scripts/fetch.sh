@@ -75,3 +75,5 @@ fetch "https://www.city.tottori.lg.jp/shiseiteian/shiseiteian/47036.html" teian_
 fetch "https://www.city.tottori.lg.jp/shiseiteian/shiseiteian/42044.html" teian_42044_bouka.html
 # 雲山のバス停に近い過去の提案を探す。令和8年度の一覧に便の数や路線の話が無かったので、令和7年度の一覧も読む（2026-11-06）
 fetch "https://www.city.tottori.lg.jp/site/shiseiteian/list97-383.html" shiseiteian_r7.html
+# 雲山の乗合タクシーの数字を取った市の計画（2026-11-04 は手元に残していなかった）。運転手不足が路線の縮小につながると書いてあるかを確かめる（2026-11-06）
+fetch "https://www.city.tottori.lg.jp/uploaded/attachment/25724.pdf" tottori_feeder_r5.pdf
