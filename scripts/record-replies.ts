@@ -20,11 +20,11 @@ const rows: string[] = [];
 let leaked = 0;
 let retries = 0;
 
-// ONLY=stop:2,field1:2 なら、その案だけ Claude に読ませ、ほかの案は前の記録を使う。1 枚を少し直したときに API を呼びすぎないため
+// ONLY=stop:2,field1:2 なら、その案だけ（stop:2:0 のように根拠まで書けばその 1 件だけ） Claude に読ませ、ほかの案は前の記録を使う。1 枚を少し直したときに API を呼びすぎないため
 const only = process.env.ONLY?.split(",").filter(Boolean);
 const prev = only ? (JSON.parse(readFileSync("data/replies-recorded.json", "utf8")) as { replies: Record<string, { asks: string[] }> }).replies : {};
 const keyOf = (c: (typeof cases)[number]) => `${c.req.spot}:${c.req.option}:${c.req.fact}`;
-const fresh = cases.filter((c) => !only || only.some((o) => keyOf(c).startsWith(`${o}:`)) || !prev[keyOf(c)]);
+const fresh = cases.filter((c) => !only || only.some((o) => keyOf(c) === o || keyOf(c).startsWith(`${o}:`)) || !prev[keyOf(c)]);
 // 4 件ずつ同時に送る。1 件ずつだと 81 件で 20 分を超えるため
 const ran = await Promise.all(
   cases.map(async (c) => {

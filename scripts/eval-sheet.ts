@@ -46,7 +46,7 @@ const prev = only ? (JSON.parse(readFileSync("data/notes-recorded.json", "utf8")
 for (const c of cases) {
   const a = answerFromRequest(w, c.req) as SheetAnswer;
   const key = typeof c.req.option === "number" ? `${c.req.spot}:${c.req.option}:${c.req.fact}` : "";
-  const kept = only && key && !only.some((o) => key.startsWith(`${o}:`)) ? prev[key] : undefined;
+  const kept = only && key && !only.some((o) => key === o || key.startsWith(`${o}:`)) ? prev[key] : undefined;
   const note = kept ? ({ ...kept, model, retries: 0, demo: false } as Awaited<ReturnType<typeof reviewSheet>>) : await reviewSheet(a, w);
   const text = `${note.good} ${note.gap} ${note.question}`;
   const bad = sheetNumbers(note, sheetOf(a, w));

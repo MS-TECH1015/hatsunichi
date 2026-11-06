@@ -203,6 +203,8 @@ export type Mark = { id: string; place: string; at: Vec2; text: string; sources:
 export type Facility = Mark & { name: string };
 
 export type World = {
+  /** 国勢調査 令和2年の鳥取市全体。oldShare は年齢の分かる人のうち 65 歳以上の割合 */
+  cityAge: { people: number; oldShare: number };
   meta: { start: { place: string; at: Vec2 }; clock: { start_hour: number; end_hour: number; minutes_per_second: number; minutes_per_talk: number } };
   places: Place[];
   props: Prop[];

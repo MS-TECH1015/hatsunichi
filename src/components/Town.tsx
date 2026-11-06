@@ -664,7 +664,8 @@ export function Town({ world }: Props) {
 
       {started && (
         <div className="hud">
-          {!walk && (
+          {/* 歩かずに出す人には、時計と手帳を出さない。案を作る道具として見せる */}
+          {!walk && !quick && (
             <div className="hud-clock">
               <SunIcon />
               <span>{clockText(minutes)}</span>
@@ -673,9 +674,11 @@ export function Town({ world }: Props) {
               </span>
             </div>
           )}
-          <button className="hud-finds" onClick={openBook} aria-label={`手帳 これまでに ${book.length}`}>
-            手帳 {book.length}
-          </button>
+          {!quick && (
+            <button className="hud-finds" onClick={openBook} aria-label={`手帳 これまでに ${book.length}`}>
+              手帳 {book.length}
+            </button>
+          )}
           {!walk && (
             <div className="hud-stamps" aria-label={`案 ${answers.length}/3`}>
               {[0, 1, 2].map((i) => (
@@ -689,14 +692,14 @@ export function Town({ world }: Props) {
         </div>
       )}
 
-      {started && cheer && panel?.type !== "end" && (
+      {started && !quick && cheer && panel?.type !== "end" && (
         <div className="find-toast cheer" key={`cheer-${cheer}`}>
           <small>手帳がそろった</small>
           {cheer}を歩ききった
         </div>
       )}
 
-      {started && fresh && !cheer && panel?.type !== "end" && (
+      {started && !quick && fresh && !cheer && panel?.type !== "end" && (
         <div className="find-toast" key={fresh.id}>
           <small>手帳に書いた</small>
           {fresh.text}
@@ -745,7 +748,7 @@ export function Town({ world }: Props) {
           stage={panel.stage}
           detail={panel.detail === true}
           answer={answerOf(panel.spot)}
-          voices={voicesOf(panel.spot)}
+          voices={quick ? voicesOf(panel.spot).filter((v) => v.heard) : voicesOf(panel.spot)}
           draft={panel.draft}
           guide={guide}
           world={world}
@@ -800,11 +803,23 @@ export function Town({ world }: Props) {
           依頼の一覧
         </button>
       )}
+      {/* 歩くだけの人には時計が無く終業が来ないので、案ができたら自分で終わりの画面を開く */}
+      {walk && started && !panel && answers.length > 0 && (
+        <button
+          className="btn-game small quick-back"
+          onClick={() => {
+            sceneRef.current?.setPaused(true);
+            setPanel({ type: "end" });
+          }}
+        >
+          できた分を見て写す
+        </button>
+      )}
 
       {panel?.type === "end" && (
         <div className="end">
           <div className="end-card">
-            <h2>初日、おつかれさま</h2>
+            <h2>{quick ? `できた ${answers.length} 枚` : "初日、おつかれさま"}</h2>
             <div className="end-stamps">
               {[0, 1, 2].map((i) => (
                 <Stamp key={i} char={answers[i]?.spot.stamp} big />
@@ -1877,7 +1892,7 @@ function QuickList({ world, done, onPick, onOwn, onWalk, onEnd }: { world: World
       <div className="end-card quick-card">
         <h2>依頼の一覧</h2>
         <ConcernFinder world={world} onOwn={onOwn} />
-        <p className="end-meta">鳥取市の {new Set(world.spots.map((s) => s.place)).size} つの町の、人手の困りごと。選ぶとその場所へ行き、頼んだ人の話を聞いて案を 1 枚にする。3 つで終業</p>
+        <p className="end-meta">鳥取市の {new Set(world.spots.map((s) => s.place)).size} つの町の、人手の困りごと。選ぶとその場所へ行き、頼んだ人の話を聞いて案を 1 枚にする。1 枚から写せる。3 枚まで作れる</p>
         <ul className="end-list">
           {world.spots.map((s) => (
             <li key={s.id}>
@@ -1900,7 +1915,7 @@ function QuickList({ world, done, onPick, onOwn, onWalk, onEnd }: { world: World
           </button>
           {done.size > 0 && (
             <button className="btn-game" onClick={onEnd}>
-              終業にする
+              できた分を見て写す
             </button>
           )}
         </div>

@@ -1,7 +1,7 @@
 // 窓口に持っていく 1 枚。画面の書き写しと、確認役のサーバーが同じ文を作る。
 // サーバーは画面から番号と値だけを受け取り、world.json から 1 枚を組み直す。自由に書けるのは自分で書いた案の一行だけ
 import { CALCS } from "./calcs.ts";
-import { changeText, checksOf, placeStats, worldStats } from "./world.ts";
+import { changeText, checksOf, placeStats } from "./world.ts";
 import type { Facility, Fact, Spot, World } from "./world.ts";
 
 export const PROPOSAL = { name: "鳥取市 公共施設マネジメント民間提案制度", url: "https://www.city.tottori.lg.jp/page/48913.html" };
@@ -94,8 +94,7 @@ function placeLine(a: SheetAnswer, world: World): string | undefined {
   if (s.people === 0) return undefined;
   const town = world.places.find((p) => p.id === a.spot.place)?.name ?? "";
   const src = s.sources.map((id) => world.sources[id]?.name ?? id).join(" / ");
-  const all = worldStats(world);
-  return `関わる人: ${town}の ${s.blocks} 町丁に住む ${s.people.toLocaleString()} 人。65 歳以上が ${s.oldShare}%、${all.towns} つの町の ${all.blocks} 町丁の合計では ${all.oldShare}%。${changeText(s.change)} 出典: ${src}`;
+  return `関わる人: ${town}の ${s.blocks} 町丁に住む ${s.people.toLocaleString()} 人。65 歳以上が ${s.oldShare}%、鳥取市全体では ${world.cityAge.oldShare}%。${changeText(s.change)} 出典: ${src}`;
 }
 
 /** 計算が使う出典の数字のうち、根拠の行に無いもの。出典の数字と、本人が動かした前提を読み手が分けられるようにする */

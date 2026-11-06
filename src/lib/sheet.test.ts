@@ -76,10 +76,10 @@ describe("返事の予行", () => {
     const a = answerFromRequest(w, { spot: "fire1", option: 0, fact: 0 }) as SheetAnswer;
     const sheet = sheetOf(a, w, "city");
     expect(unsourcedNumbers("国府に住む 774 人の中から、まず大学の近くの町丁で声をかける", [{ text: sheet }])).toEqual([]);
-    expect(unsourcedNumbers("学生を 30 人集める", [{ text: sheet }])).toEqual(["30"]);
-    expect(unsourcedNumbers("学生を三十人集めて、3 割の家を回る", [{ text: sheet }])).toEqual(["3 割", "三十"]);
+    expect(unsourcedNumbers("学生を 37 人集める", [{ text: sheet }])).toEqual(["37"]);
+    expect(unsourcedNumbers("学生を三十七人集めて、6 割の家を回る", [{ text: sheet }])).toEqual(["6 割", "三十七"]);
     expect(unsourcedNumbers("七百七十四人のうち、千代川の近くは十分に回れる", [{ text: sheet }])).toEqual([]);
-    expect(unsourcedNumbers("町の三割、四十 人に声をかける", [{ text: sheet }])).toEqual(["三割", "四十"]);
+    expect(unsourcedNumbers("町の六割、四十 人に声をかける", [{ text: sheet }])).toEqual(["六割", "四十"]);
     expect(unsourcedNumbers("二〇三〇年までに", [{ text: "2030 年の目標" }])).toEqual([]);
   });
   it("1 枚には窓口がすでにしていることと、それを確かめた日が載る。持ち帰る 1 枚にも載る", () => {

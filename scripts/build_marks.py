@@ -172,6 +172,9 @@ def main():
     marks.sort(key=lambda m: (order.index(m["place"]), m["id"]))
 
     world["marks"] = marks
+    # 市全体の 65 歳以上の割合。表の KEY_CODE 31201 の行が鳥取市の合計。1 枚の「関わる人」で、その町と比べる
+    _, city_people, city_known, city_old = now["31201"]
+    world["cityAge"] = {"people": city_people, "oldShare": round(100 * city_old / city_known)}
     world["sources"]["census_small"] = {
         "name": "国勢調査 令和2年・平成27年 小地域集計と境界（総務省、e-Stat）を加工",
         "url": "https://www.e-stat.go.jp/",

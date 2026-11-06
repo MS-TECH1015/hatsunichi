@@ -3,7 +3,7 @@
 //   POST /sheet     決めた 1 枚に付箋を付ける
 //   POST /rehearse  市の担当者役の問い（返事の予行）
 //   POST /route     困りごとの一行から近い依頼を選ぶ。受け取るのは { text } だけで、OWN_MAX 字まで
-// 守り: 日本からだけ（Anthropic の対応地域の規定に合わせる）。Origin は ALLOWED_ORIGIN だけ。本文 4KB まで。同じ IP は 1 時間に 10 回まで。1 日の合計は DAILY_MAX 回まで。
+// 守り: 日本からだけ（Anthropic の対応地域の規定に合わせる）。Origin は ALLOWED_ORIGIN だけ。本文 4KB まで。同じ IP は 1 時間に PER_HOUR 回まで（既定 10、置いた先は 30。人前で何度も見せる日に足りるように）。1 日の合計は DAILY_MAX 回まで。
 // プロンプトはこちらで組む。受け取った番号と一行をそのまま Claude に渡す口は作らない。モデルと出力の長さも src/lib/review.ts で決めてある。
 // 回数は KV（HITS）に置く。鍵は wrangler secret put ANTHROPIC_API_KEY で入れ、コードにもリポジトリにも置かない。
 // 置き方は docs/spec.md の 10 節
@@ -13,10 +13,10 @@ import { OWN_MAX, answerFromRequest, type SheetRequest } from "../src/lib/sheet"
 import type { World } from "../src/lib/world";
 
 type KV = { get(key: string): Promise<string | null>; put(key: string, value: string, opts?: { expirationTtl?: number }): Promise<void> };
-type Env = { ANTHROPIC_API_KEY: string; HITS: KV; ALLOWED_ORIGIN?: string; DAILY_MAX?: string; REVIEW_MODEL?: string };
+type Env = { ANTHROPIC_API_KEY: string; HITS: KV; ALLOWED_ORIGIN?: string; DAILY_MAX?: string; PER_HOUR?: string; REVIEW_MODEL?: string };
 
 const BODY_MAX = 4096;
-const PER_HOUR = 10;
+const DEFAULT_PER_HOUR = 10;
 const DEFAULT_DAILY = 100;
 const w = world as unknown as World;
 
@@ -46,7 +46,8 @@ export default {
     const ipKey = `ip:${ip}:${Math.floor(Date.now() / 3600_000)}`;
     const dayKey = `day:${new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" })}`;
     const [byIp, byDay] = await Promise.all([hits(env.HITS, ipKey), hits(env.HITS, dayKey)]);
-    if (byIp >= PER_HOUR) return json(429, { error: "1 時間に 10 回まで" }, origin);
+    const perHour = Number(env.PER_HOUR ?? DEFAULT_PER_HOUR);
+    if (byIp >= perHour) return json(429, { error: `1 時間に ${perHour} 回まで` }, origin);
     if (byDay >= Number(env.DAILY_MAX ?? DEFAULT_DAILY)) return json(429, { error: "今日の分は使い切った" }, origin);
     await Promise.all([env.HITS.put(ipKey, String(byIp + 1), { expirationTtl: 3600 }), env.HITS.put(dayKey, String(byDay + 1), { expirationTtl: 2 * 86400 })]);
 

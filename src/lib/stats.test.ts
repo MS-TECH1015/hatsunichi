@@ -26,7 +26,8 @@ it("町の町丁の人口は札の合計で、出典は札のもの。1 枚の�
   const a = answerFromRequest(w, { spot: "empty1", option: 0, fact: 0 }) as SheetAnswer;
   const all = worldStats(w);
   expect(all.oldShare).toBeGreaterThan(0);
-  expect(sheetOf(a, w)).toContain(`関わる人: 用瀬の ${s.blocks} 町丁に住む ${s.people.toLocaleString()} 人。65 歳以上が ${s.oldShare}%、${all.towns} つの町の ${all.blocks} 町丁の合計では ${all.oldShare}%。${changeText(s.change)}`);
+  expect(sheetOf(a, w)).toContain(`関わる人: 用瀬の ${s.blocks} 町丁に住む ${s.people.toLocaleString()} 人。65 歳以上が ${s.oldShare}%、鳥取市全体では ${w.cityAge.oldShare}%。${changeText(s.change)}`);
+  expect(w.cityAge.oldShare).toBe(30);
 });
 
 it("確認役の問いは、付箋があるときだけ 1 枚に載り、記録なら日付が付く", () => {
