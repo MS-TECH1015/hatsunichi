@@ -1199,16 +1199,21 @@ function Rehearsal({
 }) {
   const [waiting, setWaiting] = useState<string | null>(null);
   const rows = answers.map((a) => ({ a, reply: rehearsed[a.spot.id] ?? rehearsalOf(a) ?? (tabKey || REHEARSE_URL ? undefined : checksReply(a)) }));
+  const allDemo = rows.every((r) => r.reply?.demo);
   return (
     <div className="end-rehearsal" aria-label="返事の予行">
       <h3>
         返事の予行
-        <small>市の担当者役の {REPLIES.model} が、この 1 枚を読んで聞き返しそうなこと。架空の練習で、市の返事ではない。答えを書いておくと写しに載る</small>
+        <small>
+          {allDemo
+            ? "鍵が無く記録も無いので、依頼のまだ確かめていないことを問いにした。Claude の問いではない。答えを書いておくと写しに載る"
+            : `市の担当者役の ${REPLIES.model} が、この 1 枚を読んで聞き返しそうなこと。架空の練習で、市の返事ではない。答えを書いておくと写しに載る`}
+        </small>
       </h3>
       {rows.map(({ a, reply }) => (
         <div key={a.spot.id} className="end-rehearsal-row">
           <strong>{a.label}</strong>
-          {reply?.demo && <small>自分で書いた一行の記録は無い。鍵が無いので、この依頼のまだ確かめていないことを問いにした</small>}
+          {reply?.demo && !allDemo && <small>自分で書いた一行の記録は無い。鍵が無いので、この依頼のまだ確かめていないことを問いにした</small>}
           {reply ? (
             <ol>
               {reply.asks.map((q, i) => (
