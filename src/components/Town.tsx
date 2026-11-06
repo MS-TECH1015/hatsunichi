@@ -1145,7 +1145,7 @@ function ReviewCard({ answer, world, onReview }: { answer: Answer; world: World;
         </>
       ) : (
         <small>
-          自分で書いた一行は、鍵を入れたときだけ確認役が読む。
+          {answer.own ? "自分で書いた一行は、鍵を入れたときだけ確認役が読む。" : "この案とこの根拠の記録はまだ無い。"}
           {summary && `測定 ${summary.cases} 件では、一行に作った数字があった ${summary.made} 件のうち ${summary.caught} 件を名指しした`}
         </small>
       )}

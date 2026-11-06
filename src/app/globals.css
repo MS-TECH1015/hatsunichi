@@ -320,3 +320,6 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .title-stats { margin: -4px auto 14px; max-width: 560px; padding: 6px 14px; border: 2px solid #2b2620; border-radius: 14px; background: #fffaf0; color: #2b2620; font-size: 12px; font-weight: 700; line-height: 1.5; }
 .home-sum { margin: 0 0 10px; padding: 8px 10px; border: 2px solid #2b2620; border-radius: 10px; background: #fffaf0; font-size: 14px; font-weight: 700; text-align: left; }
 .home-sum small { display: block; font-size: 11px; color: #8a7f70; }
+.guide-chip { position: absolute; z-index: 4; left: 50%; bottom: 40px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; background: var(--paper); color: var(--ink); border: 3px solid var(--ink); border-radius: 999px; padding: 6px 16px 6px 10px; font-size: 14px; font-weight: 900; box-shadow: 0 4px 0 var(--ink); pointer-events: none; white-space: nowrap; }
+.guide-chip svg { width: 20px; height: 20px; flex: none; }
+.guide-chip small { font-size: 11px; color: #8a7f70; font-weight: 700; }
