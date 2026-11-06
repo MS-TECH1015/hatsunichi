@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { CALCS, defaults, type Calc } from "@/lib/calcs";
 import { clockText, facilityFind, markFind, rideFind, spotFind, targetAt, unsourcedNumbers, type Fact, type Facility, type Find, type Mark, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
 import { withBase } from "@/lib/base";
-import { OWN_MAX, WHY_MAX, answerFromRequest, sheetOf, type SheetRequest } from "@/lib/sheet";
+import { OWN_MAX, WHY_MAX, answerFromRequest, sheetOf, type SheetRequest, type SheetUse } from "@/lib/sheet";
 import recordedNotes from "../../data/notes-recorded.json";
 import type { Note as Reviewed } from "@/lib/review";
 import type { TownScene } from "./town/TownScene";
@@ -99,6 +99,12 @@ const END_ASKS = [
   { ask: "案と返事が就活で話せるなら、また使う？", options: ["使う", "使わない", "わからない"] },
 ];
 
+/** 移り住む人や店を始めたい人は、市に出すより自分の事業の種として持ち帰りたいことがある */
+const USES: { id: SheetUse; label: string }[] = [
+  { id: "city", label: "市に出す" },
+  { id: "business", label: "事業の構想として持ち帰る" },
+];
+
 export function Town({ world }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mapRef = useRef<HTMLCanvasElement>(null);
@@ -125,6 +131,8 @@ export function Town({ world }: Props) {
   const [help, setHelp] = useState("");
   /** 終業の問いへの答え。END_ASKS の順 */
   const [ends, setEnds] = useState<(string | undefined)[]>([]);
+  /** 案を市に出すか、事業の構想として持ち帰るか。書き写す 1 枚の終わりの行が変わる */
+  const [use, setUse] = useState<SheetUse>("city");
   const [sent, setSent] = useState<Sent[]>([]);
   const [showSent, setShowSent] = useState(false);
   const [marked, setMarked] = useState(false);
@@ -447,7 +455,7 @@ export function Town({ world }: Props) {
   const extraFinds = finds.filter((f) => !answers.some((a) => a.spot.id === f.spot));
 
   function copyAnswers() {
-    const body = answers.map((a) => sheetOf(a, world)).join("\n\n");
+    const body = answers.map((a) => sheetOf(a, world, use)).join("\n\n");
     const found = extraFinds.map((f) => `- ${f.text} 出典: ${f.source}`).join("\n");
     const said = END_ASKS.flatMap((q, i) => (ends[i] ? [`- ${q.ask} ${ends[i]}`] : [])).join("\n");
     const text = ["はつにち 初日の記録", help.trim() && `自分が手伝えること: ${help.trim()}`, body, found && `■ 見つけたこと\n${found}`, said && `■ ${guide}に答えたこと\n${said}`]
@@ -688,11 +696,38 @@ export function Town({ world }: Props) {
               </div>
             )}
             {answers.length > 0 && (
+              <div className="end-ask end-use" role="group" aria-label="この案の使い道">
+                <span>この案をどう使う？</span>
+                {USES.map((u) => (
+                  <button
+                    key={u.id}
+                    className={use === u.id ? "on" : undefined}
+                    aria-pressed={use === u.id}
+                    onClick={() => {
+                      setUse(u.id);
+                      setCopied(false);
+                    }}
+                  >
+                    {u.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            {answers.length > 0 && use === "city" && (
               <p className="end-meta">
                 <a href={world.submit.url} target="_blank" rel="noreferrer">
                   {world.submit.name}
                 </a>{" "}
                 に出すと、市から返事が来る。{world.submit.reply}
+              </p>
+            )}
+            {answers.length > 0 && use === "business" && (
+              <p className="end-meta">
+                事業の相談は{" "}
+                <a href={world.business.url} target="_blank" rel="noreferrer">
+                  {world.business.name}
+                </a>
+                。{world.business.note}
               </p>
             )}
             <p className="end-meta">
@@ -732,7 +767,7 @@ export function Town({ world }: Props) {
                   {copied ? "写しました" : "書き写す"}
                 </button>
               )}
-              {answers.length > 0 && (
+              {answers.length > 0 && use === "city" && (
                 <button className="btn-game ghost" onClick={markSent} disabled={marked}>
                   {marked ? "記録した" : "出したら記録"}
                 </button>

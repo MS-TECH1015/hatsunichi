@@ -22,6 +22,17 @@ describe("確認役に送る 1 枚", () => {
     expect(sheet).toContain(`使う場所: ${w.facilities[0].name}`);
   });
 
+  it("持ち帰る 1 枚は出す先を書かず、担当の課と事業の相談先を書く", () => {
+    const a = answerFromRequest(w, { spot: "shop1", option: 0, fact: 0 }) as SheetAnswer;
+    const sheet = sheetOf(a, w, "business");
+    expect(sheet).toContain("（事業の構想として）");
+    expect(sheet).not.toContain("出す先:");
+    expect(sheet).toContain(`この困りごとの担当: ${a.spot.window.name}`);
+    expect(sheet).toContain(`事業の相談先: ${w.business.name} ${w.business.url}`);
+    expect(w.sources[w.business.source].url).toBe(w.business.url);
+    expect(sheetOf(a, w)).toContain(`出す先: ${w.submit.name}`);
+  });
+
   it("無い場所・無い番号・長すぎる一行・範囲の外の前提・無い施設は断る", () => {
     expect(answerFromRequest(w, { spot: "nowhere", option: 0, fact: 0 })).toBe("依頼の場所が無い");
     expect(answerFromRequest(w, { spot: "stop", option: 0, fact: 99 })).toBe("根拠の番号が無い");

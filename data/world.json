@@ -1930,6 +1930,12 @@
       "url": "https://www.pref.tottori.lg.jp/153169.htm",
       "date": "2026-11-06",
       "note": "SHA256 53c0e7372c21b7203d2b04ed6a0807df03b13cda7c2165ab3fbdbd13a7f7d408。事実だけを自分の言葉で短く引く。文は写さない。利用規約のページは見つからず、生成 AI での利用は未確認"
+    },
+    "city_shien_r8": {
+      "name": "鳥取市 令和8年度 鳥取市中小企業・小規模企業支援制度のお知らせ",
+      "url": "https://www.city.tottori.lg.jp/page/5160.html",
+      "date": "2026-11-06",
+      "note": "経済・雇用戦略課のページ。2026年4月1日更新。SHA256 c868c42a14c7c23a21948977f42e8f31a35665f29b5f0a71f1ab26cfca4dd538。鳥取市ウェブサイト利用規約（PDL1.0 準拠）。生成 AI での利用は未確認"
     }
   },
   "submit": {
@@ -2565,5 +2571,11 @@
         "odp_facilities"
       ]
     }
-  ]
+  ],
+  "business": {
+    "name": "鳥取市 中小企業・小規模企業支援制度（令和8年度）",
+    "url": "https://www.city.tottori.lg.jp/page/5160.html",
+    "note": "創業、空き店舗への出店、事業承継、農業への参入、観光などの制度が並び、制度ごとに問い合わせ先の課が違う。まず電話で相談するよう書いてある。この案に合う制度があるかは未確認",
+    "source": "city_shien_r8"
+  }
 }

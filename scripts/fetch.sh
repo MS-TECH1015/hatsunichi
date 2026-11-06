@@ -51,3 +51,5 @@ fetch "https://online.bunka.go.jp/db/heritages/detail/139297" bunka_inaba_kokuch
 fetch "https://online.bunka.go.jp/db/heritages/detail/191522" bunka_tottori_jo.html      # 鳥取城跡 附 太閤ヶ平
 fetch "https://www.pref.tottori.lg.jp/295378.htm" pref_nagashibina.html                  # 用瀬の流しびな 記録選択
 fetch "https://www.pref.tottori.lg.jp/153169.htm" pref_sakyu.html                        # 鳥取砂丘
+# 事業として持ち帰る人の相談先。鳥取市 令和8年度 中小企業・小規模企業支援制度のお知らせ（robots.txt なし、市の利用規約は PDL1.0 準拠）
+fetch "https://www.city.tottori.lg.jp/page/5160.html" city_shien_r8.html

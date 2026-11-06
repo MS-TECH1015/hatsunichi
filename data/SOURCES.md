@@ -20,6 +20,7 @@ SHA256 は取得時の `data/raw/fetch.log` から写した。
 | bunka_tottori_jo | 文化遺産オンライン 鳥取城跡 附 太閤ヶ平 | 文化庁 | https://online.bunka.go.jp/db/heritages/detail/191522 | 2026-11-06 | c6b03f05771fc5021d21652b12af1ae042a42707cfc21c86bcb388a82f53109b | 同上 | 築城の始まり、天正9年の開城、池田家、指定の年を駅のむかしに引いた |
 | pref_nagashibina | 記録作成等の措置を講ずべき無形の民俗文化財「用瀬の流しびな」 | 鳥取県 文化財課 | https://www.pref.tottori.lg.jp/295378.htm | 2026-11-06 | d6990260846bb8836a6c217eec45d067bff3cbae46ae22750767fd4950ffa382 | 利用条件と生成 AI での利用は未確認 | 行事の中身と選択の年を用瀬のむかしに引いた |
 | pref_sakyu | 鳥取砂丘ってどこにあるの？ | 鳥取県 自然共生課 | https://www.pref.tottori.lg.jp/153169.htm | 2026-11-06 | 53c0e7372c21b7203d2b04ed6a0807df03b13cda7c2165ab3fbdbd13a7f7d408 | 利用条件と生成 AI での利用は未確認 | 砂丘の広さと4つの砂丘を、砂丘・福部・湖山のむかしに引いた |
+| city_shien_r8 | 令和8年度 鳥取市中小企業・小規模企業支援制度のお知らせ | 鳥取市 経済・雇用戦略課 | https://www.city.tottori.lg.jp/page/5160.html | 2026-11-06 | c868c42a14c7c23a21948977f42e8f31a35665f29b5f0a71f1ab26cfca4dd538 | 鳥取市ウェブサイト利用規約（PDL1.0 準拠）。robots.txt は置いていない。生成 AI での利用は未確認 | 「事業の構想として持ち帰る」1 枚の相談先にリンクだけ置いた。制度の名前や表は写さず、並ぶ制度の分野と、制度ごとに問い合わせ先が違うことを自分の言葉で書いた |
 
 取得したがまだ使っていないもの
 - 鳥取県介護サービス事業所一覧 CSV（CC BY、/dataset/1888、SHA256 51d10aaecefb04195b4da7b4424622a610bd8876090e68482dbe6a2d7bc286a8）

@@ -7,13 +7,15 @@ export const PROPOSAL = { name: "鳥取市 公共施設マネジメント民間�
 
 export type SheetAnswer = { spot: Spot; option: string; own?: boolean; fact: Fact; calc?: string; why?: string; self?: string; place?: Facility };
 
+/** 1 枚の使い道。市に出すか、事業の構想として持ち帰るか */
+export type SheetUse = "city" | "business";
+
 /** 町の住民は架空なので、その声は載せない */
-export function sheetOf(a: SheetAnswer, world: World): string {
+export function sheetOf(a: SheetAnswer, world: World, use: SheetUse = "city"): string {
   const src = world.sources[a.fact.source];
-  const { submit } = world;
   const town = world.places.find((p) => p.id === a.place?.place)?.name ?? "";
   return [
-    `■ ${a.spot.title}`,
+    use === "business" ? `■ ${a.spot.title}（事業の構想として）` : `■ ${a.spot.title}`,
     `案: ${a.option}`,
     `根拠: ${a.fact.text}`,
     `出典: ${src.name} ${src.url}`,
@@ -25,11 +27,19 @@ export function sheetOf(a: SheetAnswer, world: World): string {
     a.place && `使う場所: ${a.place.name}、${town}。鳥取市の未活用施設。今も使われていないかは未確認 出典: ${world.sources[a.place.sources[0]]?.name ?? ""}`,
     a.place && `参考: 市の施設の使い方は ${PROPOSAL.name} で民間から募っている。この施設の案を市が募っているわけではない ${PROPOSAL.url}`,
     `まだ確かめていないこと: ${a.spot.checks.join(" / ")}`,
-    `出す先: ${submit.name} ${submit.url}`,
-    a.spot.window.url !== submit.url && `担当の窓口: ${a.spot.window.name} ${a.spot.window.url}`,
+    ...(use === "business" ? businessLines(a, world) : cityLines(a, world)),
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+function cityLines(a: SheetAnswer, { submit }: World) {
+  return [`出す先: ${submit.name} ${submit.url}`, a.spot.window.url !== submit.url && `担当の窓口: ${a.spot.window.name} ${a.spot.window.url}`];
+}
+
+/** 持ち帰る人には、この困りごとの担当課と、市の事業者向け制度の一覧だけを渡す。合う制度を名指しはしない */
+function businessLines(a: SheetAnswer, { business }: World) {
+  return [`この困りごとの担当: ${a.spot.window.name} ${a.spot.window.url}`, `事業の相談先: ${business.name} ${business.url}`, `相談先について: ${business.note}`];
 }
 
 /** 画面から確認役へ送るもの。option は選んだ案の番号、own は自分で書いた一行。どちらか一方 */

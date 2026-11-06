@@ -80,6 +80,8 @@ export type World = {
   sources: Record<string, { name: string; url: string; date: string; note: string }>;
   /** 案を出す先。担当の窓口は問い合わせ先で、提案を受けて回答すると書いてあるのはここだけ */
   submit: { name: string; url: string; reply: string; source: string };
+  /** 案を市に出さず、事業の構想として持ち帰る人の相談先。合う制度があるかまでは確かめていない */
+  business: { name: string; url: string; note: string; source: string };
 };
 
 /** 場所の中の座標を、市全体の座標に直したもの */
