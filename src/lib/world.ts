@@ -17,7 +17,13 @@ export type Window = { name: string; url: string; checked: string; note: string 
 
 /** 物語を置く町。at は build_city.py が緯度経度から求めた位置。stop はバスに乗れる標識の位置（場所の中の座標） */
 /** past はその町のむかし。公的な資料の事実を短く引いたもので、地元を探す画面で今の数字と並べる */
-export type Place = { id: string; name: string; geo: Vec2; at: Vec2; hub?: boolean; stop?: Vec2; geo_source: string; past?: Fact[] };
+export type Place = { id: string; name: string; geo: Vec2; at: Vec2; hub?: boolean; stop?: Vec2; geo_source: string; past?: PastFact[] };
+
+/** むかしの札に添える絵。写真は権利の確かめが要るので、作者が描いた絵だけを使う */
+export const PAST_ICONS = ["doki", "kofun", "wan", "shiro", "yakusho", "fuda", "hina", "sakyu"] as const;
+export type PastIcon = (typeof PAST_ICONS)[number];
+/** era は資料にある時代だけを書く。資料に時代が無いものは空のまま */
+export type PastFact = Fact & { era?: string; icon: PastIcon };
 
 export type Spot = {
   id: string;

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { CALCS, defaults, type Calc } from "@/lib/calcs";
 import { clockText, facilityFind, markFind, rideFind, spotFind, targetAt, unsourcedNumbers, type Fact, type Facility, type Find, type Mark, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
 import { withBase } from "@/lib/base";
+import { PastIcon } from "./PastIcon";
 import { OWN_MAX, WHY_MAX, answerFromRequest, sheetOf, type SheetRequest, type SheetUse } from "@/lib/sheet";
 import recordedNotes from "../../data/notes-recorded.json";
 import type { Note as Reviewed } from "@/lib/review";
@@ -787,6 +788,7 @@ export function Town({ world }: Props) {
  * 見せるリンクに入れるのは町の id だけ */
 function HomeView({ home, world, ready, onPick, onBegin, onClose }: { home: Place | "list"; world: World; ready: boolean; onPick: (h: Place | "list") => void; onBegin: (p: Place) => void; onClose: () => void }) {
   const [shared, setShared] = useState(false);
+  const [moreNow, setMoreNow] = useState(false);
   if (home === "list")
     return (
       <div className="end">
@@ -810,8 +812,11 @@ function HomeView({ home, world, ready, onPick, onBegin, onClose }: { home: Plac
     );
 
   const past = home.past ?? [];
-  const now = world.marks.filter((m) => m.place === home.id).slice(0, 3);
+  const marks = world.marks.filter((m) => m.place === home.id);
+  const now = moreNow ? marks : marks.slice(0, 1);
   const sourceOf = (id: string) => world.sources[id];
+  // 出典は札ごとに繰り返さず、むかしの下にまとめて 1 回だけ出す
+  const pastSources = [...new Set(past.map((f) => f.source))].map(sourceOf).filter(Boolean);
   async function show(p: Place) {
     const url = `${location.origin}${location.pathname}?town=${p.id}`;
     const text = `鳥取市 ${p.name}のむかしといま。${past[0]?.text ?? now[0]?.text ?? ""}`;
@@ -828,16 +833,29 @@ function HomeView({ home, world, ready, onPick, onBegin, onClose }: { home: Plac
         <h2>{home.name}</h2>
         <h3>むかし</h3>
         {past.length === 0 && <p className="home-note">この町のむかしは、まだ調べていない</p>}
-        <ul className="home-facts">
+        <ol className="past-cards">
           {past.map((f) => (
             <li key={f.text}>
-              {f.text}
-              <a href={sourceOf(f.source)?.url} target="_blank" rel="noreferrer">
-                {sourceOf(f.source)?.name}
-              </a>
+              <PastIcon kind={f.icon} />
+              {f.era && <b>{f.era}</b>}
+              <span>{f.text}</span>
             </li>
           ))}
-        </ul>
+        </ol>
+        {pastSources.length > 0 && (
+          <p className="past-src">
+            出典:{" "}
+            {pastSources.map((s, i) => (
+              <span key={s!.url}>
+                {i > 0 && "、"}
+                <a href={s!.url} target="_blank" rel="noreferrer">
+                  {s!.name}
+                </a>
+              </span>
+            ))}
+            。絵は資料の写真でなく、作者が描いたもの
+          </p>
+        )}
         <h3>いま</h3>
         <ul className="home-facts">
           {now.map((m) => (
@@ -847,6 +865,11 @@ function HomeView({ home, world, ready, onPick, onBegin, onClose }: { home: Plac
             </li>
           ))}
         </ul>
+        {marks.length > 1 && !moreNow && (
+          <button className="link-more" onClick={() => setMoreNow(true)}>
+            ほかの町丁の数字 {marks.length - 1} 件
+          </button>
+        )}
         <div className="end-actions">
           <button className="btn-game" disabled={!ready} onClick={() => onBegin(home)}>
             {ready ? "この町から歩く" : "よみこみ中…"}
@@ -854,7 +877,13 @@ function HomeView({ home, world, ready, onPick, onBegin, onClose }: { home: Plac
           <button className="btn-game ghost" onClick={() => void show(home)}>
             {shared ? "写しました" : "この町を見せる"}
           </button>
-          <button className="btn-game ghost" onClick={() => onPick("list")}>
+          <button
+            className="btn-game ghost"
+            onClick={() => {
+              setMoreNow(false);
+              onPick("list");
+            }}
+          >
             ほかの町
           </button>
         </div>

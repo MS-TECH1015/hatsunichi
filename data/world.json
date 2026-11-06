@@ -37,15 +37,21 @@
       "past": [
         {
           "text": "駅の北の久松山にあった鳥取城は、天文14年に山名誠通が出城として築いたのが始まりといわれる",
-          "source": "bunka_tottori_jo"
+          "source": "bunka_tottori_jo",
+          "era": "戦国",
+          "icon": "shiro"
         },
         {
           "text": "天正9年、鳥取城は秀吉に3か月あまり囲まれ、吉川経家が自刃して城を開いた",
-          "source": "bunka_tottori_jo"
+          "source": "bunka_tottori_jo",
+          "era": "戦国",
+          "icon": "shiro"
         },
         {
           "text": "池田光仲が移ってから明治維新まで、池田家の城だった。1957 年に国の史跡",
-          "source": "bunka_tottori_jo"
+          "source": "bunka_tottori_jo",
+          "era": "江戸",
+          "icon": "shiro"
         }
       ]
     },
@@ -87,7 +93,8 @@
       "past": [
         {
           "text": "鳥取砂丘をなす4つの砂丘のうち1つが湖山砂丘",
-          "source": "pref_sakyu"
+          "source": "pref_sakyu",
+          "icon": "sakyu"
         }
       ]
     },
@@ -111,11 +118,13 @@
       "past": [
         {
           "text": "因幡国の国府は、今の福部と国府町を含む地域にあったとされる",
-          "source": "bunka_inaba_kokucho"
+          "source": "bunka_inaba_kokucho",
+          "icon": "yakusho"
         },
         {
           "text": "鳥取砂丘の東の端は福部町岩戸。砂丘をなす4つのうち1つが福部砂丘",
-          "source": "pref_sakyu"
+          "source": "pref_sakyu",
+          "icon": "sakyu"
         }
       ]
     },
@@ -139,11 +148,15 @@
       "past": [
         {
           "text": "八束水の短尾遺跡など、気高町では縄文時代の遺跡が見つかっている",
-          "source": "pref_maibun_ketaka"
+          "source": "pref_maibun_ketaka",
+          "era": "縄文",
+          "icon": "doki"
         },
         {
           "text": "勝見の谷奥1号墳からは銅の鋺と馬鐸が出た。奈良時代の上原遺跡群などもある",
-          "source": "pref_maibun_ketaka"
+          "source": "pref_maibun_ketaka",
+          "era": "古墳",
+          "icon": "wan"
         }
       ]
     },
@@ -167,11 +180,15 @@
       "past": [
         {
           "text": "郷原の前田遺跡や釜口の下中溝遺跡は、縄文時代から人が暮らした跡",
-          "source": "pref_maibun_kawahara"
+          "source": "pref_maibun_kawahara",
+          "era": "縄文",
+          "icon": "doki"
         },
         {
           "text": "古墳時代には郷原1号墳や曳田の嶽古墳が造られた。奈良時代の郷原遺跡からは軒瓦が出た",
-          "source": "pref_maibun_kawahara"
+          "source": "pref_maibun_kawahara",
+          "era": "古墳",
+          "icon": "kofun"
         }
       ]
     },
@@ -195,11 +212,15 @@
       "past": [
         {
           "text": "国府町の因幡国庁跡は、平安時代のはじめの因幡国の役所の跡とみられる。1978 年に国の史跡",
-          "source": "bunka_inaba_kokucho"
+          "source": "bunka_inaba_kokucho",
+          "era": "平安",
+          "icon": "yakusho"
         },
         {
           "text": "溝から「仁和2年」と書いた札や木簡、硯が出た。国の役所が確かめられた例は全国でも少ない",
-          "source": "bunka_inaba_kokucho"
+          "source": "bunka_inaba_kokucho",
+          "era": "平安",
+          "icon": "fuda"
         }
       ]
     },
@@ -223,11 +244,13 @@
       "past": [
         {
           "text": "旧暦3月3日、紙の雛を桟俵にのせて千代川に流す。2021 年に国の記録選択に",
-          "source": "pref_nagashibina"
+          "source": "pref_nagashibina",
+          "icon": "hina"
         },
         {
           "text": "流しびなは因幡で広く行われていたが、今も残るのは用瀬だけ",
-          "source": "pref_nagashibina"
+          "source": "pref_nagashibina",
+          "icon": "hina"
         }
       ]
     },
@@ -251,11 +274,14 @@
       "past": [
         {
           "text": "鳥取砂丘は東西 16 km、南北 2.4 km。福部・浜坂・湖山・末恒の4つの砂丘からなる",
-          "source": "pref_sakyu"
+          "source": "pref_sakyu",
+          "icon": "sakyu"
         },
         {
           "text": "観光で歩く浜坂砂丘の一部だけが、1950 年代の天然記念物指定のころの姿を残す",
-          "source": "pref_sakyu"
+          "source": "pref_sakyu",
+          "era": "1950年代",
+          "icon": "sakyu"
         }
       ]
     }

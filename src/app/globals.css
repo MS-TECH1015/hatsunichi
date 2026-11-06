@@ -257,6 +257,14 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .home-facts { margin: 0 0 8px; padding: 0; list-style: none; text-align: left; font-size: 14px; font-weight: 700; }
 .home-facts li { margin-bottom: 10px; }
 .home-facts a, .home-facts small { display: block; font-size: 11px; font-weight: 700; color: #8a7f70; }
+.past-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 0 0 6px; padding: 0; list-style: none; text-align: left; }
+.past-cards li { display: grid; grid-template-columns: 44px 1fr; grid-template-rows: auto 1fr; column-gap: 8px; padding: 8px; border: 2px solid #2b2620; border-radius: 12px; background: #fff; }
+.past-cards svg { grid-row: span 2; }
+.past-cards b { justify-self: start; padding: 1px 8px; border-radius: 999px; background: #2b2620; color: #fffaf0; font-size: 11px; font-weight: 900; }
+.past-cards span { grid-column: 2; font-size: 12px; font-weight: 700; line-height: 1.45; }
+.past-src { margin: 0 0 4px; font-size: 11px; font-weight: 700; color: #8a7f70; text-align: left; }
+.past-src a { color: inherit; }
+.link-more { display: block; margin: 0 0 8px; padding: 0; border: 0; background: none; font: inherit; font-size: 12px; font-weight: 900; color: #8a7f70; text-decoration: underline; cursor: pointer; }
 .end-asks { margin: 0 0 14px; text-align: left; font-size: 13px; font-weight: 900; }
 .end-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
 .end-ask span { flex-basis: 100%; }

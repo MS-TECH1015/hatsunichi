@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import world from "../../data/world.json";
 import city from "../../public/city/city.json";
 import { CALCS, defaults } from "./calcs";
-import { busMinutes, clockText, facilityFind, heightAt, markFind, nearestMark, nearestTarget, placeWorld, pushOut, rideFind, routeBetween, spotFind, stepWithin, straightKm, unsourcedNumbers, walkable, type Ground, type Route, type World } from "./world";
+import { PAST_ICONS, busMinutes, clockText, facilityFind, heightAt, markFind, nearestMark, nearestTarget, placeWorld, pushOut, rideFind, routeBetween, spotFind, stepWithin, straightKm, unsourcedNumbers, walkable, type Ground, type Route, type World } from "./world";
 
 const w = placeWorld(world as unknown as World);
 const bytes = (path: string) => readFileSync(new URL(path, import.meta.url));
@@ -134,6 +134,7 @@ describe("world", () => {
       for (const f of p.past ?? []) {
         expect(w.sources[f.source]?.url, `${p.id}: ${f.source}`).toMatch(/^https:\/\//);
         expect(f.text.length, `${p.id}: ${f.text}`).toBeLessThanOrEqual(50);
+        expect(PAST_ICONS, `${p.id}: ${f.text}`).toContain(f.icon);
       }
   });
 
