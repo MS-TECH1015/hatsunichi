@@ -4,9 +4,12 @@ import type { Impact, Town, Trip } from "@/lib/impact";
 import { CLOCK_DIGITS, demoNote, digitsOf, type Facts, type Note, type Submission } from "@/lib/review";
 import { residentState } from "@/lib/impact";
 
-// Pages は静的なので確認役は手元のサーバー（scripts/review-server.ts）。無ければ demo の付箋を画面側で作る
-const REVIEW_URL = process.env.NEXT_PUBLIC_REVIEW_URL;
 import { SourceChip, type SourceMeta } from "./SourceChip";
+
+// 確認役は手元のサーバー（scripts/review-server.ts）だけ。公開版の中継は 3D の町の /sheet・/rehearse・/route しか受けないので、
+// 中継に向いているときは送らず、demo の付箋を画面側で作る
+const REVIEW_URL = process.env.NEXT_PUBLIC_REVIEW_URL;
+export const MAP_REVIEW_URL = REVIEW_URL && new URL(REVIEW_URL).hostname === "localhost" ? REVIEW_URL : undefined;
 
 type Round = { submission: Submission; note: Note; persons: Impact["persons"] };
 
@@ -45,7 +48,7 @@ export function SubmissionForm({ town, removedTrips, impact, load, source }: Pro
   }
 
   async function askReviewer(submission: Submission): Promise<Note> {
-    const res = await fetch(REVIEW_URL!, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ submission, load_factor: load }) });
+    const res = await fetch(MAP_REVIEW_URL!, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ submission, load_factor: load }) });
     if (!res.ok) throw new Error((await res.json()).error ?? res.statusText);
     return ((await res.json()) as { note: Note }).note;
   }
@@ -60,7 +63,7 @@ export function SubmissionForm({ town, removedTrips, impact, load, source }: Pro
       alternative,
     };
     try {
-      const note = REVIEW_URL ? await askReviewer(submission) : demoNote(factsOf(), submission);
+      const note = MAP_REVIEW_URL ? await askReviewer(submission) : demoNote(factsOf(), submission);
       setRounds((prev) => [...prev, { submission, note, persons: impact.persons }]);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

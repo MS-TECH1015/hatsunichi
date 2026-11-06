@@ -5,7 +5,7 @@ import type { Ticket } from "@/lib/ticket";
 import { busesAt } from "@/lib/busPosition";
 import { SourceChip, type SourceMeta } from "./SourceChip";
 import { TownMap } from "./TownMap";
-import { SubmissionForm } from "./SubmissionForm";
+import { MAP_REVIEW_URL, SubmissionForm } from "./SubmissionForm";
 
 type Meta = { built_at: string; sources: SourceMeta[]; counts: Record<string, number> };
 
@@ -133,7 +133,7 @@ export function Workbench({ town, meta, tickets }: { town: Town; meta: Meta; tic
       </main>
 
       <footer className="foot">
-        <span>選考に使わず本人にだけ返す。保存するのは同意した一言だけ</span>
+        <span>{MAP_REVIEW_URL ? "提出用紙は手元の確認役のサーバーへ送る" : "提出用紙はどこにも送らず、決まった文の付箋を画面の中で付ける"}。一言は同意したときだけ、このブラウザに残す</span>
         <span>事業者とは無関係の個人制作。時刻表: 鳥取県オープンデータポータル 鳥取県バス情報（日本交通 GTFS-JP）を加工。人口: 出典：鳥取市公式ウェブサイト。町の代表点: 大字・町丁目位置参照情報 19.0b（国土交通省）をもとに作成。地図: 地理院タイル。生成 {meta.built_at}</span>
       </footer>
     </div>
