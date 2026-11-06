@@ -15,6 +15,8 @@ fetch() {
   curl -sSL --retry 0 -A "hatsunichi/0.1 (one-time fetch; Built with Claude Japan 2026)" -o "$RAW/$out" "$url"
   echo "$(date +%Y-%m-%d) $(sha256sum "$RAW/$out" | cut -d' ' -f1) $url" >> "$RAW/fetch.log"
   echo "fetched: $out"
+  # 文化遺産オンラインの robots.txt が Crawl-delay 10 秒。どのサイトにも同じ間をあける
+  sleep 10
 }
 
 # 鳥取県オープンデータポータル 鳥取県バス情報 https://odp-pref-tottori.tori-info.co.jp/bus.html
