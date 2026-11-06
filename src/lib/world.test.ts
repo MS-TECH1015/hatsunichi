@@ -42,6 +42,8 @@ describe("world", () => {
     for (const s of w.spots) {
       expect(s.quest.options).toHaveLength(3);
       expect(s.window.url).toMatch(/^https:\/\//);
+      expect(s.window.doing.length).toBeGreaterThan(10);
+      expect(s.window.checked).toMatch(/^2026-\d\d-\d\d$/);
       for (const f of s.facts) expect(w.sources[f.source]).toBeDefined();
       const digits = s.why.match(/\d+/g) ?? [];
       const known = s.facts.map((f) => f.text).join(" ");

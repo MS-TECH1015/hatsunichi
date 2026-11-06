@@ -78,6 +78,11 @@ describe("返事の予行", () => {
     expect(unsourcedNumbers("国府に住む 774 人の中から、まず大学の近くの町丁で声をかける", [{ text: sheet }])).toEqual([]);
     expect(unsourcedNumbers("学生を 30 人集める", [{ text: sheet }])).toEqual(["30"]);
   });
+  it("1 枚には窓口がすでにしていることと、それを確かめた日が載る。持ち帰る 1 枚にも載る", () => {
+    const a = answerFromRequest(w, { spot: "fire1", option: 0, fact: 0 }) as SheetAnswer;
+    for (const use of ["city", "business"] as const) expect(sheetOf(a, w, use)).toContain(`窓口がすでにしていること（${a.spot.window.checked} にページで確認）: ${a.spot.window.doing}`);
+    expect(unsourcedNumbers("18 歳の学生 3 人で団体をつくる", [{ text: sheetOf(a, w, "city") }])).toEqual([]);
+  });
 });
 
 describe("困りごとの案内", () => {

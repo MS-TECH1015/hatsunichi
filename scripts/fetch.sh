@@ -56,3 +56,13 @@ fetch "https://www.city.tottori.lg.jp/page/5160.html" city_shien_r8.html
 # 町のむかし（河原・気高）。鳥取県埋蔵文化財センターの遺跡の年表。県の著作権のページ 9314.htm に従い、事実を自分の言葉で短く引くだけで、文と表は写さない
 fetch "https://www.pref.tottori.lg.jp/secure/76301/maibunj8.pdf" pref_maibun_j8.pdf
 fetch "https://www.pref.tottori.lg.jp/secure/76301/maibunj9.pdf" pref_maibun_j9.pdf
+# 依頼ごとの担当の窓口のページ。窓口がすでにしていることを、事実だけ自分の言葉で 1 枚に添える（2026-11-06）
+fetch "https://www.pref.tottori.lg.jp/koutuu/" win_stop_koutuu.html
+fetch "https://www.city.tottori.lg.jp/soshiki/57/" win_shop1_machinaka.html
+fetch "https://www.city.tottori.lg.jp/page/5429.html" win_field1_chiikikeikaku.html
+fetch "https://www.city.tottori.lg.jp/page/7017.html" win_cave_shouga.html
+fetch "https://www.pref.tottori.lg.jp/258682.htm" win_workshop_shoukei.html
+fetch "https://www.pref.tottori.lg.jp/318584.htm" win_care1_soudan.html
+fetch "https://www.pref.tottori.lg.jp/281025.htm" win_fire1_shoubou.html
+# 消防団の窓口のページから案内されている、県の若者・女性の地域防災参画補助金（2026-11-06）
+fetch "https://www.pref.tottori.lg.jp/328533.htm" win_fire1_hojokin.html

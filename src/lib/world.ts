@@ -13,7 +13,8 @@ export function unsourcedNumbers(text: string, facts: Pick<Fact, "text">[]): str
   const known = new Set(facts.flatMap((f) => numbers(f.text)));
   return [...new Set(numbers(text))].filter((n) => n.length > 1 && !known.has(n));
 }
-export type Window = { name: string; url: string; checked: string; note: string };
+/** doing は窓口がすでにしていること。窓口のページを読んで、事実だけを自分の言葉で書いた */
+export type Window = { name: string; url: string; checked: string; note: string; doing: string };
 
 /** 物語を置く町。at は build_city.py が緯度経度から求めた位置。stop はバスに乗れる標識の位置（場所の中の座標） */
 /** past はその町のむかし。公的な資料の事実を短く引いたもので、地元を探す画面で今の数字と並べる */

@@ -41,12 +41,16 @@ export function sheetOf(a: SheetAnswer, world: World, use: SheetUse = "city"): s
 }
 
 function cityLines(a: SheetAnswer, { submit }: World) {
-  return [`出す先: ${submit.name} ${submit.url}`, a.spot.window.url !== submit.url && `担当の窓口: ${a.spot.window.name} ${a.spot.window.url}`];
+  return [`出す先: ${submit.name} ${submit.url}`, a.spot.window.url !== submit.url && `担当の窓口: ${a.spot.window.name} ${a.spot.window.url}`, doingLine(a)];
 }
 
 /** 持ち帰る人には、この困りごとの担当課と、市の事業者向け制度の一覧だけを渡す。合う制度を名指しはしない */
 function businessLines(a: SheetAnswer, { business }: World) {
-  return [`この困りごとの担当: ${a.spot.window.name} ${a.spot.window.url}`, `事業の相談先: ${business.name} ${business.url}`, `相談先について: ${business.note}`];
+  return [`この困りごとの担当: ${a.spot.window.name} ${a.spot.window.url}`, doingLine(a), `事業の相談先: ${business.name} ${business.url}`, `相談先について: ${business.note}`];
+}
+
+function doingLine(a: SheetAnswer) {
+  return `窓口がすでにしていること（${a.spot.window.checked} にページで確認）: ${a.spot.window.doing}`;
 }
 
 /** 画面から確認役へ送るもの。option は選んだ案の番号、own は自分で書いた一行。どちらか一方 */

@@ -25,6 +25,14 @@ SHA256 は取得時の `data/raw/fetch.log` から写した。
 | city_shien_r8 | 令和8年度 鳥取市中小企業・小規模企業支援制度のお知らせ | 鳥取市 経済・雇用戦略課 | https://www.city.tottori.lg.jp/page/5160.html | 2026-11-06 | c868c42a14c7c23a21948977f42e8f31a35665f29b5f0a71f1ab26cfca4dd538 | 鳥取市ウェブサイト利用規約（PDL1.0 準拠）。robots.txt は置いていない。生成 AI での利用は未確認 | 「事業の構想として持ち帰る」1 枚の相談先にリンクだけ置いた。制度の名前や表は写さず、並ぶ制度の分野と、制度ごとに問い合わせ先が違うことを自分の言葉で書いた |
 | pref_arikata_r2 | 地域における今後の職業教育機関の在り方について（令和2年3月） | 鳥取県 | https://www.pref.tottori.lg.jp/secure/1218876/arikatazentai.pdf | 2026-11-04 | 95031efcab25645602d70aaa0d84a4e0b952ed225ded1c7ba6b3a4c13561226c | 鳥取県のサイトポリシーに従う（2026-11-06 に 9314.htm で確認。出典の明示で利用可）。AI 利用の可否は未確認 | 県内進学者の県内残留率 14.2% の 1 文だけを自分の言葉で書き写した |
 | tottori_shiseiteian_list | 市政提案 令和8年度の提案と回答の一覧 | 鳥取市 | https://www.city.tottori.lg.jp/site/shiseiteian/list97-628.html | 2026-11-04 | d6a483655fa1c6fc21309f37081299f29a76a3df0f109253419720d9c3fcede2 | 鳥取市のサイトの著作権の扱いに従う。AI 利用の可否は未確認 | 取得時点の件数 80 件だけを数えた |
+| win_stop | 交通政策課 | 鳥取県 交通政策課 | https://www.pref.tottori.lg.jp/koutuu/ | 2026-11-06 | 45d9560796254917b2ac00c326cdaf233e107dfd614cb2a28caa6e45119b6839 | 県のページは著作物（https://www.pref.tottori.lg.jp/9314.htm）。生成 AI での利用は未確認 | 窓口がすでにしていること（world.json の spots[].window.doing）を、事実だけ自分の言葉で 1〜3 文に書いた。文と表は写さない |
+| win_shop1 | まちなか未来創造課 | 鳥取市 まちなか未来創造課 | https://www.city.tottori.lg.jp/soshiki/57/ | 2026-11-06 | c7b7365b4dcb78b1d6f1c311b55c97340e47909d9fde4a09bb1f7b262bcbcad5 | 鳥取市ウェブサイト利用規約（PDL1.0 準拠）。robots.txt は置いていない。生成 AI での利用は未確認 | 窓口がすでにしていること（world.json の spots[].window.doing）を、事実だけ自分の言葉で 1〜3 文に書いた。文と表は写さない |
+| win_field1 | 地域計画を策定しました | 鳥取市 農政企画課 | https://www.city.tottori.lg.jp/page/5429.html | 2026-11-06 | 4d9242cfd9afcdcebe61b4d40b549db3355c5af95c40298035439e0c8f2ba623 | 鳥取市ウェブサイト利用規約（PDL1.0 準拠）。robots.txt は置いていない。生成 AI での利用は未確認 | 窓口がすでにしていること（world.json の spots[].window.doing）を、事実だけ自分の言葉で 1〜3 文に書いた。文と表は写さない |
+| win_cave | 気高の生姜（瑞穂生姜、日光生姜） | 鳥取市 気高町総合支所 地域振興課 | https://www.city.tottori.lg.jp/page/7017.html | 2026-11-06 | d1bedb7e66587bab37e0589ca8a5931adfb335a7756e25926417570c4ff91cd6 | 鳥取市ウェブサイト利用規約（PDL1.0 準拠）。robots.txt は置いていない。生成 AI での利用は未確認 | 窓口がすでにしていること（world.json の spots[].window.doing）を、事実だけ自分の言葉で 1〜3 文に書いた。文と表は写さない |
+| win_workshop | 事業承継支援 | 鳥取県 企業支援課 | https://www.pref.tottori.lg.jp/258682.htm | 2026-11-06 | 449b037daf830152314a2d95a7d8a38c8d4991eb25f39cab48687857cf5f08cf | 県のページは著作物（https://www.pref.tottori.lg.jp/9314.htm）。生成 AI での利用は未確認 | 窓口がすでにしていること（world.json の spots[].window.doing）を、事実だけ自分の言葉で 1〜3 文に書いた。文と表は写さない |
+| win_care1 | 各種相談窓口（地域包括支援センター等） | 鳥取県 長寿社会課 | https://www.pref.tottori.lg.jp/318584.htm | 2026-11-06 | 869ed352d5877c088cb6be1c0555a8c8eb47b44ca61f4606b1184653371d469f | 県のページは著作物（https://www.pref.tottori.lg.jp/9314.htm）。生成 AI での利用は未確認 | 窓口がすでにしていること（world.json の spots[].window.doing）を、事実だけ自分の言葉で 1〜3 文に書いた。文と表は写さない |
+| win_fire1 | 消防団について | 鳥取県 | https://www.pref.tottori.lg.jp/281025.htm | 2026-11-06 | a43cfc15bc5ee4df4d5ab04656ff7a2a73f474dee3b2a7e3eb78a3c3f665fbe0 | 県のページは著作物（https://www.pref.tottori.lg.jp/9314.htm）。生成 AI での利用は未確認 | 窓口がすでにしていること（world.json の spots[].window.doing）を、事実だけ自分の言葉で 1〜3 文に書いた。文と表は写さない |
+| win_fire1_hojokin | 鳥取県若者・女性の地域防災参画補助金 | 鳥取県 | https://www.pref.tottori.lg.jp/328533.htm | 2026-11-06 | 8fe73516336610e9dfa0dab1b1b9eddf03eb21187826ab72918466734577dbac | 県のページは著作物（https://www.pref.tottori.lg.jp/9314.htm）。生成 AI での利用は未確認 | 窓口がすでにしていること（world.json の spots[].window.doing）を、事実だけ自分の言葉で 1〜3 文に書いた。文と表は写さない |
 
 取得したがまだ使っていないもの
 - 鳥取県介護サービス事業所一覧 CSV（CC BY、/dataset/1888、SHA256 51d10aaecefb04195b4da7b4424622a610bd8876090e68482dbe6a2d7bc286a8）
@@ -58,6 +66,7 @@ SHA256 は取得時の `data/raw/fetch.log` から写した。
 ## robots.txt と著作権のページ（2026-11-06 に読んだ）
 
 取った 28 件の URL は、どれも各サイトの robots.txt の Disallow に当たらない。robots.txt は各サイトで 1 回ずつ取った。
+2026-11-06 に足した窓口のページ 8 件も、県のサイトの Disallow（/dde.aspx、/secure/221685/ など）に当たらない。市のサイトは robots.txt を置いていない。1 件ごとに 10 秒あけて取った。
 
 | サイト | robots.txt | 著作権・利用のページ |
 |---|---|---|

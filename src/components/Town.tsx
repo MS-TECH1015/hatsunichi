@@ -1486,6 +1486,11 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, su
               ))}
             </ul>
           )}
+          {/* 携帯では案の並びが画面からあふれるので、閉じておく */}
+          <details className="doing" open={!window.matchMedia("(max-width: 640px)").matches}>
+            <summary>窓口がすでにしていること</summary>
+            {spot.window.doing}
+          </details>
           {spot.quest.options.map((o, i) => (
             <button key={o.label} className="choice" onClick={() => onChoose(spot, o)} onMouseEnter={() => play("select", 0.2)}>
               <kbd>{i + 1}</kbd>
