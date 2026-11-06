@@ -254,7 +254,7 @@ export function demoRoute(text: string, world: World): Route {
   const want = grams(text);
   const score = (t: string) => [...grams(t)].filter((g) => want.has(g)).length;
   const ranked = world.spots
-    .map((s) => ({ s, n: score(`${s.title} ${s.quest.ask} ${s.why} ${s.facts.map((f) => f.text).join(" ")} ${s.window.doing}`) }))
+    .map((s) => ({ s, n: score(`${s.title} ${s.quest.ask} ${s.why} ${s.facts.map((f) => f.text).join(" ")}`) }))
     .sort((a, b) => b.n - a.n);
   const top = ranked[0];
   if (!top || top.n === 0) return { spot: null, fact: null, reason: "書いた言葉と重なる依頼が無かった。", model: "demo", retries: 0, demo: true };
