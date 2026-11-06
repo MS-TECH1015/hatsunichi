@@ -27,6 +27,8 @@ type Worked = { text: string; knobs: Record<string, number>; why?: string };
 const townTotal = (world: World, place: string) =>
   world.spots.filter((s) => s.place === place).length + world.marks.filter((m) => m.place === place).length + world.facilities.filter((f) => f.place === place).length;
 type Voice = { name: string; role: string; view: string; heard: boolean };
+/** 白兎の初日の説明に、解く課題の数字を 1 行ずつ挟む。数字は world.problem にあり、出典つき */
+const introLines = (lines: string[], world: World) => [lines[0], ...world.problem.map((p) => `${p.text}。`), ...lines.slice(1)];
 type Stage = "hint" | "ask" | "write" | "basis" | "calc" | "place" | "self" | "result";
 type Panel =
   | { type: "talk"; speaker: string; role?: string; lines: string[]; i: number }
@@ -229,7 +231,7 @@ export function Town({ world }: Props) {
     sceneRef.current?.markTalked(rabbit.id);
     setTalked([rabbit.id]);
     // カメラが降りきってから白兎が話しかける
-    window.setTimeout(() => setPanel({ type: "talk", speaker: rabbit.name, role: rabbit.role, lines: rabbit.lines, i: 0 }), 1700);
+    window.setTimeout(() => setPanel({ type: "talk", speaker: rabbit.name, role: rabbit.role, lines: introLines(rabbit.lines, world), i: 0 }), 1700);
   }
 
   function stroll() {
@@ -486,6 +488,7 @@ export function Town({ world }: Props) {
         <div className="title">
           <h1 className="logo">はつにち</h1>
           <p className="tagline">鳥取市を歩いて、町の困りごとを見つける。</p>
+          <p className="title-problem">{world.problem.map((p) => p.text).join("。")}。</p>
           <p className="title-stats">
             {stats.towns} つの町、{stats.blocks} の町丁に住む {stats.people.toLocaleString()} 人の数字。{changeText(stats.change)}。根拠 {stats.facts} 件、出典 {stats.sources} 件。数字はすべて公的な資料から
           </p>
@@ -736,7 +739,7 @@ export function Town({ world }: Props) {
                 <a href={world.submit.url} target="_blank" rel="noreferrer">
                   {world.submit.name}
                 </a>{" "}
-                に出すと、市から返事が来る。{world.submit.reply}
+                に出すと、市から返事が来る。{world.submit.reply}。{world.submit.listed.text}
               </p>
             )}
             {answers.length > 0 && use === "business" && (
@@ -1023,7 +1026,7 @@ type SpotViewProps = {
  * 公開版では、遊ぶ人が入れた鍵でブラウザから Anthropic へ直接送る。鍵が無ければ、測定のときに Claude が書いた付箋の記録を見せる */
 const REVIEW_URL = process.env.NEXT_PUBLIC_REVIEW_URL;
 const SHEET_URL = REVIEW_URL && new URL("sheet", REVIEW_URL).toString();
-type Recorded = { model: string; date: string; summary?: { cases: number; made: number; caught: number }; notes: Record<string, Pick<Reviewed, "good" | "gap" | "question">> };
+type Recorded = { model: string; date: string; summary?: { cases: number; made: number; caught: number }; tricks?: { spot: string; own: string; made: string; gap: string }[]; notes: Record<string, Pick<Reviewed, "good" | "gap" | "question">> };
 const RECORDED = recordedNotes as Recorded;
 // 入れた鍵はこの変数にだけ置く。保存しないので、読み込み直すと消える
 let tabKey = "";
@@ -1104,6 +1107,7 @@ function ReviewCard({ answer, world, onReview }: { answer: Answer; world: World;
     }
   };
   const summary = RECORDED.summary;
+  const trick = RECORDED.tricks?.find((t) => t.spot === answer.spot.id) ?? RECORDED.tricks?.[0];
 
   if (state === "wait")
     return (
@@ -1147,6 +1151,12 @@ function ReviewCard({ answer, world, onReview }: { answer: Answer; world: World;
         <small>
           {answer.own ? "自分で書いた一行は、鍵を入れたときだけ確認役が読む。" : "この案とこの根拠の記録はまだ無い。"}
           {summary && `測定 ${summary.cases} 件では、一行に作った数字があった ${summary.made} 件のうち ${summary.caught} 件を名指しした`}
+          {answer.own && trick && (
+            <>
+              <br />
+              例: 「{trick.own}」と書くと、{RECORDED.model} は {trick.made} を名指しした。{trick.gap}
+            </>
+          )}
         </small>
       )}
       {SHEET_URL ? (

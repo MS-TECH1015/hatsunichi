@@ -1917,6 +1917,18 @@
       "date": "2026-11-04",
       "note": "表の最初の行、鳥取砂丘。集計の日数が年によって違う。県のサイトのため数字だけを引用"
     },
+    "pref_arikata_r2": {
+      "name": "鳥取県 地域における今後の職業教育機関の在り方について 令和2年3月（平成30年度学校基本調査による）",
+      "url": "https://www.pref.tottori.lg.jp/secure/1218876/arikatazentai.pdf",
+      "date": "2026-11-04",
+      "note": "SHA256 95031efcab25645602d70aaa0d84a4e0b952ed225ded1c7ba6b3a4c13561226c。県内の大学進学者が県内に残る率 14.2% は全国で 2 番目に低いと書いてある"
+    },
+    "tottori_shiseiteian_list": {
+      "name": "鳥取市 市政提案 令和8年度の提案と回答の一覧",
+      "url": "https://www.city.tottori.lg.jp/site/shiseiteian/list97-628.html",
+      "date": "2026-11-04",
+      "note": "SHA256 d6a483655fa1c6fc21309f37081299f29a76a3df0f109253419720d9c3fcede2。取得時点で 2026-10-26 までの 80 件が載っていた"
+    },
     "tottori_shiseiteian": {
       "name": "鳥取市 市政提案 提案の方法",
       "url": "https://www.city.tottori.lg.jp/page/3265.html",
@@ -1996,10 +2008,24 @@
       "note": "鳥取県埋蔵文化財センター作成の年表（鳥取埋文情報）。2026-11-06 に 1 回取得。SHA256 881b5baa69ecba001f8630f715c30b22726db49e565e69c24e30fa55da2c2a7a。県の著作権のページ 9314.htm に従い、遺跡の名前と時代の事実だけを自分の言葉で短く引く。表と図は写さない。生成 AI での利用は未確認"
     }
   },
+  "problem": [
+    {
+      "text": "鳥取県の高校から大学へ進む人のうち、県内の大学へ進むのは 14.2%。全国で 2 番目に低い",
+      "source": "pref_arikata_r2"
+    },
+    {
+      "text": "鳥取市で調査に答えた会社の 61.6% に、後継者がいない",
+      "source": "tottori_shokei_r7"
+    }
+  ],
   "submit": {
     "name": "鳥取市 市政提案 市長への手紙",
     "url": "https://www.city.tottori.lg.jp/site/shiseiteian/",
     "reply": "2 週間をめどに回答。要旨と回答を市のサイトに載せることがある",
+    "listed": {
+      "text": "令和8年度は 2026-10-26 までに 80 件の提案と回答が公開されている",
+      "source": "tottori_shiseiteian_list"
+    },
     "source": "tottori_shiseiteian"
   },
   "marks": [

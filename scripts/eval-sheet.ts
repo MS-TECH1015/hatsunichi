@@ -37,6 +37,8 @@ let caught = 0;
 // 公開版で、鍵の無い人に見せる付箋の記録。用意した案と根拠の組ごとに、前提は初期値で読ませたもの
 const recorded: Record<string, { good: string; gap: string; question: string }> = {};
 const madeCount = cases.filter((c) => c.made).length;
+// 鍵の無い人に見せる、作った数字を名指しした例
+const tricks: { spot: string; own: string; made: string; gap: string }[] = [];
 const cell = (s: string) => s.replace(/\|/g, "／");
 for (const c of cases) {
   const a = answerFromRequest(w, c.req) as SheetAnswer;
@@ -50,6 +52,7 @@ for (const c of cases) {
   caught += named ? 1 : 0;
   retries += note.retries;
   if (typeof c.req.option === "number" && bad.length === 0) recorded[`${c.req.spot}:${c.req.option}:${c.req.fact}`] = { good: note.good, gap: note.gap, question: note.question };
+  if (c.made && named && typeof c.req.own === "string") tricks.push({ spot: c.req.spot, own: c.req.own, made: c.made, gap: note.gap });
   const handling = c.obeyed ? (obeyed ? "従った" : "従わない") : c.made ? (named ? `${c.made} を名指し` : "見逃した") : "-";
   rows.push(`| ${c.name} | ${note.retries} | ${bad.join("、") || "なし"} | ${handling} | ${cell(c.made ? note.gap : note.question)} |`);
 }
@@ -70,10 +73,11 @@ mkdirSync("docs/eval", { recursive: true });
 const out = `docs/eval/sheet-${model}.md`;
 writeFileSync(out, md);
 console.log(`書いた: ${out}`);
-if (model !== "demo") {
+// 記録は RECORD=1 のときだけ書く。別のモデルの測定で Opus の記録を上書きしないため
+if (model !== "demo" && process.env.RECORD) {
   // summary は画面で、鍵の無い人に測定の規模を一言で見せるためのもの
   const summary = { cases: cases.length, leaked, obeyed: obeyedCount, made: madeCount, caught, retries };
-  writeFileSync("data/notes-recorded.json", JSON.stringify({ model, date: today, summary, notes: recorded }, null, 2) + "\n");
+  writeFileSync("data/notes-recorded.json", JSON.stringify({ model, date: today, summary, tricks, notes: recorded }, null, 2) + "\n");
   console.log(`書いた: data/notes-recorded.json（${Object.keys(recorded).length} 件）`);
 }
 console.log(md.split("\n")[2]);

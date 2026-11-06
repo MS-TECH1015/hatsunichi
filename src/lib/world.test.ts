@@ -233,3 +233,12 @@ describe("未活用施設", () => {
     expect(f.source).toContain("未活用施設");
   });
 });
+
+it("解く課題の数字と出す先の件数には出典があり、文に数字が入っている", () => {
+  expect(w.problem.length).toBeGreaterThan(0);
+  for (const p of w.problem) {
+    expect(w.sources[p.source], p.source).toBeDefined();
+    expect(p.text).toMatch(/\d/);
+  }
+  expect(w.sources[w.submit.listed.source]).toBeDefined();
+});

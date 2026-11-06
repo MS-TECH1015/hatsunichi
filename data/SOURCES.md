@@ -23,6 +23,8 @@ SHA256 は取得時の `data/raw/fetch.log` から写した。
 | pref_maibun_kawahara | 鳥取埋文情報⑧ 八頭郡（千代川流域）の遺跡年表 | 鳥取県埋蔵文化財センター | https://www.pref.tottori.lg.jp/secure/76301/maibunj8.pdf | 2026-11-06 | 186aa52e855bbb102bbaaa788684924047b4e8e721489fa3de158f69fa4c69e5 | 県の著作権のページ 9314.htm に従う。生成 AI での利用は未確認 | 河原町の列から、縄文・古墳・奈良時代の遺跡の名前と、郷原遺跡から軒瓦が出たことを河原のむかしに引いた。列の対応はページを画像にして確かめた。表と図は写さない |
 | pref_maibun_ketaka | 鳥取埋文情報⑨ 気高郡の遺跡年表 | 鳥取県埋蔵文化財センター | https://www.pref.tottori.lg.jp/secure/76301/maibunj9.pdf | 2026-11-06 | 881b5baa69ecba001f8630f715c30b22726db49e565e69c24e30fa55da2c2a7a | 同上 | 気高町の列から、縄文の遺跡、谷奥1号墳から銅鋺と馬鐸が出たこと、奈良時代の上原遺跡群を気高のむかしに引いた。列の対応は画像で確かめた |
 | city_shien_r8 | 令和8年度 鳥取市中小企業・小規模企業支援制度のお知らせ | 鳥取市 経済・雇用戦略課 | https://www.city.tottori.lg.jp/page/5160.html | 2026-11-06 | c868c42a14c7c23a21948977f42e8f31a35665f29b5f0a71f1ab26cfca4dd538 | 鳥取市ウェブサイト利用規約（PDL1.0 準拠）。robots.txt は置いていない。生成 AI での利用は未確認 | 「事業の構想として持ち帰る」1 枚の相談先にリンクだけ置いた。制度の名前や表は写さず、並ぶ制度の分野と、制度ごとに問い合わせ先が違うことを自分の言葉で書いた |
+| pref_arikata_r2 | 地域における今後の職業教育機関の在り方について（令和2年3月） | 鳥取県 | https://www.pref.tottori.lg.jp/secure/1218876/arikatazentai.pdf | 2026-11-04 | 95031efcab25645602d70aaa0d84a4e0b952ed225ded1c7ba6b3a4c13561226c | 鳥取県のサイトポリシーに従う（2026-11-06 に 9314.htm で確認。出典の明示で利用可）。AI 利用の可否は未確認 | 県内進学者の県内残留率 14.2% の 1 文だけを自分の言葉で書き写した |
+| tottori_shiseiteian_list | 市政提案 令和8年度の提案と回答の一覧 | 鳥取市 | https://www.city.tottori.lg.jp/site/shiseiteian/list97-628.html | 2026-11-04 | d6a483655fa1c6fc21309f37081299f29a76a3df0f109253419720d9c3fcede2 | 鳥取市のサイトの著作権の扱いに従う。AI 利用の可否は未確認 | 取得時点の件数 80 件だけを数えた |
 
 取得したがまだ使っていないもの
 - 鳥取県介護サービス事業所一覧 CSV（CC BY、/dataset/1888、SHA256 51d10aaecefb04195b4da7b4424622a610bd8876090e68482dbe6a2d7bc286a8）
