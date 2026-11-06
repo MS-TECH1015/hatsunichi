@@ -1,6 +1,7 @@
 // 窓口に持っていく 1 枚。画面の書き写しと、確認役のサーバーが同じ文を作る。
 // サーバーは画面から番号と値だけを受け取り、world.json から 1 枚を組み直す。自由に書けるのは自分で書いた案の一行だけ
 import { CALCS } from "./calcs.ts";
+import { placeStats } from "./world.ts";
 import type { Facility, Fact, Spot, World } from "./world.ts";
 
 export const PROPOSAL = { name: "鳥取市 公共施設マネジメント民間提案制度", url: "https://www.city.tottori.lg.jp/page/48913.html" };
@@ -23,6 +24,7 @@ export function sheetOf(a: SheetAnswer, world: World, use: SheetUse = "city"): s
     a.calc && calcBasis(a, world),
     a.calc && CALCS[a.spot.id] && `計算の前提（推定）: ${CALCS[a.spot.id].knobs.map((k) => k.label).join("、")}`,
     a.calc && a.why && `前提の置き方: ${a.why}`,
+    placeLine(a, world),
     a.self && `自分は: ${a.self}`,
     a.place && `使う場所: ${a.place.name}、${town}。鳥取市の未活用施設。今も使われていないかは未確認 出典: ${world.sources[a.place.sources[0]]?.name ?? ""}`,
     a.place && `参考: 市の施設の使い方は ${PROPOSAL.name} で民間から募っている。この施設の案を市が募っているわけではない ${PROPOSAL.url}`,
@@ -70,6 +72,15 @@ export function answerFromRequest(world: World, req: SheetRequest): SheetAnswer 
   const self = typeof req.self === "number" ? spot.self?.options[req.self] : undefined;
   if (typeof req.self === "number" && !self) return "自分の答えの番号が無い";
   return { spot, option: option?.text ?? own, own: !option, fact, calc, why: why || undefined, self, place };
+}
+
+/** 案が関わる人の規模。その町の町丁の札を合計した数で、町丁の札が無い町には書かない */
+function placeLine(a: SheetAnswer, world: World): string | undefined {
+  const s = placeStats(world, a.spot.place);
+  if (s.people === 0) return undefined;
+  const town = world.places.find((p) => p.id === a.spot.place)?.name ?? "";
+  const src = s.sources.map((id) => world.sources[id]?.name ?? id).join(" / ");
+  return `関わる人: ${town}の ${s.blocks} の町丁に住む ${s.people.toLocaleString()} 人。65 歳以上が ${s.oldShare}% 出典: ${src}`;
 }
 
 /** 計算が使う出典の数字のうち、根拠の行に無いもの。出典の数字と、本人が動かした前提を読み手が分けられるようにする */

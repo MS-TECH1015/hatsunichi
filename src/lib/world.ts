@@ -28,13 +28,32 @@ export type PastFact = Fact & { era?: string; icon: PastIcon };
 /** 題の画面と記録に出す、この模型にあるものの数。使った人の数はまだ無いので、代わりに中身の数を出す。
  * 町丁の人口は国勢調査の札の文から数える。札の無い町丁は入らない */
 export function worldStats(world: World) {
-  let people = 0;
-  for (const m of world.marks) {
-    const hit = m.text.match(/住む人 ([\d,]+) 人/);
-    if (hit) people += Number(hit[1].replace(/,/g, ""));
-  }
+  const people = world.marks.reduce((n, m) => n + (peopleOf(m.text) ?? 0), 0);
   const facts = world.spots.reduce((n, s) => n + s.facts.length, 0);
   return { towns: world.places.length, blocks: world.marks.length, people, facts, sources: Object.keys(world.sources).length };
+}
+
+/** 1 枚に書く、その町の町丁に住む人の数。案が関わる人の規模を出典のある数で添える。65 歳以上の割合は人口で重みづけ */
+export function placeStats(world: World, placeId: string) {
+  let people = 0;
+  let old = 0;
+  let blocks = 0;
+  const sources = new Set<string>();
+  for (const m of world.marks) {
+    if (m.place !== placeId) continue;
+    const n = peopleOf(m.text);
+    if (n === undefined) continue;
+    blocks++;
+    people += n;
+    old += (n * (Number(m.text.match(/65歳以上が (\d+)%/)?.[1]) || 0)) / 100;
+    for (const s of m.sources) sources.add(s);
+  }
+  return { blocks, people, oldShare: people ? Math.round((old / people) * 100) : 0, sources: [...sources] };
+}
+
+function peopleOf(text: string): number | undefined {
+  const hit = text.match(/住む人 ([\d,]+) 人/);
+  return hit ? Number(hit[1].replace(/,/g, "")) : undefined;
 }
 
 export type Spot = {
