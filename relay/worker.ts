@@ -18,6 +18,8 @@ type Env = { ANTHROPIC_API_KEY: string; HITS: KV; ALLOWED_ORIGIN?: string; DAILY
 const BODY_MAX = 4096;
 const DEFAULT_PER_HOUR = 10;
 const DEFAULT_DAILY = 100;
+/** 前の答えを残す日数。置くのは問いの SHA-256 と Claude の答えだけで、書いた一行そのものは鍵にしない */
+const CACHE_TTL = 14 * 86400;
 const w = world as unknown as World;
 
 const cors = (origin: string) => ({ "access-control-allow-origin": origin, "access-control-allow-headers": "content-type", "access-control-allow-methods": "POST, OPTIONS", vary: "Origin" });
@@ -41,7 +43,19 @@ export default {
     const country = (req as Request & { cf?: { country?: string } }).cf?.country;
     if (country && country !== "JP") return json(403, { error: "日本からだけ使える" }, origin);
 
-    // 断る回は KV に書かない。書くのは通した回の 2 件だけにして、無料枠の書き込み 1 日 1,000 回に収める
+    const text = await req.text();
+    if (text.length > BODY_MAX) return json(413, { error: "本文が大きい" }, origin);
+    const asked = askOf(path, text);
+    if (typeof asked === "string") return json(400, { error: asked }, origin);
+
+    // 同じ問いには前の答えを返し、Claude を呼ばない。数えもしないので、撮り直しや同じ例を試す人は回数を使わない
+    const cacheKey = `ans:${await sha256(`${path}
+${env.REVIEW_MODEL ?? ""}
+${asked.key}`)}`;
+    const cached = await env.HITS.get(cacheKey);
+    if (cached) return json(200, JSON.parse(cached), origin);
+
+    // 断る回は KV に書かない。書くのは通した回の 3 件だけにして、無料枠の書き込み 1 日 1,000 回に収める
     const ip = req.headers.get("cf-connecting-ip") ?? "unknown";
     const ipKey = `ip:${ip}:${Math.floor(Date.now() / 3600_000)}`;
     const dayKey = `day:${new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" })}`;
@@ -51,23 +65,36 @@ export default {
     if (byDay >= Number(env.DAILY_MAX ?? DEFAULT_DAILY)) return json(429, { error: "今日の分は使い切った" }, origin);
     await Promise.all([env.HITS.put(ipKey, String(byIp + 1), { expirationTtl: 3600 }), env.HITS.put(dayKey, String(byDay + 1), { expirationTtl: 2 * 86400 })]);
 
-    const text = await req.text();
-    if (text.length > BODY_MAX) return json(413, { error: "本文が大きい" }, origin);
-    let input: unknown;
-    try {
-      input = JSON.parse(text);
-    } catch {
-      return json(400, { error: "JSON でない" }, origin);
-    }
-    const opts = { apiKey: env.ANTHROPIC_API_KEY, model: env.REVIEW_MODEL };
-    if (path === "/route") {
-      const line = typeof (input as { text?: unknown })?.text === "string" ? (input as { text: string }).text.trim() : "";
-      if (!line || line.length > OWN_MAX) return json(400, { error: `一行は 1〜${OWN_MAX} 字` }, origin);
-      return json(200, { route: await routeConcern(line, w, opts) }, origin);
-    }
-    const answer = answerFromRequest(w, input as SheetRequest);
-    if (typeof answer === "string") return json(400, { error: answer }, origin);
-    if (path === "/rehearse") return json(200, { reply: await rehearseReply(answer, w, opts) }, origin);
-    return json(200, { note: await reviewSheet(answer, w, opts) }, origin);
+    const body = await asked.run({ apiKey: env.ANTHROPIC_API_KEY, model: env.REVIEW_MODEL });
+    await env.HITS.put(cacheKey, JSON.stringify(body), { expirationTtl: CACHE_TTL });
+    return json(200, body, origin);
   },
 };
+
+type Opts = { apiKey: string; model?: string };
+type Asked = { key: string; run: (opts: Opts) => Promise<unknown> };
+
+/** 本文を確かめ、Claude に渡す前の形にする。断るときは理由の文を返す。回数を数える前に済ませ、壊れた本文で枠を使わせない */
+function askOf(path: string, text: string): Asked | string {
+  let input: unknown;
+  try {
+    input = JSON.parse(text);
+  } catch {
+    return "JSON でない";
+  }
+  if (path === "/route") {
+    const line = typeof (input as { text?: unknown })?.text === "string" ? (input as { text: string }).text.trim() : "";
+    if (!line || line.length > OWN_MAX) return `一行は 1〜${OWN_MAX} 字`;
+    return { key: line, run: async (opts) => ({ route: await routeConcern(line, w, opts) }) };
+  }
+  const answer = answerFromRequest(w, input as SheetRequest);
+  if (typeof answer === "string") return answer;
+  const key = JSON.stringify(input);
+  if (path === "/rehearse") return { key, run: async (opts) => ({ reply: await rehearseReply(answer, w, opts) }) };
+  return { key, run: async (opts) => ({ note: await reviewSheet(answer, w, opts) }) };
+}
+
+async function sha256(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}

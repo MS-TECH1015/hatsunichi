@@ -13,8 +13,8 @@ preview_urls = false
 
 [vars]
 ALLOWED_ORIGIN = "https://ms-tech1015.github.io"
-DAILY_MAX = "100"
-PER_HOUR = "30"
+DAILY_MAX = "60"
+PER_HOUR = "20"
 
 [[kv_namespaces]]
 binding = "HITS"

@@ -38,7 +38,20 @@ describe("確認役の中継", () => {
   it("1 日の合計を超えたら断る", async () => {
     const env = envOf();
     const codes = [];
-    for (let i = 0; i < 4; i++) codes.push((await worker.fetch(post("/route", { text: "バスが減った" }, ORIGIN, `203.0.113.${i + 10}`), env)).status);
+    for (let i = 0; i < 4; i++) codes.push((await worker.fetch(post("/route", { text: `バスが減った ${i}` }, ORIGIN, `203.0.113.${i + 10}`), env)).status);
     expect(codes).toEqual([200, 200, 200, 429]);
+  });
+  it("同じ問いは前の答えを返し、1 日の回数を使わない", async () => {
+    const env = envOf();
+    const codes = [];
+    for (let i = 0; i < 5; i++) codes.push((await worker.fetch(post("/route", { text: "  バスが減った" }), env)).status);
+    expect(codes).toEqual([200, 200, 200, 200, 200]);
+    const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+    expect(await env.HITS.get(`day:${today}`)).toBe("1");
+  });
+  it("壊れた本文は回数を使わない", async () => {
+    const env = envOf();
+    for (let i = 0; i < 4; i++) expect((await worker.fetch(post("/route", { text: "" }), env)).status).toBe(400);
+    expect((await worker.fetch(post("/route", { text: "バスが減った" }), env)).status).toBe(200);
   });
 });
