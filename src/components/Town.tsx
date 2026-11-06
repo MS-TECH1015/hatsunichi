@@ -10,7 +10,8 @@ import { changeText, nearestSpot, placeStats, placeWorld, worldStats, type Vec2 
 import { OWN_MAX, WHY_MAX, answerFromRequest, sheetOf, type SheetRequest, type SheetUse } from "@/lib/sheet";
 import recordedNotes from "../../data/notes-recorded.json";
 import recordedReplies from "../../data/replies-recorded.json";
-import type { Note as Reviewed, Reply } from "@/lib/review";
+import recordedRoutes from "../../data/routes-recorded.json";
+import type { Note as Reviewed, Reply, Route } from "@/lib/review";
 import type { TownScene } from "./town/TownScene";
 import { play, setMuted } from "./town/sfx";
 
@@ -33,7 +34,7 @@ const introLines = (lines: string[], world: World) => [lines[0], ...world.proble
 type Stage = "hint" | "ask" | "write" | "basis" | "calc" | "place" | "self" | "result";
 type Panel =
   | { type: "talk"; speaker: string; role?: string; lines: string[]; i: number }
-  | { type: "spot"; spot: Spot; stage: Stage; detail?: boolean; draft?: string; pending?: { option: Option; own: boolean; fact?: Fact; calc?: Worked } }
+  | { type: "spot"; spot: Spot; stage: Stage; detail?: boolean; draft?: string; pending?: { option: Option; own: boolean; fact?: Fact; calc?: Worked; suggest?: number } }
   | { type: "bus"; from: Place }
   | { type: "ride"; to: Place; minutes: number }
   | { type: "end" }
@@ -270,6 +271,19 @@ export function Town({ world }: Props) {
     sceneRef.current?.warpTo([at[0], at[1] + 1.5]);
     jot(spotFind(spot, world.sources));
     open({ type: "spot", spot: { ...spot, at } });
+  }
+
+  /** 困りごとの一行から選ばれた依頼を、その一行を自分の案にして開く。根拠は自分で選び、案内役の候補には印が付く */
+  function openQuickOwn(spot: Spot, line: string, suggest?: number) {
+    const at = placed.spots.find((s) => s.id === spot.id)?.at;
+    if (!at) return;
+    sceneRef.current?.warpTo([at[0], at[1] + 1.5]);
+    sceneRef.current?.setPaused(true);
+    sceneRef.current?.faceTo(at);
+    jot(spotFind(spot, world.sources));
+    play("open");
+    const option = { text: line, label: line, note: { good: "", gap: "", question: spot.checks[0] } };
+    setPanel({ type: "spot", spot: { ...spot, at }, stage: "basis", pending: { option, own: true, suggest } });
   }
 
   function walkFromQuick() {
@@ -701,6 +715,7 @@ export function Town({ world }: Props) {
           draft={panel.draft}
           guide={guide}
           world={world}
+          suggest={panel.pending?.suggest}
           onStage={(stage, draft) => setPanel({ ...panel, stage, draft })}
           onDetail={(detail) => {
             play(detail ? "open" : "talk");
@@ -736,7 +751,7 @@ export function Town({ world }: Props) {
       {panel?.type === "book" && <BookView book={book} world={world} onClose={close} />}
 
       {panel?.type === "quick" && (
-        <QuickList world={world} done={new Set(answers.map((a) => a.spot.id))} onPick={openQuick} onWalk={walkFromQuick} onEnd={() => setPanel({ type: "end" })} />
+        <QuickList world={world} done={new Set(answers.map((a) => a.spot.id))} onPick={openQuick} onOwn={openQuickOwn} onWalk={walkFromQuick} onEnd={() => setPanel({ type: "end" })} />
       )}
 
       {quick && started && !panel && (
@@ -1090,6 +1105,8 @@ type SpotViewProps = {
   onStage: (s: Stage, draft?: string) => void;
   onDetail: (open: boolean) => void;
   onChoose: (s: Spot, o: Option, own?: boolean) => void;
+  /** 困りごとの案内役が選んだ根拠の番号。印を付けるだけで、選ぶのは本人 */
+  suggest?: number;
   onSettle: (s: Spot, f: Fact) => void;
   onCalc: (calc?: Worked) => void;
   facilities: Facility[];
@@ -1315,7 +1332,7 @@ function ReviewCard({ answer, world, onReview }: { answer: Answer; world: World;
 
 /** 調べる → 頼まれる → 町の人の声を見て、案を選ぶか自分で書く → 判子と問い。理由と出典は「くわしく」に。
  * 3つの案は正解ではなく方向の違う出発点。考えるのは遊んでいる学生で、ゲームは材料と問いだけを渡す */
-function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, onStage, onDetail, onChoose, onSettle, onCalc, facilities, onPlace, onSelf, onReview, onClose }: SpotViewProps) {
+function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, suggest, onStage, onDetail, onChoose, onSettle, onCalc, facilities, onPlace, onSelf, onReview, onClose }: SpotViewProps) {
   useEffect(() => {
     if (detail || (stage !== "ask" && stage !== "basis" && stage !== "self")) return;
     const onKey = (e: KeyboardEvent) => {
@@ -1381,9 +1398,10 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, on
       <>
         <div className="choices">
           {spot.facts.map((f, i) => (
-            <button key={f.text} className="choice fact" onClick={() => onSettle(spot, f)} onMouseEnter={() => play("select", 0.2)}>
+            <button key={f.text} className={`choice fact${suggest === i ? " suggest" : ""}`} onClick={() => onSettle(spot, f)} onMouseEnter={() => play("select", 0.2)}>
               <kbd>{i + 1}</kbd>
               {f.text}
+              {suggest === i && <small className="suggest-tag">案内の候補</small>}
             </button>
           ))}
           <button className="choice why" onClick={() => onStage("ask")}>
@@ -1630,12 +1648,112 @@ function Detail({ spot, answer, voices, world, onClose }: { spot: Spot; answer?:
 }
 
 /** 歩かずに案を出す人の依頼の一覧。困りごとの題と町の名前だけを並べ、選ぶとその場所へ飛ぶ */
-function QuickList({ world, done, onPick, onWalk, onEnd }: { world: World; done: Set<string>; onPick: (s: Spot) => void; onWalk: () => void; onEnd: () => void }) {
+type RecordedRoutes = { model: string; date: string; summary?: { cases: number; right: number }; routes: Record<string, Pick<Route, "spot" | "fact" | "reason">> };
+const ROUTES = recordedRoutes as RecordedRoutes;
+type Routed = Route & { recorded?: string };
+
+/** 困りごとから探す。自分の一行を書くと、案内役が 9 つの依頼から近いものと根拠の候補を選ぶ。
+ * 例は測定のときの記録を見せる。自分の一行は、鍵があれば Claude に、無ければ言葉の一致で選ぶ。どちらかを画面に書く */
+function ConcernFinder({ world, onOwn }: { world: World; onOwn: (s: Spot, line: string, suggest?: number) => void }) {
+  const [text, setText] = useState("");
+  const [result, setResult] = useState<{ line: string; route: Routed } | null>(null);
+  const [state, setState] = useState<"idle" | "key" | "wait" | "fail">("idle");
+  const [key, setKey] = useState(tabKey);
+  const examples = Object.keys(ROUTES.routes);
+  const find = async (line: string, apiKey: string) => {
+    const kept = ROUTES.routes[line];
+    if (kept) return setResult({ line, route: { ...kept, model: ROUTES.model, retries: 0, demo: false, recorded: ROUTES.date } });
+    setState("wait");
+    try {
+      const { routeConcern } = await import("@/lib/review");
+      setResult({ line, route: await routeConcern(line, world, { apiKey: apiKey || undefined }) });
+      setState("idle");
+    } catch {
+      setState("fail");
+    }
+  };
+  const spot = result?.route.spot ? world.spots.find((s) => s.id === result.route.spot) : undefined;
+  const town = spot && world.places.find((p) => p.id === spot.place)?.name;
+  const fact = spot && result?.route.fact !== null && result ? spot.facts[result.route.fact] : undefined;
+  return (
+    <div className="concern">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const line = text.trim();
+          if (!line) return;
+          tabKey = key.trim();
+          void find(line, tabKey);
+        }}
+      >
+        <label>
+          気になっている困りごとから探す
+          <input value={text} maxLength={OWN_MAX} onChange={(e) => setText(e.target.value)} placeholder="例: 地元のバスが減って、祖母が病院に行きにくい" />
+        </label>
+        {state === "key" && <input type="password" autoComplete="off" spellCheck={false} placeholder="Anthropic の API キー（任意）" value={key} onChange={(e) => setKey(e.target.value)} aria-label="Anthropic の API キー" />}
+        <button className="btn-game small" disabled={!text.trim() || state === "wait"}>
+          {state === "wait" ? "探している…" : "近い依頼を探す"}
+        </button>
+      </form>
+      <div className="concern-examples" aria-label="困りごとの例">
+        {examples.map((ex) => (
+          <button
+            key={ex}
+            type="button"
+            onClick={() => {
+              setText(ex);
+              void find(ex, "");
+            }}
+          >
+            {ex}
+          </button>
+        ))}
+      </div>
+      {state === "fail" && <small>届かなかった。鍵と、使える残高を見る</small>}
+      {result && (
+        <div className="concern-result" aria-live="polite">
+          {spot ? (
+            <>
+              <p>
+                近い依頼: <b>「{spot.quest.ask}」</b> {town}・{spot.title}
+              </p>
+              {fact && <p>根拠の候補: {fact.text}</p>}
+            </>
+          ) : (
+            <p>
+              <b>9 つの依頼に近いものが無かった。</b>今は、この 9 つの外の困りごとは扱えない
+            </p>
+          )}
+          <p>理由: {result.route.reason}</p>
+          <small>
+            {result.route.demo
+              ? "鍵が無いので、Claude ではなく言葉の一致で選んだ。"
+              : `${result.route.model} が選んだ${result.route.recorded ? `。${result.route.recorded} の記録` : ""}。`}
+            選べるのは 9 つの依頼の id と根拠の番号だけで、数字は書かせていない
+          </small>
+          {spot && (
+            <button className="btn-game small" onClick={() => onOwn(spot, result.line, result.route.fact ?? undefined)}>
+              この一行を自分の案にする
+            </button>
+          )}
+        </div>
+      )}
+      {state === "idle" && !tabKey && (
+        <button type="button" className="concern-key" onClick={() => setState("key")}>
+          自分の鍵で Claude に選ばせる
+        </button>
+      )}
+    </div>
+  );
+}
+
+function QuickList({ world, done, onPick, onOwn, onWalk, onEnd }: { world: World; done: Set<string>; onPick: (s: Spot) => void; onOwn: (s: Spot, line: string, suggest?: number) => void; onWalk: () => void; onEnd: () => void }) {
   const placeName = (id: string) => world.places.find((p) => p.id === id)?.name ?? id;
   return (
     <div className="end">
       <div className="end-card quick-card">
         <h2>依頼の一覧</h2>
+        <ConcernFinder world={world} onOwn={onOwn} />
         <p className="end-meta">鳥取市の {new Set(world.spots.map((s) => s.place)).size} つの町の、人手の困りごと。選ぶとその場所へ行き、頼んだ人の話を聞いて案を 1 枚にする。3 つで終業</p>
         <ul className="end-list">
           {world.spots.map((s) => (

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import raw from "../../data/world.json";
-import { demoReply, demoSheetNote, replyNumbers, sheetNumbers } from "./review";
+import { demoReply, demoRoute, demoSheetNote, replyNumbers, sheetNumbers } from "./review";
+import routes from "../../data/routes-recorded.json";
 import { OWN_MAX, answerFromRequest, sheetOf, type SheetAnswer } from "./sheet";
 import type { World } from "./world";
 
@@ -70,5 +71,25 @@ describe("返事の予行", () => {
     expect(r.asks.length).toBeLessThanOrEqual(3);
     expect(replyNumbers(r, sheetOf(a, w, "city"))).toEqual([]);
     expect(replyNumbers({ asks: ["学生 9999 人で足りますか"] }, sheetOf(a, w, "city"))).toEqual(["9999"]);
+  });
+});
+
+describe("困りごとの案内", () => {
+  it("鍵が無ければ言葉の一致で選び、重ならなければ近い依頼は無いとする", () => {
+    expect(demoRoute("地元のバスが減って、祖母が病院に行きにくくなった", w).spot).toBe("stop");
+    expect(demoRoute("地元の消防団に若い人が入らない", w).spot).toBe("fire1");
+    const none = demoRoute("子どもが遊べる公園が近くに無い", w);
+    expect(none.spot).toBeNull();
+    expect(none.demo).toBe(true);
+  });
+
+  it("記録した案内は、ある依頼とある根拠だけを指す", () => {
+    for (const r of Object.values(routes.routes) as { spot: string | null; fact: number | null }[]) {
+      if (r.spot === null) continue;
+      const spot = w.spots.find((s) => s.id === r.spot);
+      expect(spot).toBeDefined();
+      expect(r.fact).not.toBeNull();
+      expect(spot!.facts[r.fact!]).toBeDefined();
+    }
   });
 });

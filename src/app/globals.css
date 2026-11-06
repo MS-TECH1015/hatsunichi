@@ -209,6 +209,19 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .end-list { list-style: none; margin: 0 0 12px; padding: 0; text-align: left; }
 .end-list li { display: flex; align-items: center; gap: 12px; padding: 8px 4px; border-top: 2px dashed #e1d6c0; font-weight: 800; }
 .end-label { flex: 1; }
+.concern { text-align: left; margin: 0 0 14px; padding: 12px 14px; border: 3px solid var(--ink); border-radius: 14px; background: #fff; }
+.concern form { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+.concern label { flex: 1 1 260px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; font-weight: 900; }
+.concern input { font: inherit; font-size: 14px; font-weight: 600; padding: 8px 10px; border: 2px solid var(--ink); border-radius: 10px; min-width: 0; }
+.concern input[type="password"] { flex: 1 1 200px; }
+.concern-examples { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+.concern-examples button { font: inherit; font-size: 12px; font-weight: 700; padding: 4px 10px; border: 2px solid #e1d6c0; border-radius: 999px; background: var(--paper); cursor: pointer; text-align: left; }
+.concern-result { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: #fff7d6; font-size: 13px; }
+.concern-result p { margin: 0 0 6px; font-weight: 700; }
+.concern-result small { display: block; margin: 0 0 8px; color: #6b5f4a; font-weight: 700; }
+.concern-key { margin: 8px 0 0; font: inherit; font-size: 12px; font-weight: 700; background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; color: var(--ink); }
+.choice.fact.suggest { outline: 4px solid var(--accent); }
+.suggest-tag { flex: none; margin-left: auto; padding: 2px 8px; border-radius: 999px; background: var(--accent); white-space: nowrap; font-size: 12px; font-weight: 900; }
 .quick-back { position: absolute; z-index: 3; right: 12px; bottom: 16px; }
 .end-list a { font-size: 13px; color: var(--ink); text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
 .end-line { font-weight: 700; }

@@ -20,7 +20,8 @@
     "deploy": "node scripts/deploy-pages.mjs",
     "eval": "node --env-file-if-exists=.env scripts/eval.ts",
     "eval:sheet": "node --env-file-if-exists=.env scripts/eval-sheet.ts",
-    "record:replies": "node --env-file-if-exists=.env scripts/record-replies.ts"
+    "record:replies": "node --env-file-if-exists=.env scripts/record-replies.ts",
+    "record:routes": "node --env-file-if-exists=.env scripts/record-routes.ts"
   },
   "repository": {
     "type": "git",
