@@ -316,3 +316,5 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .review-card input { flex: 1; min-width: 0; font: inherit; font-size: 13px; padding: 4px 8px; border: 2px solid var(--ink); border-radius: 8px; background: #fffdf2; }
 .calc-why { width: 100%; margin-top: 8px; font: inherit; font-size: 14px; padding: 6px 10px; border: 2px solid var(--ink); border-radius: 8px; background: #fffdf2; }
 .dialog-actions button { white-space: nowrap; }
+.title-stats { margin: -6px auto 14px; max-width: 540px; font-size: 13px; font-weight: 700; color: #8a7f70; line-height: 1.5; }
+.title-stats { margin: -4px auto 14px; max-width: 560px; padding: 6px 14px; border: 2px solid #2b2620; border-radius: 14px; background: #fffaf0; color: #2b2620; font-size: 12px; font-weight: 700; line-height: 1.5; }

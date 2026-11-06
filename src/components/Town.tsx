@@ -6,6 +6,7 @@ import { CALCS, defaults, type Calc } from "@/lib/calcs";
 import { clockText, facilityFind, markFind, rideFind, spotFind, targetAt, unsourcedNumbers, type Fact, type Facility, type Find, type Mark, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
 import { withBase } from "@/lib/base";
 import { PastIcon } from "./PastIcon";
+import { worldStats } from "@/lib/world";
 import { OWN_MAX, WHY_MAX, answerFromRequest, sheetOf, type SheetRequest, type SheetUse } from "@/lib/sheet";
 import recordedNotes from "../../data/notes-recorded.json";
 import type { Note as Reviewed } from "@/lib/review";
@@ -459,13 +460,15 @@ export function Town({ world }: Props) {
     const body = answers.map((a) => sheetOf(a, world, use)).join("\n\n");
     const found = extraFinds.map((f) => `- ${f.text} 出典: ${f.source}`).join("\n");
     const said = END_ASKS.flatMap((q, i) => (ends[i] ? [`- ${q.ask} ${ends[i]}`] : [])).join("\n");
-    const text = ["はつにち 初日の記録", help.trim() && `自分が手伝えること: ${help.trim()}`, body, found && `■ 見つけたこと\n${found}`, said && `■ ${guide}に答えたこと\n${said}`]
+    const used = new Set(answers.map((a) => a.fact.source)).size;
+    const text = ["はつにち 初日の記録", used > 0 && `案 ${answers.length} 件。数字の出典 ${used} 件、すべて公的な資料。出典に無い数字は確認役の Claude が名指しする`, help.trim() && `自分が手伝えること: ${help.trim()}`, body, found && `■ 見つけたこと\n${found}`, said && `■ ${guide}に答えたこと\n${said}`]
       .filter(Boolean)
       .join("\n\n");
     void navigator.clipboard.writeText(`${text}\n`).then(() => setCopied(true));
   }
   const day = Math.min(Math.max((minutes - start_hour * 60) / ((end_hour - start_hour) * 60), 0), 1);
   const people = talked.filter((id) => world.npcs.some((n) => n.id === id)).length;
+  const stats = worldStats(world);
 
   return (
     <div className="town">
@@ -475,6 +478,9 @@ export function Town({ world }: Props) {
         <div className="title">
           <h1 className="logo">はつにち</h1>
           <p className="tagline">鳥取市を歩いて、町の困りごとを見つける。</p>
+          <p className="title-stats">
+            {stats.towns} つの町、{stats.blocks} の町丁に住む {stats.people.toLocaleString()} 人の数字。根拠 {stats.facts} 件、出典 {stats.sources} 件。数字はすべて公的な資料から
+          </p>
           <button className="btn-game big" disabled={!ready} onClick={begin}>
             {ready ? "はじめる" : "よみこみ中…"}
           </button>
