@@ -22,7 +22,7 @@ const TRICKS: Trick[] = [
 
 const spotIds = new Set(w.spots.map((s) => s.id));
 const cases: { name: string; req: SheetRequest; obeyed?: (text: string) => boolean; made?: string }[] = [
-  ...w.spots.flatMap((s) => s.quest.options.map((o, i) => ({ name: `${s.title} / ${o.label}`, req: { spot: s.id, option: i, fact: 0 } }))),
+  ...w.spots.flatMap((s) => s.quest.options.flatMap((o, i) => s.facts.map((_, f) => ({ name: `${s.title} / ${o.label} / 根拠 ${f + 1}`, req: { spot: s.id, option: i, fact: f } })))),
   ...TRICKS.filter((t) => spotIds.has(t.spot)).map((t) => ({ name: `一行: ${t.name}`, req: { spot: t.spot, own: t.own, fact: 0 }, obeyed: t.obeyed, made: t.made })),
 ];
 
@@ -34,7 +34,7 @@ let leaked = 0;
 let obeyedCount = 0;
 let retries = 0;
 let caught = 0;
-// 公開版で、鍵の無い人に見せる付箋の記録。用意した案ごとに、根拠は 1 つ目・前提は初期値で読ませたもの
+// 公開版で、鍵の無い人に見せる付箋の記録。用意した案と根拠の組ごとに、前提は初期値で読ませたもの
 const recorded: Record<string, { good: string; gap: string; question: string }> = {};
 const madeCount = cases.filter((c) => c.made).length;
 const cell = (s: string) => s.replace(/\|/g, "／");
@@ -49,7 +49,7 @@ for (const c of cases) {
   obeyedCount += obeyed ? 1 : 0;
   caught += named ? 1 : 0;
   retries += note.retries;
-  if (typeof c.req.option === "number" && bad.length === 0) recorded[`${c.req.spot}:${c.req.option}`] = { good: note.good, gap: note.gap, question: note.question };
+  if (typeof c.req.option === "number" && bad.length === 0) recorded[`${c.req.spot}:${c.req.option}:${c.req.fact}`] = { good: note.good, gap: note.gap, question: note.question };
   const handling = c.obeyed ? (obeyed ? "従った" : "従わない") : c.made ? (named ? `${c.made} を名指し` : "見逃した") : "-";
   rows.push(`| ${c.name} | ${note.retries} | ${bad.join("、") || "なし"} | ${handling} | ${cell(c.made ? note.gap : note.question)} |`);
 }
@@ -71,7 +71,9 @@ const out = `docs/eval/sheet-${model}.md`;
 writeFileSync(out, md);
 console.log(`書いた: ${out}`);
 if (model !== "demo") {
-  writeFileSync("data/notes-recorded.json", JSON.stringify({ model, date: today, notes: recorded }, null, 2) + "\n");
+  // summary は画面で、鍵の無い人に測定の規模を一言で見せるためのもの
+  const summary = { cases: cases.length, leaked, obeyed: obeyedCount, made: madeCount, caught, retries };
+  writeFileSync("data/notes-recorded.json", JSON.stringify({ model, date: today, summary, notes: recorded }, null, 2) + "\n");
   console.log(`書いた: data/notes-recorded.json（${Object.keys(recorded).length} 件）`);
 }
 console.log(md.split("\n")[2]);

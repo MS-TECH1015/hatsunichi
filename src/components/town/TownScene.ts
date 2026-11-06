@@ -31,7 +31,7 @@ import { cityLooks, clock } from "./surfaces";
 import { Towns, type TownData } from "./townMesh";
 
 /** place はいま入っている町の名前。町の外とバスの中では null */
-export type SceneState = { minutes: number; target: Target | null; place: string | null; mark: Mark | null; facility: Facility | null };
+export type SceneState = { minutes: number; target: Target | null; place: string | null; mark: Mark | null; facility: Facility | null; pos: Vec2; riding: boolean };
 
 type CityData = {
   grid: { x0: number; z0: number; cell: number; w: number; h: number };
@@ -889,7 +889,7 @@ export class TownScene {
       this.placeName = place;
       this.lastMark = mark;
       this.lastFacility = facility;
-      this.onChange({ minutes: this.minutes, target, place, mark, facility });
+      this.onChange({ minutes: this.minutes, target, place, mark, facility, pos: [this.playerPos[0], this.playerPos[1]], riding: this.ride !== null });
     }
   }
 

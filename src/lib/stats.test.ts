@@ -24,7 +24,17 @@ it("町の町丁の人口は札の合計で、出典は札のもの。1 枚の�
   expect(total).toBe(worldStats(w).people);
 
   const a = answerFromRequest(w, { spot: "empty1", option: 0, fact: 0 }) as SheetAnswer;
-  expect(sheetOf(a, w)).toContain(`関わる人: 用瀬の ${s.blocks} の町丁に住む ${s.people.toLocaleString()} 人。65 歳以上が ${s.oldShare}%。${changeText(s.change)}`);
+  const all = worldStats(w);
+  expect(all.oldShare).toBeGreaterThan(0);
+  expect(sheetOf(a, w)).toContain(`関わる人: 用瀬の ${s.blocks} の町丁に住む ${s.people.toLocaleString()} 人。65 歳以上が ${s.oldShare}%、${all.towns} つの町の ${all.blocks} 町丁の合計では ${all.oldShare}%。${changeText(s.change)}`);
+});
+
+it("確認役の問いは、付箋があるときだけ 1 枚に載り、記録なら日付が付く", () => {
+  const a = answerFromRequest(w, { spot: "empty1", option: 0, fact: 0 }) as SheetAnswer;
+  expect(sheetOf(a, w)).not.toContain("確認役の問い");
+  const line = sheetOf({ ...a, review: { question: "何年なら続けられる？", model: "claude-opus-5-5", date: "2026-11-06" } }, w);
+  expect(line).toContain("確認役の問い: 何年なら続けられる？（claude-opus-5-5、2026-11-06 の記録）");
+  expect(sheetOf({ ...a, review: { question: "何年？", model: "claude-opus-5-5" } }, w)).toContain("確認役の問い: 何年？（claude-opus-5-5）");
 });
 
 it("5 年の増減は札の文から数え、減った町丁は負の数。町の合計は全体の合計に一致する", () => {

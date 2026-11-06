@@ -1,12 +1,12 @@
 "use client";
 // 町を歩く画面。描画は TownScene、ここはタイトル・HUD・会話・依頼の選択・判子・詳細の UI。
 // 画面に出す文字は一言ずつにし、理由・出典・付箋・窓口は「くわしく」の中に置く
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CALCS, defaults, type Calc } from "@/lib/calcs";
 import { clockText, facilityFind, markFind, rideFind, spotFind, targetAt, unsourcedNumbers, type Fact, type Facility, type Find, type Mark, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
 import { withBase } from "@/lib/base";
 import { PastIcon } from "./PastIcon";
-import { changeText, placeStats, worldStats } from "@/lib/world";
+import { changeText, nearestSpot, placeStats, placeWorld, worldStats, type Vec2 } from "@/lib/world";
 import { OWN_MAX, WHY_MAX, answerFromRequest, sheetOf, type SheetRequest, type SheetUse } from "@/lib/sheet";
 import recordedNotes from "../../data/notes-recorded.json";
 import type { Note as Reviewed } from "@/lib/review";
@@ -16,7 +16,8 @@ import { play, setMuted } from "./town/sfx";
 type Props = { world: World };
 /** own は自分で書いた一行。選んだ案と違い付箋が無いので、確かめる問いだけを出す */
 /** fact は学生が選んだ根拠の数字。案は数字と出典を付けて窓口へ持っていく */
-type Answer = { spot: Spot; option: string; label: string; note: Note; own?: boolean; fact: Fact; calc?: string; knobs?: Record<string, number>; why?: string; self?: string; place?: Facility };
+/** review は確認役（Claude）の付箋。記録なら recorded に日付が入る。1 枚の「確認役の問い」の行になる */
+type Answer = { spot: Spot; option: string; label: string; note: Note; own?: boolean; fact: Fact; calc?: string; knobs?: Record<string, number>; why?: string; self?: string; place?: Facility; review?: Reviewed & { recorded?: string } };
 /** 計算の一文と、そのときの前提の値。確認役のサーバーは値から一文を作り直す */
 type Worked = { text: string; knobs: Record<string, number>; why?: string };
 
@@ -119,6 +120,10 @@ export function Town({ world }: Props) {
   const [facility, setFacility] = useState<Facility | null>(null);
   const [cheer, setCheer] = useState<string | null>(null);
   const [placeName, setPlaceName] = useState<string | null>(null);
+  /** 主人公の位置と乗車中か。いちばん近い依頼への案内に使う */
+  const placed = useMemo(() => placeWorld(world), [world]);
+  const [pos, setPos] = useState<Vec2>(placed.start);
+  const [riding, setRiding] = useState(false);
   const [panel, setPanel] = useState<Panel>(null);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [talked, setTalked] = useState<string[]>([]);
@@ -161,6 +166,7 @@ export function Town({ world }: Props) {
   // 閉じた直後の Space で同じ相手をまた開かないように
   const closedAt = useRef(0);
   const { start_hour, end_hour } = world.meta.clock;
+  const near = useMemo(() => nearestSpot(pos, placed.spots, new Set(answers.map((a) => a.spot.id))), [pos, placed, answers]);
   const rabbit = world.npcs.find((n) => n.kind === "rabbit");
   const guide = rabbit?.name ?? "白兎";
 
@@ -175,6 +181,8 @@ export function Town({ world }: Props) {
         setPlaceName(s.place);
         setMark(s.mark);
         setFacility(s.facility);
+        setPos(s.pos);
+        setRiding(s.riding);
       });
       sceneRef.current = scene;
       if (location.search.includes("debug")) (window as unknown as { __town: TownScene }).__town = scene;
@@ -457,7 +465,7 @@ export function Town({ world }: Props) {
   const extraFinds = finds.filter((f) => !answers.some((a) => a.spot.id === f.spot));
 
   function copyAnswers() {
-    const body = answers.map((a) => sheetOf(a, world, use)).join("\n\n");
+    const body = answers.map((a) => sheetOf({ ...a, review: a.review && { question: a.review.question, model: a.review.model, date: a.review.recorded } }, world, use)).join("\n\n");
     const found = extraFinds.map((f) => `- ${f.text} 出典: ${f.source}`).join("\n");
     const said = END_ASKS.flatMap((q, i) => (ends[i] ? [`- ${q.ask} ${ends[i]}`] : [])).join("\n");
     const used = new Set(answers.map((a) => a.fact.source)).size;
@@ -592,6 +600,8 @@ export function Town({ world }: Props) {
         </button>
       )}
 
+      {started && !panel && !target && !riding && near && <GuideChip near={near} world={world} />}
+
       {started && (
         <div className={bigMap ? "minimap big" : "minimap"}>
           <canvas ref={mapRef} onClick={() => setBigMap(!bigMap)} aria-label="鳥取市の地図" />
@@ -640,6 +650,7 @@ export function Town({ world }: Props) {
           facilities={foundFacilities}
           onPlace={(f) => panel.pending?.fact && finish(panel.spot, panel.pending.fact, panel.pending.calc, f)}
           onSelf={(self) => answerSelf(panel.spot, self)}
+          onReview={(review) => setAnswers((prev) => prev.map((a) => (a.spot.id === panel.spot.id ? { ...a, review } : a)))}
           onClose={close}
         />
       )}
@@ -821,6 +832,7 @@ function HomeView({ home, world, ready, onPick, onBegin, onClose }: { home: Plac
   const marks = world.marks.filter((m) => m.place === home.id);
   const now = moreNow ? marks : marks.slice(0, 1);
   const sum = placeStats(world, home.id);
+  const all = worldStats(world);
   const sourceOf = (id: string) => world.sources[id];
   // 出典は札ごとに繰り返さず、むかしの下にまとめて 1 回だけ出す
   const pastSources = [...new Set(past.map((f) => f.source))].map(sourceOf).filter(Boolean);
@@ -866,7 +878,7 @@ function HomeView({ home, world, ready, onPick, onBegin, onClose }: { home: Plac
         <h3>いま</h3>
         {sum.people > 0 && (
           <p className="home-sum">
-            {sum.blocks} の町丁に住む {sum.people.toLocaleString()} 人。65 歳以上が {sum.oldShare}%。{changeText(sum.change)}
+            {sum.blocks} の町丁に住む {sum.people.toLocaleString()} 人。65 歳以上が {sum.oldShare}%、{all.towns} つの町の合計では {all.oldShare}%。{changeText(sum.change)}
             <small>{sum.sources.map((s) => sourceOf(s)?.name).join("、")}</small>
           </p>
         )}
@@ -1003,6 +1015,7 @@ type SpotViewProps = {
   facilities: Facility[];
   onPlace: (f?: Facility) => void;
   onSelf: (self?: string) => void;
+  onReview: (review: Reviewed & { recorded?: string }) => void;
   onClose: () => void;
 };
 
@@ -1010,7 +1023,7 @@ type SpotViewProps = {
  * 公開版では、遊ぶ人が入れた鍵でブラウザから Anthropic へ直接送る。鍵が無ければ、測定のときに Claude が書いた付箋の記録を見せる */
 const REVIEW_URL = process.env.NEXT_PUBLIC_REVIEW_URL;
 const SHEET_URL = REVIEW_URL && new URL("sheet", REVIEW_URL).toString();
-type Recorded = { model: string; date: string; notes: Record<string, Pick<Reviewed, "good" | "gap" | "question">> };
+type Recorded = { model: string; date: string; summary?: { cases: number; made: number; caught: number }; notes: Record<string, Pick<Reviewed, "good" | "gap" | "question">> };
 const RECORDED = recordedNotes as Recorded;
 // 入れた鍵はこの変数にだけ置く。保存しないので、読み込み直すと消える
 let tabKey = "";
@@ -1043,43 +1056,54 @@ async function askReviewer(answer: Answer, world: World, apiKey: string): Promis
 }
 
 function noteFoot(note: Reviewed & { recorded?: string }): string {
-  if (note.recorded) return `${note.recorded} に ${note.model} がこの案に書いた記録。根拠の数字や前提を変えると、付箋も変わる`;
+  if (note.recorded) return `${note.recorded} に ${note.model} が、この案とこの根拠に書いた記録。前提を変えて読み直すには自分の鍵が要る`;
   if (note.demo) return "鍵が無いので、用意してある付箋";
   return `${note.model}${note.retries ? `。出典に無い数字で ${note.retries} 回書き直した` : ""}`;
 }
 
-/** 決めた 1 枚を確認役（Claude）に見せて、付箋を 1 枚もらう */
-function ReviewCard({ answer, world }: { answer: Answer; world: World }) {
-  const [state, setState] = useState<"idle" | "key" | "wait" | "fail">("idle");
-  const [note, setNote] = useState<(Reviewed & { recorded?: string }) | null>(null);
-  const [key, setKey] = useState(tabKey);
+/** いちばん近い、まだ案を出していない依頼の場所への矢印と距離。遠い町にしか残っていなければバスを勧める */
+function GuideChip({ near, world }: { near: NonNullable<ReturnType<typeof nearestSpot>>; world: World }) {
+  const angle = (Math.atan2(near.dz, near.dx) * 180) / Math.PI;
+  const dist = near.meters >= 1000 ? `${(near.meters / 1000).toFixed(1)} km` : `${Math.max(10, Math.round(near.meters / 10) * 10)} m`;
+  const town = world.places.find((p) => p.id === near.spot.place)?.name ?? "";
+  const far = near.meters > 2000;
+  return (
+    <div className="guide-chip" aria-label={`いちばん近い依頼 ${near.spot.title} まで ${dist}`}>
+      <svg viewBox="0 0 24 24" style={{ transform: `rotate(${angle}deg)` }} aria-hidden>
+        <path d="M3 12h14M12 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span>{far ? `次の依頼は${town}` : near.spot.title}</span>
+      <small>{far ? `バスで ${dist}` : dist}</small>
+    </div>
+  );
+}
+
+/** 決めた 1 枚を確認役（Claude）に見せて、付箋を 1 枚もらう。
+ * 鍵が無い人には、同じ案と根拠に測定のとき Claude が書いた記録を最初から見せる。自分の鍵があれば、いまの前提で読み直せる */
+function ReviewCard({ answer, world, onReview }: { answer: Answer; world: World; onReview: (r: Reviewed & { recorded?: string }) => void }) {
   const req = requestOf(answer);
-  const kept = req.option === undefined ? undefined : RECORDED.notes[`${req.spot}:${req.option}`];
+  const kept = req.option === undefined ? undefined : RECORDED.notes[`${req.spot}:${req.option}:${req.fact}`];
+  const first = answer.review ?? (kept && { ...kept, model: RECORDED.model, retries: 0, demo: false, recorded: RECORDED.date });
+  const [state, setState] = useState<"idle" | "key" | "wait" | "fail">("idle");
+  const [note, setNote] = useState<(Reviewed & { recorded?: string }) | null>(first ?? null);
+  const [key, setKey] = useState(tabKey);
+  useEffect(() => {
+    if (first && !answer.review) onReview(first);
+  }, [first, answer.review, onReview]);
   const ask = async () => {
     setState("wait");
     tabKey = key.trim();
     try {
-      setNote(await askReviewer(answer, world, tabKey));
+      const got = await askReviewer(answer, world, tabKey);
+      setNote(got);
+      onReview(got);
+      setState("idle");
       play("stamp");
     } catch {
       setState("fail");
     }
   };
-  const showKept = () => {
-    setNote({ ...kept!, model: RECORDED.model, retries: 0, demo: false, recorded: RECORDED.date });
-    play("stamp");
-  };
-
-  if (note)
-    return (
-      <aside className="review-card" aria-live="polite">
-        <b>確認役の付箋</b>
-        <p>よい: {note.good}</p>
-        <p>足りない: {note.gap}</p>
-        <p>問い: {note.question}</p>
-        <small>{noteFoot(note)}</small>
-      </aside>
-    );
+  const summary = RECORDED.summary;
 
   if (state === "wait")
     return (
@@ -1087,16 +1111,6 @@ function ReviewCard({ answer, world }: { answer: Answer; world: World }) {
         <button className="btn-game small" disabled>
           読んでもらっている…
         </button>
-      </aside>
-    );
-
-  if (SHEET_URL)
-    return (
-      <aside className="review-card">
-        <button className="btn-game small" onClick={ask}>
-          確認役に見せる
-        </button>
-        {state === "fail" && <small>確認役に届かなかった。手元のサーバーが動いているか見る</small>}
       </aside>
     );
 
@@ -1120,22 +1134,37 @@ function ReviewCard({ answer, world }: { answer: Answer; world: World }) {
     );
 
   return (
-    <aside className="review-card">
-      {kept && (
-        <button className="btn-game small" onClick={showKept}>
-          確認役の記録を見る
+    <aside className="review-card" aria-live="polite">
+      {note ? (
+        <>
+          <b>確認役の付箋</b>
+          <p>よい: {note.good}</p>
+          <p>足りない: {note.gap}</p>
+          <p>問い: {note.question}</p>
+          <small>{noteFoot(note)}</small>
+        </>
+      ) : (
+        <small>
+          自分で書いた一行は、鍵を入れたときだけ確認役が読む。
+          {summary && `測定 ${summary.cases} 件では、一行に作った数字があった ${summary.made} 件のうち ${summary.caught} 件を名指しした`}
+        </small>
+      )}
+      {SHEET_URL ? (
+        <button className="btn-game small" onClick={ask}>
+          確認役に見せる
+        </button>
+      ) : (
+        <button className="btn-game small" onClick={() => setState("key")}>
+          {note ? "自分の鍵で読み直す" : "自分の鍵で見せる"}
         </button>
       )}
-      <button className="btn-game small" onClick={() => setState("key")}>
-        自分の鍵で見せる
-      </button>
     </aside>
   );
 }
 
 /** 調べる → 頼まれる → 町の人の声を見て、案を選ぶか自分で書く → 判子と問い。理由と出典は「くわしく」に。
  * 3つの案は正解ではなく方向の違う出発点。考えるのは遊んでいる学生で、ゲームは材料と問いだけを渡す */
-function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, onStage, onDetail, onChoose, onSettle, onCalc, facilities, onPlace, onSelf, onClose }: SpotViewProps) {
+function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, onStage, onDetail, onChoose, onSettle, onCalc, facilities, onPlace, onSelf, onReview, onClose }: SpotViewProps) {
   useEffect(() => {
     if (detail || (stage !== "ask" && stage !== "basis" && stage !== "self")) return;
     const onKey = (e: KeyboardEvent) => {
@@ -1249,7 +1278,7 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, on
   if (!answer) return null;
   return (
     <>
-      <ReviewCard key={`${spot.id}:${answer.option}`} answer={answer} world={world} />
+      <ReviewCard key={`${spot.id}:${answer.option}:${answer.fact.text}`} answer={answer} world={world} onReview={onReview} />
       <div className="result">
         <Stamp char={spot.stamp} big pop />
         <div className="result-label">{answer.label}</div>

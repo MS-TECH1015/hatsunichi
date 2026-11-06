@@ -29,10 +29,27 @@ export type PastFact = Fact & { era?: string; icon: PastIcon };
  * 町丁の人口は国勢調査の札の文から数える。札の無い町丁は入らない */
 export function worldStats(world: World) {
   const people = world.marks.reduce((n, m) => n + (peopleOf(m.text) ?? 0), 0);
+  const old = world.marks.reduce((n, m) => n + oldOf(m.text), 0);
   const change = world.marks.reduce((n, m) => n + changeOf(m.text), 0);
   const facts = world.spots.reduce((n, s) => n + s.facts.length, 0);
-  return { towns: world.places.length, blocks: world.marks.length, people, change, facts, sources: Object.keys(world.sources).length };
+  return { towns: world.places.length, blocks: world.marks.length, people, oldShare: people ? Math.round((old / people) * 100) : 0, change, facts, sources: Object.keys(world.sources).length };
 }
+
+/** 主人公の位置からいちばん近い依頼の場所。done に入っている場所は除く。画面の案内に使う */
+export function nearestSpot(pos: Vec2, spots: Spot[], done: Set<string>): { spot: Spot; dx: number; dz: number; meters: number } | null {
+  let best: { spot: Spot; dx: number; dz: number; meters: number } | null = null;
+  for (const spot of spots) {
+    if (done.has(spot.id)) continue;
+    const dx = spot.at[0] - pos[0];
+    const dz = spot.at[1] - pos[1];
+    const meters = Math.hypot(dx, dz) * M_PER_UNIT;
+    if (!best || meters < best.meters) best = { spot, dx, dz, meters };
+  }
+  return best;
+}
+
+/** 模型の 1 単位が実際の何 m か。scripts/build_city.py の M_PER_UNIT と同じ */
+export const M_PER_UNIT = 50;
 
 /** 1 枚に書く、その町の町丁に住む人の数。案が関わる人の規模を出典のある数で添える。65 歳以上の割合は人口で重みづけ。
  * change は 5 年の増減の合計で、減った町丁は負の数 */
@@ -49,7 +66,7 @@ export function placeStats(world: World, placeId: string) {
     blocks++;
     people += n;
     change += changeOf(m.text);
-    old += (n * (Number(m.text.match(/65歳以上が (\d+)%/)?.[1]) || 0)) / 100;
+    old += oldOf(m.text);
     for (const s of m.sources) sources.add(s);
   }
   return { blocks, people, change, oldShare: people ? Math.round((old / people) * 100) : 0, sources: [...sources] };
@@ -64,6 +81,12 @@ export function changeText(change: number): string {
 function peopleOf(text: string): number | undefined {
   const hit = text.match(/住む人 ([\d,]+) 人/);
   return hit ? Number(hit[1].replace(/,/g, "")) : undefined;
+}
+
+/** 65 歳以上の人数。割合は整数の % なので、人数は近い値 */
+function oldOf(text: string): number {
+  const n = peopleOf(text) ?? 0;
+  return (n * (Number(text.match(/65歳以上が (\d+)%/)?.[1]) || 0)) / 100;
 }
 
 function changeOf(text: string): number {

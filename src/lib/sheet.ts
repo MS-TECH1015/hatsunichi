@@ -1,12 +1,15 @@
 // 窓口に持っていく 1 枚。画面の書き写しと、確認役のサーバーが同じ文を作る。
 // サーバーは画面から番号と値だけを受け取り、world.json から 1 枚を組み直す。自由に書けるのは自分で書いた案の一行だけ
 import { CALCS } from "./calcs.ts";
-import { changeText, placeStats } from "./world.ts";
+import { changeText, placeStats, worldStats } from "./world.ts";
 import type { Facility, Fact, Spot, World } from "./world.ts";
 
 export const PROPOSAL = { name: "鳥取市 公共施設マネジメント民間提案制度", url: "https://www.city.tottori.lg.jp/page/48913.html" };
 
-export type SheetAnswer = { spot: Spot; option: string; own?: boolean; fact: Fact; calc?: string; why?: string; self?: string; place?: Facility };
+export type SheetAnswer = { spot: Spot; option: string; own?: boolean; fact: Fact; calc?: string; why?: string; self?: string; place?: Facility; review?: SheetReview };
+
+/** 確認役（Claude）が 1 枚に付けた問い。記録なら date が入る。受け手に、学生がどこまで確かめたかを見せる */
+export type SheetReview = { question: string; model: string; date?: string };
 
 /** 1 枚の使い道。市に出すか、事業の構想として持ち帰るか */
 export type SheetUse = "city" | "business";
@@ -29,6 +32,7 @@ export function sheetOf(a: SheetAnswer, world: World, use: SheetUse = "city"): s
     a.place && `使う場所: ${a.place.name}、${town}。鳥取市の未活用施設。今も使われていないかは未確認 出典: ${world.sources[a.place.sources[0]]?.name ?? ""}`,
     a.place && `参考: 市の施設の使い方は ${PROPOSAL.name} で民間から募っている。この施設の案を市が募っているわけではない ${PROPOSAL.url}`,
     `まだ確かめていないこと: ${a.spot.checks.join(" / ")}`,
+    a.review && `確認役の問い: ${a.review.question}（${a.review.model}${a.review.date ? `、${a.review.date} の記録` : ""}）`,
     ...(use === "business" ? businessLines(a, world) : cityLines(a, world)),
   ]
     .filter(Boolean)
@@ -80,7 +84,8 @@ function placeLine(a: SheetAnswer, world: World): string | undefined {
   if (s.people === 0) return undefined;
   const town = world.places.find((p) => p.id === a.spot.place)?.name ?? "";
   const src = s.sources.map((id) => world.sources[id]?.name ?? id).join(" / ");
-  return `関わる人: ${town}の ${s.blocks} の町丁に住む ${s.people.toLocaleString()} 人。65 歳以上が ${s.oldShare}%。${changeText(s.change)} 出典: ${src}`;
+  const all = worldStats(world);
+  return `関わる人: ${town}の ${s.blocks} の町丁に住む ${s.people.toLocaleString()} 人。65 歳以上が ${s.oldShare}%、${all.towns} つの町の ${all.blocks} 町丁の合計では ${all.oldShare}%。${changeText(s.change)} 出典: ${src}`;
 }
 
 /** 計算が使う出典の数字のうち、根拠の行に無いもの。出典の数字と、本人が動かした前提を読み手が分けられるようにする */
