@@ -44,3 +44,8 @@ fetch "https://odp-pref-tottori.tori-info.co.jp/dataset/1652/url_resource/143/da
 fetch "https://www.mhlw.go.jp/content/12004000/001274768.pdf" mhlw_kaigo_hitsuyosu_r6.pdf
 # 鳥取県 鳥取県の消防 3 消防体制 令和4年4月1日現在（県の公式サイト。数字を事実として引くだけで、文や表は写さない）
 fetch "https://www.pref.tottori.lg.jp/secure/1323317/3syouboutaisei.pdf" pref_shoubou_taisei_r4.pdf
+# 町のむかし。文化庁 文化遺産オンライン（利用規約のページは見つからず、AI に使ってよいかは未確認）と鳥取県の公式ページ。事実を自分の言葉で短く引くだけで、文は写さない
+fetch "https://online.bunka.go.jp/db/heritages/detail/139297" bunka_inaba_kokucho.html   # 因幡国庁跡
+fetch "https://online.bunka.go.jp/db/heritages/detail/191522" bunka_tottori_jo.html      # 鳥取城跡 附 太閤ヶ平
+fetch "https://www.pref.tottori.lg.jp/295378.htm" pref_nagashibina.html                  # 用瀬の流しびな 記録選択
+fetch "https://www.pref.tottori.lg.jp/153169.htm" pref_sakyu.html                        # 鳥取砂丘

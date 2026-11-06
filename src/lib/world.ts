@@ -16,7 +16,8 @@ export function unsourcedNumbers(text: string, facts: Fact[]): string[] {
 export type Window = { name: string; url: string; checked: string; note: string };
 
 /** 物語を置く町。at は build_city.py が緯度経度から求めた位置。stop はバスに乗れる標識の位置（場所の中の座標） */
-export type Place = { id: string; name: string; geo: Vec2; at: Vec2; hub?: boolean; stop?: Vec2; geo_source: string };
+/** past はその町のむかし。公的な資料の事実を短く引いたもので、地元を探す画面で今の数字と並べる */
+export type Place = { id: string; name: string; geo: Vec2; at: Vec2; hub?: boolean; stop?: Vec2; geo_source: string; past?: Fact[] };
 
 export type Spot = {
   id: string;

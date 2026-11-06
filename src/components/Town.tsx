@@ -145,6 +145,9 @@ export function Town({ world }: Props) {
   }, []);
   /** 町を歩くだけ。白兎の初日も時計の終業も無い */
   const [walk, setWalk] = useState(false);
+  /** 地元を探す画面。list は町の一覧、Place はその町のむかしといま */
+  const [home, setHome] = useState<Place | "list" | null>(null);
+  const goTo = useRef<Place | null>(null);
   // 閉じた直後の Space で同じ相手をまた開かないように
   const closedAt = useRef(0);
   const { start_hour, end_hour } = world.meta.clock;
@@ -293,6 +296,18 @@ export function Town({ world }: Props) {
     closedAt.current = performance.now();
     setPanel(null);
     sceneRef.current?.setPaused(false);
+    // 地元から始めた人は、白兎の話のあとにその町へバスで行く
+    const to = goTo.current;
+    goTo.current = null;
+    const from = world.places[0];
+    if (to && to.id !== from.id) void ride(from, to);
+  }
+
+  /** 地元を選んで始める。駅で白兎の話を聞いてから、その町へ乗る */
+  function beginAt(place: Place) {
+    goTo.current = place;
+    setHome(null);
+    begin();
   }
 
   /** バスで別の町へ。走っているあいだは行き先の札だけ出す */
@@ -365,7 +380,11 @@ export function Town({ world }: Props) {
     setSent(loadSent());
     bookRef.current = loadBook();
     setBook(bookRef.current);
-  }, []);
+    // 人から送られた ?town= のリンクは、その町のむかしといまから見せる
+    const id = new URLSearchParams(location.search).get("town");
+    const place = world.places.find((p) => p.id === id);
+    if (place) setHome(place);
+  }, [world]);
 
   function openBook() {
     if (panel) return;
@@ -399,7 +418,7 @@ export function Town({ world }: Props) {
       if (e.key !== " " && e.key !== "Enter") return;
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (!started) {
-        if (showSent) return;
+        if (showSent || home) return;
         e.preventDefault();
         begin();
         return;
@@ -450,6 +469,9 @@ export function Town({ world }: Props) {
           <button className="btn-game big" disabled={!ready} onClick={begin}>
             {ready ? "はじめる" : "よみこみ中…"}
           </button>
+          <button className="btn-game ghost" onClick={() => setHome("list")}>
+            自分の地元を探す
+          </button>
           <button className="btn-game ghost" disabled={!ready} onClick={stroll}>
             町を歩くだけ
           </button>
@@ -472,6 +494,8 @@ export function Town({ world }: Props) {
           </p>
         </div>
       )}
+
+      {!started && home && <HomeView home={home} world={world} ready={ready} onPick={setHome} onBegin={beginAt} onClose={() => setHome(null)} />}
 
       {!started && showSent && (
         <div className="end">
@@ -720,6 +744,86 @@ export function Town({ world }: Props) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/** 自分の地元を探す。町のむかしと今の数字を並べ、その町から歩くか、人に見せる。
+ * 見せるリンクに入れるのは町の id だけ */
+function HomeView({ home, world, ready, onPick, onBegin, onClose }: { home: Place | "list"; world: World; ready: boolean; onPick: (h: Place | "list") => void; onBegin: (p: Place) => void; onClose: () => void }) {
+  const [shared, setShared] = useState(false);
+  if (home === "list")
+    return (
+      <div className="end">
+        <div className="end-card home-card">
+          <h2>自分の地元を探す</h2>
+          <p className="home-note">いま歩けるのは鳥取市の {world.places.length} つの町。ほかの市町村はまだない</p>
+          <div className="home-list">
+            {world.places.map((p) => (
+              <button key={p.id} className="btn-game ghost" onClick={() => onPick(p)}>
+                {p.name}
+              </button>
+            ))}
+          </div>
+          <div className="end-actions">
+            <button className="btn-game" onClick={onClose}>
+              もどる
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+
+  const past = home.past ?? [];
+  const now = world.marks.filter((m) => m.place === home.id).slice(0, 3);
+  const sourceOf = (id: string) => world.sources[id];
+  async function show(p: Place) {
+    const url = `${location.origin}${location.pathname}?town=${p.id}`;
+    const text = `鳥取市 ${p.name}のむかしといま。${past[0]?.text ?? now[0]?.text ?? ""}`;
+    if (navigator.share) {
+      await navigator.share({ title: "はつにち", text, url }).catch(() => {});
+      return;
+    }
+    await navigator.clipboard.writeText(`${text}\n${url}`);
+    setShared(true);
+  }
+  return (
+    <div className="end">
+      <div className="end-card home-card">
+        <h2>{home.name}</h2>
+        <h3>むかし</h3>
+        {past.length === 0 && <p className="home-note">この町のむかしは、まだ調べていない</p>}
+        <ul className="home-facts">
+          {past.map((f) => (
+            <li key={f.text}>
+              {f.text}
+              <a href={sourceOf(f.source)?.url} target="_blank" rel="noreferrer">
+                {sourceOf(f.source)?.name}
+              </a>
+            </li>
+          ))}
+        </ul>
+        <h3>いま</h3>
+        <ul className="home-facts">
+          {now.map((m) => (
+            <li key={m.id}>
+              {m.text}
+              <small>{m.sources.map((s) => sourceOf(s)?.name).join("、")}</small>
+            </li>
+          ))}
+        </ul>
+        <div className="end-actions">
+          <button className="btn-game" disabled={!ready} onClick={() => onBegin(home)}>
+            {ready ? "この町から歩く" : "よみこみ中…"}
+          </button>
+          <button className="btn-game ghost" onClick={() => void show(home)}>
+            {shared ? "写しました" : "この町を見せる"}
+          </button>
+          <button className="btn-game ghost" onClick={() => onPick("list")}>
+            ほかの町
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

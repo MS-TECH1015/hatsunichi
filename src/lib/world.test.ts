@@ -127,6 +127,16 @@ describe("world", () => {
     }
   });
 
+  it("町のむかしは出典のある短い一文。地元を探す画面に並べる", () => {
+    const withPast = w.places.filter((p) => p.past?.length);
+    expect(withPast.length).toBeGreaterThan(0);
+    for (const p of withPast)
+      for (const f of p.past ?? []) {
+        expect(w.sources[f.source]?.url, `${p.id}: ${f.source}`).toMatch(/^https:\/\//);
+        expect(f.text.length, `${p.id}: ${f.text}`).toBeLessThanOrEqual(50);
+      }
+  });
+
   it("始まりの位置・依頼の場所・住民・バスの標識は、市の中の歩ける所にある", () => {
     for (const at of [w.start, ...w.spots.map((s) => s.at), ...w.npcs.map((n) => n.at), ...w.stops.map((s) => s.at)]) {
       expect(walkable(ground, at[0], at[1])).toBe(true);

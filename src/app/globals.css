@@ -251,6 +251,12 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .choice.fact { grid-column: 1 / -1; font-size: 15px; font-weight: 700; padding: 10px 14px; }
 .result-label { max-width: min(640px, 90vw); text-align: center; }
 .end-label small { display: block; font-size: 12px; font-weight: 700; color: #8a7f70; }
+.home-card h3 { margin: 14px 0 6px; text-align: left; font-size: 15px; font-weight: 900; }
+.home-note { margin: 0 0 12px; font-size: 13px; font-weight: 700; color: #8a7f70; text-align: left; }
+.home-list { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 16px; }
+.home-facts { margin: 0 0 8px; padding: 0; list-style: none; text-align: left; font-size: 14px; font-weight: 700; }
+.home-facts li { margin-bottom: 10px; }
+.home-facts a, .home-facts small { display: block; font-size: 11px; font-weight: 700; color: #8a7f70; }
 .end-asks { margin: 0 0 14px; text-align: left; font-size: 13px; font-weight: 900; }
 .end-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
 .end-ask span { flex-basis: 100%; }
