@@ -1038,7 +1038,7 @@ export class TownScene {
       g.strokeText(`${a.count.toLocaleString()}`, x, y);
       g.fillText(`${a.count.toLocaleString()}`, x, y);
     }
-    if (layer === "circle" || !areas.length) return;
+    if (layer === "circle" || !areas.length || g.canvas.width < 400 * dpr) return; // 小さな地図には凡例を書かない
     const note = "オレンジの円: 市の調査の空き家の数（令和5年度、地域ごと）";
     g.textAlign = "left";
     g.lineWidth = 3 * dpr;

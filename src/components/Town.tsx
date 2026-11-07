@@ -1361,7 +1361,7 @@ function noteFoot(note: Reviewed & { recorded?: string }): string {
   return `${note.model}${note.retries ? `。出典に無い数字で ${note.retries} 回書き直した` : ""}`;
 }
 
-/** いちばん近い、まだ案を出していない依頼の場所への矢印と距離。遠い町にしか残っていなければバスを勧める */
+/** いちばん近い、まだ案を出していない依頼の場所への矢印とまっすぐの距離。遠い町にしか残っていなければ町の名を出す */
 function GuideChip({ near, world }: { near: NonNullable<ReturnType<typeof nearestSpot>>; world: World }) {
   const angle = (Math.atan2(near.dz, near.dx) * 180) / Math.PI;
   const dist = near.meters >= 1000 ? `${(near.meters / 1000).toFixed(1)} km` : `${Math.max(10, Math.round(near.meters / 10) * 10)} m`;
@@ -1373,7 +1373,7 @@ function GuideChip({ near, world }: { near: NonNullable<ReturnType<typeof neares
         <path d="M3 12h14M12 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       <span>{far ? `次の依頼は${town}` : near.spot.title}</span>
-      <small>{far ? `バスで ${dist}` : dist}</small>
+      <small>{far ? `まっすぐ ${dist}` : dist}</small>
     </div>
   );
 }

@@ -22,6 +22,20 @@ description: data/raw/ の公式ファイルから、3D の町の data/world.jso
 6. 依頼の場所（spots）は手で書く。数字は facts に書き、各 fact の source を world.json の sources に置く。計算は `src/lib/calcs.ts` で、根拠の数字はその場所の facts の文にあるものだけ。新しい依頼の場所には calcs.ts に計算を1つ足し、町の人を2〜3人、役割の違う人で書く。画面の文の長さはテストが見る
 7. `npm test` を通す。world.json の整合、札の位置、計算の根拠、確認役の数字の見張りを見る
 
+## 実在の町にする
+
+町はどれも、実在の建物と道の配置で歩く。新しい町も 3〜6 のあと、7 の前にこの手順を通す。2026-11-07 に 9 町をこの形にし、青谷で通しで試した
+
+- GTFS の stops.txt にその町の停留所が無いときは、places に hub を付けない。路線バスが無い町で、バスでは行き来できず、テストもバスの経路を求めない
+- places の geo が家の集まりから外れているときは、center と center_source を書く。旧町の中心のバス停か役場の位置にする
+- `python scripts/fetch_gsi_vt.py <id>` 国土地理院の最適化ベクトルタイルを 1 回だけ取る。取得済みは飛ばす
+- PLATEAU に建物の無い町は、`scripts/build_real_towns.py` の GSI_TOWNS に id を足す
+- `python scripts/build_real_towns.py <id>` で public/city/towns/<id>.json を作る
+- id を `src/lib/world.ts` の REAL_TOWNS と `scripts/place_in_real_towns.py` の REAL に足す
+- `python scripts/place_in_real_towns.py` を引数なしで流す。4・5 で札を作り直したあと、6 で依頼の場所や住民を書いたあとも流す。置き直した物には placed が付き、2 回目は飛ばす
+- `python scripts/build_akiya.py` で空き家バンクの札を置き直す
+- README・`data/SOURCES.md`・`src/components/Town.tsx` の出典の行に町の名を足す
+
 ## 作業台の町（data/town.json）
 
 8. `scripts/build-town.mjs` の `SOURCES` に同じ `source_id` を足す。数値を持つ要素には必ず `source_id` を付ける。出典の無い値は `ASSUMPTIONS` にだけ置く
