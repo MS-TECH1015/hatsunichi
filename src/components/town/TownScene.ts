@@ -410,7 +410,15 @@ export class TownScene {
 
   /** 町の通り・歩道・飾り（scripts/towns.py の配置）と、そのぶつかる円 */
   private buildTowns() {
-    this.towns = new Towns(this.city.towns, this.world.places, (x, z) => heightAt(this.ground, x, z), this.models, this.gradient);
+    // 実在の町は、市の地図の上でも作り物の模型でなく、実在の建物を縮めて置く
+    const places = this.world.places.filter((p) => !this.reals.has(p.id));
+    this.towns = new Towns(this.city.towns, places, (x, z) => heightAt(this.ground, x, z), this.models, this.gradient);
+    for (const [id, town] of this.reals) {
+      const place = this.world.places.find((p) => p.id === id)!;
+      const mini = town.miniature(REAL_M_PER_UNIT / M_PER_UNIT);
+      mini.position.set(place.at[0], heightAt(this.ground, place.at[0], place.at[1]), place.at[1]);
+      this.scene.add(mini);
+    }
     this.scene.add(this.towns.group);
     this.obstacles.push(...this.towns.obstacles);
   }

@@ -159,6 +159,7 @@ export class RealTown {
   private water = new PolyIndex();
   private bridges = new PolyIndex();
   private disposables: { dispose(): void }[] = [];
+  private buildings: THREE.Mesh;
 
   constructor(
     readonly id: string,
@@ -168,7 +169,8 @@ export class RealTown {
   ) {
     this.group.position.set(origin[0], 0, origin[1]);
     this.group.add(this.buildGround(gradientMap));
-    this.group.add(this.buildBuildings(gradientMap));
+    this.buildings = this.buildBuildings(gradientMap);
+    this.group.add(this.buildings);
     for (const r of data.roads) this.bridges.add(bounds(r.ring));
     for (const a of data.land) if (a.k === "water") this.water.add(bounds(a.ring));
   }
@@ -214,6 +216,13 @@ export class RealTown {
     if (this.walkable([to[0], from[1]])) return [to[0], from[1]];
     if (this.walkable([from[0], to[1]])) return [from[0], to[1]];
     return from;
+  }
+
+  /** 市の地図の上に置く縮小。形は町の中と同じものを使う */
+  miniature(scale: number): THREE.Mesh {
+    const mini = new THREE.Mesh(this.buildings.geometry, this.buildings.material);
+    mini.scale.setScalar(scale);
+    return mini;
   }
 
   dispose() {
