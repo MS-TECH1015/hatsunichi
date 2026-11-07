@@ -631,7 +631,7 @@ export function Town({ world }: Props) {
             </button>
           )}
           <p className="title-note">
-            数字・施設・窓口・空き家バンクの物件は実在の公開情報。駅・雲山・湖山・河原の建物と道は実在の配置。町の人と、依頼の家・店・事業者は架空。試作で、市・県・バス事業者とは関係ない。対象は 18 歳以上の大学生
+            数字・施設・窓口・空き家バンクの物件は実在の公開情報。9 つの町の建物と道は実在の配置。町の人と、依頼の家・店・事業者は架空。試作で、市・県・バス事業者とは関係ない。対象は 18 歳以上の大学生
             <br />
             {REVIEW_URL
               ? "困りごとから探す・確認役に見せる・予行を頼むときだけ、その一行か、1 枚の番号と自分で書いた文を、作者の中継（Cloudflare）を通して Anthropic の Claude へ送る。中継は回数を数えるために IP を 1 時間、同じ問いに同じ答えを返すために Claude の答えを 14 日置く。名前・住所・病名は書かない。ほかはどこにも送らない。"
@@ -642,7 +642,7 @@ export function Town({ world }: Props) {
             <br />
             道とバス: 鳥取県オープンデータポータル 鳥取県バス情報（日本交通・日ノ丸自動車 GTFS-JP）を加工 ・ 家の数: 鳥取市公式ウェブサイト「町別世帯数、年齢（5歳階級）別人口」を加工
             <br />
-            町の「?」: 政府統計の総合窓口(e-Stat)「国勢調査」（総務省）と国土数値情報（医療機関・学校）（国土交通省）を加工。緑の札: 鳥取市「未活用施設」（鳥取県オープンデータポータル）を加工。橙の札: 鳥取市 空き家情報バンクを加工。駅・雲山・湖山・河原の建物と道: 3D都市モデル（Project PLATEAU）鳥取市（2020年度）を加工して作成。URL とライセンスは<a href="https://github.com/MS-TECH1015/hatsunichi/blob/master/data/SOURCES.md" target="_blank" rel="noreferrer">出典の一覧</a>、使ったライブラリと書体のライセンスは<a href={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/licenses/README.txt`} target="_blank" rel="noreferrer">licenses</a>
+            町の「?」: 政府統計の総合窓口(e-Stat)「国勢調査」（総務省）と国土数値情報（医療機関・学校）（国土交通省）を加工。緑の札: 鳥取市「未活用施設」（鳥取県オープンデータポータル）を加工。橙の札: 鳥取市 空き家情報バンクを加工。駅・雲山・湖山・河原の建物と道: 3D都市モデル（Project PLATEAU）鳥取市（2020年度）を加工して作成。福部・気高・国府・用瀬・砂丘の建物と道: 国土地理院最適化ベクトルタイルを加工して作成、建物の高さは種類からの推定。URL とライセンスは<a href="https://github.com/MS-TECH1015/hatsunichi/blob/master/data/SOURCES.md" target="_blank" rel="noreferrer">出典の一覧</a>、使ったライブラリと書体のライセンスは<a href={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/licenses/README.txt`} target="_blank" rel="noreferrer">licenses</a>
           </p>
         </div>
       )}
