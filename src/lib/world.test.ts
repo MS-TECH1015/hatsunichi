@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import world from "../../data/world.json";
 import city from "../../public/city/city.json";
 import { CALCS, defaults } from "./calcs";
-import { PAST_ICONS, busMinutes, clockText, facilityFind, heightAt, markFind, nearestMark, nearestTarget, placeWorld, pushOut, rideFind, routeBetween, spotFind, stepWithin, straightKm, unsourcedNumbers, walkable, type Ground, type Route, type World } from "./world";
+import { PAST_ICONS, busMinutes, cityAt, pocketAt, pocketOrigin, clockText, facilityFind, heightAt, markFind, nearestMark, nearestTarget, placeWorld, pushOut, rideFind, routeBetween, spotFind, stepWithin, straightKm, unsourcedNumbers, walkable, type Ground, type Route, type World } from "./world";
 
 const w = placeWorld(world as unknown as World);
 const bytes = (path: string) => readFileSync(new URL(path, import.meta.url));
@@ -17,11 +17,16 @@ const ground: Ground = {
 };
 
 describe("world", () => {
-  it("場所の中の座標は、場所の位置を足して市全体の座標になる", () => {
-    const eki = w.places.find((p) => p.id === "eki")!;
+  it("場所の中の座標は、場所の位置を足して市全体の座標になる。実在の町は離れた所の原点を足す", () => {
+    const fukube = w.places.find((p) => p.id === "fukube")!;
+    const field = w.spots.find((s) => s.place === "fukube")!;
+    const local = (world as unknown as World).spots.find((s) => s.id === field.id)!.at;
+    expect(field.at).toEqual([fukube.at[0] + local[0], fukube.at[1] + local[1]]);
     const shop = w.spots.find((s) => s.id === "shop1")!;
-    const local = (world as unknown as World).spots.find((s) => s.id === "shop1")!.at;
-    expect(shop.at).toEqual([eki.at[0] + local[0], eki.at[1] + local[1]]);
+    const shopLocal = (world as unknown as World).spots.find((s) => s.id === "shop1")!.at;
+    const o = pocketOrigin("eki")!;
+    expect(shop.at).toEqual([o[0] + shopLocal[0], o[1] + shopLocal[1]]);
+    expect(pocketAt(shop.at)).toBe("eki");
     expect(w.stops.length).toBe(w.places.filter((p) => p.hub).length);
   });
 
@@ -142,15 +147,17 @@ describe("world", () => {
 
   it("始まりの位置・依頼の場所・住民・バスの標識は、市の中の歩ける所にある", () => {
     for (const at of [w.start, ...w.spots.map((s) => s.at), ...w.npcs.map((n) => n.at), ...w.stops.map((s) => s.at)]) {
-      expect(walkable(ground, at[0], at[1])).toBe(true);
+      const [x, z] = cityAt(w.places, at); // 実在の町の中は、市の地図の上の同じ所で確かめる
+      expect(walkable(ground, x, z)).toBe(true);
     }
   });
 
   it("海と市の外へは歩けない。壁に沿って滑る", () => {
     expect(walkable(ground, 0, -200)).toBe(false); // 鳥取駅から 10 km 北は日本海
     expect(walkable(ground, 5000, 0)).toBe(false);
-    expect(stepWithin(ground, w.start, [w.start[0], -200])).toEqual(w.start);
-    expect(stepWithin(ground, w.start, [w.start[0] + 1, -200])).toEqual([w.start[0] + 1, w.start[1]]);
+    const start = cityAt(w.places, w.start);
+    expect(stepWithin(ground, start, [start[0], -200])).toEqual(start);
+    expect(stepWithin(ground, start, [start[0] + 1, -200])).toEqual([start[0] + 1, start[1]]);
   });
 
   it("足もとの高さは格子の点のあいだを線形に補う", () => {
@@ -181,7 +188,7 @@ describe("町丁の印", () => {
     for (const m of w.marks) {
       expect(w.places.some((p) => p.id === m.place)).toBe(true);
       for (const k of m.sources) expect(w.sources[k]).toBeDefined();
-      expect(walkable(ground, m.at[0], m.at[1])).toBe(true);
+      expect(walkable(ground, ...cityAt(w.places, m.at))).toBe(true);
     }
   });
 
@@ -224,7 +231,7 @@ describe("未活用施設", () => {
     for (const f of w.facilities) {
       expect(w.places.some((p) => p.id === f.place)).toBe(true);
       for (const k of f.sources) expect(w.sources[k]).toBeDefined();
-      expect(walkable(ground, f.at[0], f.at[1])).toBe(true);
+      expect(walkable(ground, ...cityAt(w.places, f.at))).toBe(true);
     }
   });
 
