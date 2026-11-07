@@ -43,7 +43,7 @@ export function nearMe(chome: string, data: NearData, placed: Placed): NearMe | 
 }
 
 /** 1 枚に足す「自分だから出せる理由」。target は使う場所の市の地図の座標。画面の中の写しにだけ載せ、確認役には送らない */
-export function nearLine(me: NearMe, target: Vec2 | null): string {
+export function nearLine(me: { chome: string; at: Vec2 }, target: Vec2 | null): string {
   if (!target) return `提案者は${me.chome}に住んでいる`;
   return `提案者は${me.chome}に住んでいて、ここまでまっすぐ測って ${km(near(me.at, "", target).m)}`;
 }
