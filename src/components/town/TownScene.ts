@@ -955,7 +955,7 @@ export class TownScene {
     this.sun.position.set(look.x + 30, look.y + 50, look.z + 20);
     this.sun.target.position.set(look.x, look.y, look.z);
     const shown = pocketAt([this.camera.position.x, this.camera.position.z]);
-    for (const [id, t] of this.reals) t.group.visible = shown === id;
+    for (const [id, t] of this.reals) t.show(shown === id);
   }
 
   /** 山がカメラと主人公のあいだに入らないよう、カメラを持ち上げる */

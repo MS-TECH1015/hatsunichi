@@ -159,6 +159,8 @@ export class RealTown {
   private water = new PolyIndex();
   private bridges = new PolyIndex();
   private disposables: { dispose(): void }[] = [];
+  private groundMat: THREE.MeshToonMaterial | null = null;
+  private groundTex: THREE.CanvasTexture | null = null;
   private buildings: THREE.Mesh;
 
   constructor(
@@ -238,15 +240,30 @@ export class RealTown {
     const p = geo.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < p.count; i++) p.setY(i, this.heightLocal(p.getX(i), p.getZ(i)));
     geo.computeVertexNormals();
-    const tex = new THREE.CanvasTexture(this.paint(size));
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = 8;
-    const mat = new THREE.MeshToonMaterial({ map: tex, gradientMap });
+    const mat = new THREE.MeshToonMaterial({ gradientMap });
     mat.userData.outlineParameters = { visible: false };
+    this.groundMat = mat;
     const mesh = new THREE.Mesh(geo, mat);
     mesh.receiveShadow = true;
-    this.disposables.push(geo, tex, mat);
+    this.disposables.push(geo, mat, { dispose: () => this.groundTex?.dispose() });
     return mesh;
+  }
+
+  /** 町を見せる・隠す。地面の絵（2048 四方）は初めて見せるときに描き、隠すと GPU から下ろす。9 町ぶんを一度に持たないため */
+  show(on: boolean) {
+    if (this.group.visible === on) return;
+    this.group.visible = on;
+    if (!on) {
+      this.groundTex?.dispose();
+      return;
+    }
+    if (this.groundTex || !this.groundMat) return;
+    const tex = new THREE.CanvasTexture(this.paint((this.data.radius + OUTSIDE) * 2));
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 8;
+    this.groundTex = tex;
+    this.groundMat.map = tex;
+    this.groundMat.needsUpdate = true;
   }
 
   private paint(size: number): HTMLCanvasElement {
