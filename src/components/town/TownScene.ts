@@ -979,7 +979,7 @@ export class TownScene {
   private moveCamera(dt: number, now: number) {
     if (!this.playing) {
       const a = now / 40000;
-      this.camera.position.set(this.center.x + Math.sin(a) * 560, 480, this.center.z + Math.cos(a) * 560);
+      this.camera.position.set(this.center.x + Math.sin(a) * 300, 230, this.center.z + Math.cos(a) * 300);
       this.camera.lookAt(this.center.x, 0, this.center.z);
       return;
     }
