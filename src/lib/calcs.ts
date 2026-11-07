@@ -46,6 +46,17 @@ export const CALCS: Record<string, Calc> = {
       return `学生 ${people} 人が月に ${times} 回、1 回 ${houses} 件ずつ見ると、1 年で ${n(perYear)} 件。4,207 件を 1 周するのに 約 ${n(4207 / perYear, 1)} 年`;
     },
   },
+  lodging: {
+    ask: "大学へ通える空き家を学生の下宿にすると、何人が住めて、家主に家賃がいくら入る？",
+    bases: [{ fact: 0, value: 2 }],
+    knobs: [
+      { id: "houses", label: "下宿にする家", unit: "件", min: 1, max: 20, step: 1, value: 2 },
+      { id: "per", label: "1 件に住む学生", unit: "人", min: 1, max: 6, step: 1, value: 3 },
+      { id: "rent", label: "1 人の家賃（月）", unit: "万円", min: 1, max: 5, step: 1, value: 2 },
+    ],
+    say: ({ houses, per, rent }) =>
+      `${houses} 件に学生が ${per} 人ずつ、月 ${rent} 万円で住むと、${n(houses * per)} 人の住まいになり、家主に入る家賃は年 ${n(houses * per * rent * 12)} 万円。今、大学へ乗り換えなしのバスで通える登録物件は 2 件`,
+  },
   care1: {
     ask: "学生が介護の仕事を週に何時間か受け持つと、2040 年度に県で足りなくなる人数のどれくらいに届く？",
     bases: [

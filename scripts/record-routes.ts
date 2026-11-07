@@ -10,6 +10,7 @@ const w = raw as unknown as World;
 // want は案内として正しい依頼。none は 9 つのどれにも近くない。困りごとが 2 つある一行は、どちらを選んでも正しいとする
 // show の例だけを画面に出す。残りは、言葉の一致では外れやすい言い換え・方言・2 つの困りごと・指示を混ぜた一行
 const EXAMPLES: { text: string; want: string | string[]; show: boolean }[] = [
+  { text: "大学の近くに、安く住める部屋が見つからない", want: "lodging", show: true },
   { text: "地元のバスが減って、祖母が病院に行きにくくなった", want: "stop", show: true },
   { text: "実家の隣の空き家、草が伸び放題で誰も手入れしていない", want: "empty1", show: true },
   { text: "近所の八百屋が閉まって、歩いて買い物できる店が無い", want: "shop1", show: true },
@@ -22,6 +23,7 @@ const EXAMPLES: { text: string; want: string | string[]; show: boolean }[] = [
   { text: "ばあちゃんが通院の足に困っとる。便が少なすぎるけぇ", want: "stop", show: false },
   { text: "おじいちゃんが、医者に行くたびにタクシー代がかさむと嘆いていた", want: "stop", show: false },
   { text: "となりの家、もう何年も誰も住んでなくて庭がジャングルみたい", want: "empty1", show: false },
+  { text: "下宿代が高くて、仕送りだけでは足りない", want: "lodging", show: false },
   { text: "駅のまわり、シャッターばっかりで歩いてもさみしい", want: "shop1", show: false },
   { text: "ひいばあちゃんは買い物に出られなくて、届けてもらうしかない", want: "shop1", show: false },
   { text: "親戚のおじさんが、らっきょう作りは来年でやめるかもと言っていた", want: "field1", show: false },
