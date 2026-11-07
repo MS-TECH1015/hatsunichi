@@ -2211,7 +2211,7 @@
       "name": "鳥取市 空き家情報バンク 登録物件一覧（2026年10月16日更新）",
       "url": "https://www.city.tottori.lg.jp/page/5828.html",
       "date": "2026-11-07",
-      "note": "鳥取市のページ（PDL1.0）から、物件の番号・登録か成約済みか・所在の町名だけを使った。点は町名の代表点で、建物の位置ではない。写真・価格・番地は載せない。UJI ターン向けの物件は鳥取県の移住サイトのページへつなぐ"
+      "note": "鳥取市のページ（PDL1.0）から、物件の番号・登録か成約済みか・所在の町名だけを使った。成約済みと UJI ターン向けの物件の点は町名の代表点で、建物の位置ではない。写真・価格・番地は載せない。UJI ターン向けの物件は鳥取市の移住サイトのページへつなぐ"
     },
     "isj_oaza": {
       "name": "大字・町丁目位置参照情報 国土交通省（令和7年、31000-19.0b）を加工",
@@ -2224,6 +2224,12 @@
       "url": "https://www.city.tottori.lg.jp/uploaded/attachment/26931.pdf",
       "date": "2026-11-07",
       "note": "16ページ 表5 地域別の空家等の増減の令和5年度の空家数・世帯数・空家率。空家率の母数は令和5年8月末の総世帯数。15ページ 表4 の空家率は一部が表5と違うので、本文の文と合う表5を使った。地域ごとの数だけで、建物の位置は使わない。鳥取市のコンテンツは PDL1.0。SHA256 0d480919e60f280deead693d722993e5ec47208702b8cfcf86f03a1594dc84e0。数字を抜き出して加工"
+    },
+    "akiya_bank_page": {
+      "name": "鳥取市 空き家情報バンク 物件ページ（登録中の 5 件）",
+      "url": "https://www.city.tottori.lg.jp/page/5828.html",
+      "date": "2026-11-07",
+      "note": "鳥取市のページ（PDL1.0）。所在の町名の横の地図リンクに市が公開した点の緯度経度だけを使った。番地・写真・価格は載せない。1 件 1 回だけ取得し、SHA256 は data/raw/fetch.log"
     }
   },
   "problem": [
@@ -2948,23 +2954,24 @@
       "status": "listed",
       "town": "福部町高江",
       "geo": [
-        35.540344,
-        134.280764
+        35.5417877,
+        134.2843106
       ],
       "at": [
-        101.26,
-        -100.84
+        107.69,
+        -104.04
       ],
       "url": "https://www.city.tottori.lg.jp/page/50534.html",
       "sources": [
         "akiya_bank_list",
-        "isj_oaza"
+        "akiya_bank_page"
       ],
+      "pin": true,
       "real": {
         "place": "fukube",
         "at": [
-          -231.3,
-          246.4
+          -32.4,
+          183.4
         ]
       }
     },
@@ -2973,72 +2980,76 @@
       "status": "listed",
       "town": "伏野",
       "geo": [
-        35.515114,
-        134.123116
+        35.5267265,
+        134.1296773
       ],
       "at": [
-        -184.5,
-        -44.85
+        -172.61,
+        -70.62
       ],
       "url": "https://www.city.tottori.lg.jp/page/48163.html",
       "sources": [
         "akiya_bank_list",
-        "isj_oaza"
-      ]
+        "akiya_bank_page"
+      ],
+      "pin": true
     },
     {
       "id": "akiya-64",
       "status": "listed",
       "town": "湯所町二丁目",
       "geo": [
-        35.510937,
-        134.230633
+        35.5127474,
+        134.2303303
       ],
       "at": [
-        10.39,
-        -35.59
+        9.84,
+        -39.6
       ],
       "url": "https://www.city.tottori.lg.jp/page/5840.html",
       "sources": [
         "akiya_bank_list",
-        "isj_oaza"
-      ]
+        "akiya_bank_page"
+      ],
+      "pin": true
     },
     {
       "id": "akiya-63",
       "status": "listed",
       "town": "立川町五丁目",
       "geo": [
-        35.488281,
-        134.243843
+        35.4904573,
+        134.2479848
       ],
       "at": [
-        34.34,
-        14.69
+        41.84,
+        9.86
       ],
       "url": "https://www.city.tottori.lg.jp/page/20090.html",
       "sources": [
         "akiya_bank_list",
-        "isj_oaza"
-      ]
+        "akiya_bank_page"
+      ],
+      "pin": true
     },
     {
       "id": "akiya-61",
       "status": "listed",
       "town": "鹿野町今市",
       "geo": [
-        35.466598,
-        134.052315
+        35.4644359,
+        134.0510232
       ],
       "at": [
-        -312.84,
-        62.8
+        -315.18,
+        67.6
       ],
       "url": "https://www.city.tottori.lg.jp/page/29076.html",
       "sources": [
         "akiya_bank_list",
-        "isj_oaza"
-      ]
+        "akiya_bank_page"
+      ],
+      "pin": true
     },
     {
       "id": "akiya-鳥取市佐01",

@@ -1,9 +1,11 @@
-"""鳥取市 空き家情報バンクの物件を、町名の代表点に置く。LLM は使わない。
+"""鳥取市 空き家情報バンクの物件を地図に置く。LLM は使わない。
 
 入力: data/raw/akiya_bank_5828.html（市の登録物件一覧のページ。取得は data/SOURCES.md の akiya_bank_list）
       data/raw/isj_31000-19.0b.zip（位置参照情報 大字・町丁目レベル、令和7年）
 出力: data/world.json の akiya。市の地図の座標（1 単位 50 m）と緯度経度、町名、物件ページの URL。
-番地・写真・価格・間取りは使わない。点は町名の代表点で、建物の位置ではない。
+番地・写真・価格・間取りは使わない。登録中で市の物件ページがある物件は、そのページの地図リンクに市が公開した点に置く
+（data/raw/akiya_pages、fetch_akiya_pages.py）。成約済みと、県の移住サイトの物件は町名の代表点に置く。
+成約済みは今は人が住んでいるかもしれず、移住サイトは規約が無断の利用を禁じているため
 """
 import csv
 import html
@@ -76,6 +78,15 @@ def in_real_town(world, geo, taken):
     return None
 
 
+def page_point(url):
+    """市の物件ページ（fetch_akiya_pages.py が落とした）の地図リンクにある、市が公開した点。無ければ None"""
+    path = ROOT / "data" / "raw" / "akiya_pages" / (url or "").rsplit("/", 1)[-1]
+    if not url or not path.exists():
+        return None
+    hit = re.search(r"!3d(3[45]\.\d+)!4d(13[34]\.\d+)", path.read_text(encoding="utf-8", errors="ignore"))
+    return [float(hit[1]), float(hit[2])] if hit else None
+
+
 def main():
     points = towns()
     world = json.loads(WORLD.read_text(encoding="utf-8"))
@@ -86,7 +97,12 @@ def main():
         if not geo:
             print("町名が位置参照情報に無い:", item["town"])
             continue
-        a = {"id": f"akiya-{item['no']}", "status": item["status"], "town": item["town"], "geo": [geo[0], geo[1]], "at": unit(*geo), "url": item["url"], "sources": ["akiya_bank_list", "isj_oaza"]}
+        pin = page_point(item["url"]) if item["status"] == "listed" else None
+        geo = pin or geo
+        a = {"id": f"akiya-{item['no']}", "status": item["status"], "town": item["town"], "geo": [geo[0], geo[1]], "at": unit(*geo), "url": item["url"],
+             "sources": ["akiya_bank_list", "akiya_bank_page" if pin else "isj_oaza"]}
+        if pin:
+            a["pin"] = True
         real = in_real_town(world, geo, taken)
         if real:
             a["real"] = real
@@ -96,7 +112,13 @@ def main():
         "name": "鳥取市 空き家情報バンク 登録物件一覧（2026年10月16日更新）",
         "url": "https://www.city.tottori.lg.jp/page/5828.html",
         "date": "2026-11-07",
-        "note": "鳥取市のページ（PDL1.0）から、物件の番号・登録か成約済みか・所在の町名だけを使った。点は町名の代表点で、建物の位置ではない。写真・価格・番地は載せない。UJI ターン向けの物件は鳥取県の移住サイトのページへつなぐ",
+        "note": "鳥取市のページ（PDL1.0）から、物件の番号・登録か成約済みか・所在の町名だけを使った。成約済みと UJI ターン向けの物件の点は町名の代表点で、建物の位置ではない。写真・価格・番地は載せない。UJI ターン向けの物件は鳥取市の移住サイトのページへつなぐ",
+    }
+    world["sources"]["akiya_bank_page"] = {
+        "name": "鳥取市 空き家情報バンク 物件ページ（登録中の 5 件）",
+        "url": "https://www.city.tottori.lg.jp/page/5828.html",
+        "date": "2026-11-07",
+        "note": "鳥取市のページ（PDL1.0）。所在の町名の横の地図リンクに市が公開した点の緯度経度だけを使った。番地・写真・価格は載せない。1 件 1 回だけ取得し、SHA256 は data/raw/fetch.log",
     }
     world["sources"]["isj_oaza"] = {
         "name": "大字・町丁目位置参照情報 国土交通省（令和7年、31000-19.0b）を加工",

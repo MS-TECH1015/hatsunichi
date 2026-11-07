@@ -245,11 +245,12 @@ describe("未活用施設", () => {
 });
 
 describe("空き家バンク", () => {
-  it("物件は町名の代表点で、家の位置ではないと文に書き、一覧の時点を添え、登録中は市か県のページへつなぐ", () => {
+  it("物件は点の出どころを文に書き、一覧の時点を添え、登録中は市のページへつなぐ。市の点は登録中だけ", () => {
     const akiya = w.facilities.filter((f) => f.akiya);
     expect(akiya.length).toBeGreaterThan(0);
     for (const f of akiya) {
-      expect(f.text).toContain("家の位置ではない");
+      expect(f.text).toMatch(f.sources.includes("akiya_bank_page") ? /市の物件ページの地図の点/ : /家の位置ではない|成約/);
+      if (f.sources.includes("akiya_bank_page")) expect(f.akiya).toBe("listed");
       expect(f.text).toContain("時点");
       for (const k of f.sources) expect(w.sources[k]).toBeDefined();
       if (f.akiya !== "closed") expect(f.url).toMatch(/^https:\/\/(www\.city\.tottori\.lg\.jp|tottori-iju\.jp)\//);

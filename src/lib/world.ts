@@ -223,7 +223,7 @@ export type Mark = { id: string; place: string; at: Vec2; text: string; sources:
 export type Facility = Mark & { name: string; /** 空き家バンクの物件のときだけ。登録中・移住向け・成約済み */ akiya?: AkiyaStatus; url?: string | null };
 export type AkiyaStatus = "listed" | "uji" | "closed";
 /** 鳥取市 空き家情報バンクの物件（scripts/build_akiya.py）。at は町名の代表点で、家の位置ではない。real は実在の町の中での位置 */
-export type Akiya = { id: string; status: AkiyaStatus; town: string; geo: Vec2; at: Vec2; url: string | null; sources: string[]; real?: { place: string; at: Vec2 } };
+export type Akiya = { id: string; status: AkiyaStatus; /** 市の物件ページの地図リンクに市が公開した点に置いたとき */ pin?: boolean; town: string; geo: Vec2; at: Vec2; url: string | null; sources: string[]; real?: { place: string; at: Vec2 } };
 
 export type AkiyaArea = { label: string; area: string; count: number; households: number; rate: number; source: string };
 
@@ -303,7 +303,7 @@ export function realCenter(place: Place): Vec2 {
 }
 
 const AKIYA_TEXT: Record<AkiyaStatus, (town: string) => string> = {
-  listed: (t) => `空き家バンクに登録中の物件が${t}にある（市の一覧の 2026年10月16日 の時点）。印は町名の代表点で、家の位置ではない`,
+  listed: (t) => `空き家バンクに登録中の物件が${t}にある（市の一覧の 2026年10月16日 の時点）`,
   uji: (t) => `移住向けに紹介中の空き家が${t}にある（市の一覧の 2026年10月16日 の時点）。印は町名の代表点で、家の位置ではない`,
   closed: (t) => `空き家バンクで${t}の物件が成約した（同じ一覧の時点）。印は町名の代表点で、家の位置ではない`,
 };
@@ -313,7 +313,7 @@ function akiyaFacility(world: World, a: Akiya): Facility {
   const near = world.places.reduce((b, p) => (Math.hypot(p.at[0] - a.at[0], p.at[1] - a.at[1]) < Math.hypot(b.at[0] - a.at[0], b.at[1] - a.at[1]) ? p : b));
   const o = a.real ? pocketOrigin(a.real.place) : null;
   const at: Vec2 = a.real && o ? [o[0] + a.real.at[0], o[1] + a.real.at[1]] : a.at;
-  return { id: a.id, place: a.real?.place ?? near.id, at, name: `空き家バンク ${a.town}`, text: AKIYA_TEXT[a.status](a.town), sources: a.sources, akiya: a.status, url: a.url };
+  return { id: a.id, place: a.real?.place ?? near.id, at, name: `空き家バンク ${a.town}`, text: AKIYA_TEXT[a.status](a.town) + (a.pin ? "。印は市の物件ページの地図の点" : a.status === "listed" ? "。印は町名の代表点で、家の位置ではない" : ""), sources: a.sources, akiya: a.status, url: a.url };
 }
 
 export function placeWorld(world: World): Placed {
