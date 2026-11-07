@@ -2098,11 +2098,21 @@
   "problem": [
     {
       "text": "鳥取県の高校から大学へ進む人のうち、県内の大学へ進むのは 14.2%。全国で 2 番目に低い",
-      "source": "pref_arikata_r2"
+      "source": "pref_arikata_r2",
+      "big": "14.2%",
+      "label": "県内の大学へ進む"
     },
     {
       "text": "鳥取市で調査に答えた会社の 61.6% に、後継者がいない",
-      "source": "tottori_shokei_r7"
+      "source": "tottori_shokei_r7",
+      "big": "61.6%",
+      "label": "後継ぎのいない会社"
+    },
+    {
+      "text": "鳥取市の空き家は令和5年度の調査で 4,207 件",
+      "source": "tottori_akiya_guide",
+      "big": "4,207",
+      "label": "鳥取市の空き家の件数"
     }
   ],
   "submit": {

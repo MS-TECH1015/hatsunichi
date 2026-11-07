@@ -366,3 +366,9 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .near-me .link-more { margin-left: 8px; }
 .near-akiya a { margin-left: 8px; font-size: 12px; }
 .dialog-src { margin: 6px 0 0; font-size: 11px; font-weight: 700; color: #8a7f70; }
+.title-big { display: flex; gap: 8px; justify-content: center; margin: 0 auto 10px; padding: 0; list-style: none; max-width: 560px; }
+.title-big li { flex: 1 1 0; min-width: 0; padding: 8px 6px; border: 3px solid var(--ink); border-radius: 14px; background: var(--paper); box-shadow: 0 4px 0 var(--ink); }
+.title-big b { display: block; font-size: 30px; font-weight: 900; line-height: 1.1; color: var(--accent); }
+.title-big span { display: block; margin-top: 2px; font-size: 12px; font-weight: 800; color: var(--ink); }
+@media (max-width: 480px) { .title-big b { font-size: 24px; } .title-big span { font-size: 11px; } }
+.calc-chosen { margin: 0 0 6px; padding: 4px 8px; border-left: 4px solid var(--accent); background: #fff3e6; font-size: 13px; font-weight: 800; }

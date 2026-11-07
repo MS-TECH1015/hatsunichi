@@ -599,9 +599,16 @@ export function Town({ world }: Props) {
           <p className="tagline">
             鳥取市を歩いて、<wbr />町の困りごとに<wbr />市へ出せる案を 1&nbsp;枚。
           </p>
-          <p className="title-problem">{world.problem.map((p) => p.text).join("。")}。</p>
+          <ul className="title-big">
+            {world.problem.map((p) => (
+              <li key={p.source} title={p.text}>
+                <b>{p.big}</b>
+                <span>{p.label}</span>
+              </li>
+            ))}
+          </ul>
           <p className="title-stats">
-            {stats.towns} つの町、{stats.blocks} 町丁に住む {stats.people.toLocaleString()} 人の数字。{changeText(stats.change)}。根拠 {stats.facts} 件、出典 {stats.sources} 件。数字はすべて公的な資料から。1 枚は確認役の Claude が読み、出典に無い数字を名指しする
+            数字は公的な資料 {stats.sources} 件から。1 枚は Claude が出典と照らす
           </p>
           <button className="btn-game big" disabled={!ready} onClick={quickStart}>
             {ready ? "歩かずに案を出す" : "よみこみ中…"}
@@ -764,6 +771,7 @@ export function Town({ world }: Props) {
           answer={answerOf(panel.spot)}
           voices={quick ? voicesOf(panel.spot).filter((v) => v.heard) : voicesOf(panel.spot)}
           draft={panel.draft}
+          chosen={panel.pending?.option.text}
           guide={guide}
           world={world}
           suggest={panel.from?.suggest}
@@ -1178,6 +1186,8 @@ type SpotViewProps = {
   answer?: Answer;
   voices: Voice[];
   draft?: string;
+  /** 選んだ案。計算の画面の上に出し、何の案の計算かを分かるようにする */
+  chosen?: string;
   guide: string;
   world: World;
   onStage: (s: Stage, draft?: string) => void;
@@ -1461,7 +1471,7 @@ function ReviewCard({ answer, world, onReview }: { answer: Answer; world: World;
 
 /** 調べる → 頼まれる → 町の人の声を見て、案を選ぶか自分で書く → 判子と問い。理由と出典は「くわしく」に。
  * 3つの案は正解ではなく方向の違う出発点。考えるのは遊んでいる学生で、ゲームは材料と問いだけを渡す */
-function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, suggest, concern, onStage, onDetail, onChoose, onSettle, onCalc, facilities, onPlace, onSelf, onReview, onClose }: SpotViewProps) {
+function SpotView({ spot, stage, detail, answer, voices, draft, chosen, guide, world, suggest, concern, onStage, onDetail, onChoose, onSettle, onCalc, facilities, onPlace, onSelf, onReview, onClose }: SpotViewProps) {
   useEffect(() => {
     if (detail || (stage !== "ask" && stage !== "basis" && stage !== "self")) return;
     const onKey = (e: KeyboardEvent) => {
@@ -1520,7 +1530,7 @@ function SpotView({ spot, stage, detail, answer, voices, draft, guide, world, su
       </>
     );
 
-  if (stage === "calc" && CALCS[spot.id]) return <CalcView calc={CALCS[spot.id]} spot={spot} world={world} guide={guide} onDone={onCalc} onBack={() => onStage("basis")} />;
+  if (stage === "calc" && CALCS[spot.id]) return <CalcView calc={CALCS[spot.id]} spot={spot} chosen={chosen} world={world} guide={guide} onDone={onCalc} onBack={() => onStage("basis")} />;
 
   if (stage === "basis")
     return (
@@ -2029,7 +2039,7 @@ function BookView({ book, world, onClose }: { book: Find[]; world: World; onClos
 }
 
 /** 案の大きさを町の数字と比べる計算。動かす前提には「推定」と付け、結果は前提の値ごと 1 枚に載る */
-function CalcView({ calc, spot, world, guide, onDone, onBack }: { calc: Calc; spot: Spot; world: World; guide: string; onDone: (calc?: Worked) => void; onBack: () => void }) {
+function CalcView({ calc, spot, chosen, world, guide, onDone, onBack }: { calc: Calc; spot: Spot; chosen?: string; world: World; guide: string; onDone: (calc?: Worked) => void; onBack: () => void }) {
   const [k, setK] = useState(() => defaults(calc));
   const [why, setWhy] = useState("");
   const text = calc.say(k);
@@ -2038,6 +2048,7 @@ function CalcView({ calc, spot, world, guide, onDone, onBack }: { calc: Calc; sp
     <>
       <div className="choices">
         <div className="calc-box">
+          {chosen && <p className="calc-chosen">案: {chosen}</p>}
           <p className="calc-ask">{calc.ask}</p>
           {calc.knobs.map((x) => (
             <label key={x.id} className="calc-knob">
@@ -2065,7 +2076,7 @@ function CalcView({ calc, spot, world, guide, onDone, onBack }: { calc: Calc; sp
           もどる
         </button>
       </div>
-      <Dialog speaker={guide} text="前提を動かして、案がどれくらい届くか見てみよう" />
+      <Dialog speaker={guide} text={chosen ? "この案で、どれくらい届くか前提を動かしてみよう" : "前提を動かして、案がどれくらい届くか見てみよう"} />
     </>
   );
 }

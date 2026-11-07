@@ -223,7 +223,8 @@ export type World = {
   sources: Record<string, { name: string; url: string; date: string; note: string }>;
   /** 案を出す先。担当の窓口は問い合わせ先で、提案を受けて回答すると書いてあるのはここだけ */
   /** 解く課題の数字。題の画面と白兎の初日の説明に出す */
-  problem: Fact[];
+  /** 題の画面に大きく出す課題。big は大きく出す数字（text の中にある）、label はその下の一言 */
+  problem: (Fact & { big?: string; label?: string })[];
   submit: { name: string; url: string; reply: string; listed: { text: string; source: string }; source: string };
   /** 案を市に出さず、事業の構想として持ち帰る人の相談先。合う制度があるかまでは確かめていない */
   business: { name: string; url: string; note: string; source: string };
