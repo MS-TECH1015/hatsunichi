@@ -192,6 +192,8 @@ export type Npc = {
   body?: [number, number, number];
   hair?: [number, number, number];
   lines: string[];
+  /** セリフの数字の出典（sources の id）。人は作り話で、数字だけが資料から */
+  src?: string;
   /** 話したあと、案を考える画面に並ぶ、この人の立場の一言 */
   view?: string;
 };

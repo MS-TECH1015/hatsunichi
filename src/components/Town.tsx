@@ -35,7 +35,7 @@ type Voice = { name: string; role: string; view: string; heard: boolean };
 const introLines = (lines: string[], world: World) => [lines[0], ...world.problem.map((p) => `${p.text}。`), ...lines.slice(1)];
 type Stage = "hint" | "ask" | "write" | "basis" | "calc" | "place" | "self" | "result";
 type Panel =
-  | { type: "talk"; speaker: string; role?: string; lines: string[]; i: number }
+  | { type: "talk"; speaker: string; role?: string; lines: string[]; i: number; src?: string }
   | { type: "spot"; spot: Spot; stage: Stage; detail?: boolean; draft?: string; pending?: { option: Option; own: boolean; fact?: Fact; calc?: Worked }; from?: { concern: string; suggest?: number } }
   | { type: "bus"; from: Place }
   | { type: "ride"; to: Place; minutes: number }
@@ -309,7 +309,7 @@ export function Town({ world }: Props) {
     if (t.type === "npc") {
       sceneRef.current?.markTalked(t.npc.id);
       setTalked((prev) => (prev.includes(t.npc.id) ? prev : [...prev, t.npc.id]));
-      setPanel({ type: "talk", speaker: t.npc.name, role: t.npc.role, lines: t.npc.lines, i: 0 });
+      setPanel({ type: "talk", speaker: t.npc.name, role: t.npc.role, lines: t.npc.lines, i: 0, src: t.npc.src });
       return;
     }
     const done = answers.some((a) => a.spot.id === t.spot.id);
@@ -751,7 +751,9 @@ export function Town({ world }: Props) {
           text={panel.lines[panel.i]}
           last={panel.i + 1 >= panel.lines.length}
           onNext={() => (panel.i + 1 < panel.lines.length ? setPanel({ ...panel, i: panel.i + 1 }) : close())}
-        />
+        >
+          {panel.src && world.sources[panel.src] && <p className="dialog-src">作り話の人。数字は {world.sources[panel.src].name}</p>}
+        </Dialog>
       )}
 
       {panel?.type === "spot" && (

@@ -365,3 +365,4 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .near-me .home-note { margin-top: 6px; }
 .near-me .link-more { margin-left: 8px; }
 .near-akiya a { margin-left: 8px; font-size: 12px; }
+.dialog-src { margin: 6px 0 0; font-size: 11px; font-weight: 700; color: #8a7f70; }
