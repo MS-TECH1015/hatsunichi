@@ -166,7 +166,7 @@ export function Town({ world }: Props) {
     setBook(bookRef.current);
     saveBook(bookRef.current);
     setFresh(f);
-    play("select", 0.4);
+    play("select", 0.2);
   }, []);
   /** 町を歩くだけ。白兎の初日も時計の終業も無い */
   const [walk, setWalk] = useState(false);
@@ -345,7 +345,7 @@ export function Town({ world }: Props) {
     if (!done) return;
     known.add(done.id);
     setCheer(done.name);
-    play("stamp", 0.5);
+    play("stamp", 0.3);
   }, [ready, book, world]);
 
   useEffect(() => {

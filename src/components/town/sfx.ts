@@ -1,4 +1,5 @@
 // 効果音。素材は Kenney の Interface Sounds（CC0）。public/sounds/License-kenney-interface.txt
+// 高い音が耳に痛いと言われたので、ffmpeg で 0.8 倍に下げ、2kHz より上を削り、立ち上がりを 15ms ならした（2026-11-07）
 import { withBase } from "@/lib/base";
 
 const FILES = {
@@ -20,7 +21,7 @@ export function setMuted(m: boolean) {
   muted = m;
 }
 
-export function play(name: Sfx, volume = 0.45) {
+export function play(name: Sfx, volume = 0.25) {
   if (muted || typeof Audio === "undefined") return;
   let base = cache.get(name);
   if (!base) {
