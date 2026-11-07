@@ -67,7 +67,7 @@ def in_real_town(world, geo, taken):
         lat0, lon0 = place.get("center") or place["geo"]
         x = (geo[1] - lon0) * 111320 * math.cos(math.radians(lat0)) / m
         z = -(geo[0] - lat0) * 110950 / m
-        if math.hypot(x, z) > data["radius"] - 15:
+        if math.hypot(x, z) > data["radius"] - 10:
             continue
         town = Town(data)
         at = town.snap([x, z], taken.setdefault(pid, []), 3)

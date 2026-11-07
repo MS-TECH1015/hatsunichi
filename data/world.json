@@ -2892,7 +2892,14 @@
       "sources": [
         "akiya_bank_list",
         "isj_oaza"
-      ]
+      ],
+      "real": {
+        "place": "fukube",
+        "at": [
+          -231.3,
+          246.4
+        ]
+      }
     },
     {
       "id": "akiya-66",
