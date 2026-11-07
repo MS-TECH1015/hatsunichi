@@ -77,7 +77,7 @@ function loadBook(): Find[] {
     if (!Array.isArray(v)) return [];
     return v
       .filter((x) => typeof x?.id === "string" && typeof x.text === "string" && typeof x.source === "string")
-      .map((x) => ({ id: x.id, text: x.text, source: x.source, spot: typeof x.spot === "string" ? x.spot : undefined, place: typeof x.place === "string" ? x.place : undefined }));
+      .map((x) => ({ id: x.id, text: x.text, source: x.source, spot: typeof x.spot === "string" ? x.spot : undefined, place: typeof x.place === "string" ? x.place : undefined, url: typeof x.url === "string" && x.url.startsWith("https://") ? x.url : undefined }));
   } catch {
     return [];
   }
@@ -850,7 +850,7 @@ export function Town({ world }: Props) {
                     <li key={f.id}>
                       {f.text}
                       {f.spot && <em>案はまだ</em>}
-                      <small>{f.source}</small>
+                      <small>{f.source}{f.url && <> <a href={f.url} target="_blank" rel="noreferrer">物件のページ</a></>}</small>
                     </li>
                   ))}
                 </ul>
@@ -1980,7 +1980,7 @@ function BookView({ book, world, onClose }: { book: Find[]; world: World; onClos
                 {got.map((f) => (
                   <li key={f.id}>
                     {f.text}
-                    <small>{f.source}</small>
+                    <small>{f.source}{f.url && <> <a href={f.url} target="_blank" rel="noreferrer">物件のページ</a></>}</small>
                   </li>
                 ))}
               </ul>
@@ -1996,7 +1996,7 @@ function BookView({ book, world, onClose }: { book: Find[]; world: World; onClos
               {moves.map((f) => (
                 <li key={f.id}>
                   {f.text}
-                  <small>{f.source}</small>
+                  <small>{f.source}{f.url && <> <a href={f.url} target="_blank" rel="noreferrer">物件のページ</a></>}</small>
                 </li>
               ))}
             </ul>

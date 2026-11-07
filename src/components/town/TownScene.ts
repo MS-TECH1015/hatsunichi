@@ -663,8 +663,10 @@ export class TownScene {
 
   /** 未活用施設の札。緑の角札に家の形。町丁の「?」より少し高く出す */
   private addFacilitySign(f: Facility): THREE.Sprite {
+    // 空き家バンクの物件は橙（成約済みは灰）、使われていない施設は緑
+    const color = f.akiya === "closed" ? "#a99f8e" : f.akiya ? "#e0782c" : "#4f7a5a";
     const sprite = this.sprite((g) => {
-      g.fillStyle = "#4f7a5a";
+      g.fillStyle = color;
       g.strokeStyle = INK;
       g.lineWidth = 9;
       g.beginPath();
@@ -679,7 +681,7 @@ export class TownScene {
       g.closePath();
       g.fill();
       g.fillRect(42, 60, 44, 32);
-      g.fillStyle = "#4f7a5a";
+      g.fillStyle = color;
       g.fillRect(58, 72, 12, 20);
     });
     const height = this.groundY(f.at) + 3.2;
@@ -1023,7 +1025,7 @@ export class TownScene {
     for (const f of this.world.facilities) {
       if (this.found.has(`fac:${f.id}`)) continue;
       const [x, y] = px(f.at);
-      g.fillStyle = "#4f7a5a";
+      g.fillStyle = f.akiya === "closed" ? "#a99f8e" : f.akiya ? "#e0782c" : "#4f7a5a";
       g.fillRect(x - 3.5 * dpr, y - 3.5 * dpr, 7 * dpr, 7 * dpr);
       g.strokeRect(x - 3.5 * dpr, y - 3.5 * dpr, 7 * dpr, 7 * dpr);
     }

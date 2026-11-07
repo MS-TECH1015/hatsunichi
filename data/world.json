@@ -2054,6 +2054,18 @@
       "url": "https://www.pref.tottori.lg.jp/secure/76301/maibunj9.pdf",
       "date": "2026-11-06",
       "note": "鳥取県埋蔵文化財センター作成の年表（鳥取埋文情報）。2026-11-06 に 1 回取得。SHA256 881b5baa69ecba001f8630f715c30b22726db49e565e69c24e30fa55da2c2a7a。県の著作権のページ 9314.htm に従い、遺跡の名前と時代の事実だけを自分の言葉で短く引く。表と図は写さない。生成 AI での利用は未確認"
+    },
+    "akiya_bank_list": {
+      "name": "鳥取市 空き家情報バンク 登録物件一覧（2026年10月16日更新）",
+      "url": "https://www.city.tottori.lg.jp/page/5828.html",
+      "date": "2026-11-07",
+      "note": "鳥取市のページ（PDL1.0）から、物件の番号・登録か成約済みか・所在の町名だけを使った。点は町名の代表点で、建物の位置ではない。写真・価格・番地は載せない。UJI ターン向けの物件は鳥取県の移住サイトのページへつなぐ"
+    },
+    "isj_oaza": {
+      "name": "大字・町丁目位置参照情報 国土交通省（令和7年、31000-19.0b）を加工",
+      "url": "https://nlftp.mlit.go.jp/isj/",
+      "date": "2026-11-03",
+      "note": "町名から代表点の緯度経度を引いた。位置参照情報ダウンロードサービス利用約款に沿って出典を書く"
     }
   },
   "problem": [
@@ -2720,5 +2732,374 @@
   "cityAge": {
     "people": 188465,
     "oldShare": 30
-  }
+  },
+  "akiya": [
+    {
+      "id": "akiya-67",
+      "status": "listed",
+      "town": "福部町高江",
+      "geo": [
+        35.540344,
+        134.280764
+      ],
+      "at": [
+        101.26,
+        -100.84
+      ],
+      "url": "https://www.city.tottori.lg.jp/page/50534.html",
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    },
+    {
+      "id": "akiya-66",
+      "status": "listed",
+      "town": "伏野",
+      "geo": [
+        35.515114,
+        134.123116
+      ],
+      "at": [
+        -184.5,
+        -44.85
+      ],
+      "url": "https://www.city.tottori.lg.jp/page/48163.html",
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    },
+    {
+      "id": "akiya-64",
+      "status": "listed",
+      "town": "湯所町二丁目",
+      "geo": [
+        35.510937,
+        134.230633
+      ],
+      "at": [
+        10.39,
+        -35.59
+      ],
+      "url": "https://www.city.tottori.lg.jp/page/5840.html",
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    },
+    {
+      "id": "akiya-63",
+      "status": "listed",
+      "town": "立川町五丁目",
+      "geo": [
+        35.488281,
+        134.243843
+      ],
+      "at": [
+        34.34,
+        14.69
+      ],
+      "url": "https://www.city.tottori.lg.jp/page/20090.html",
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    },
+    {
+      "id": "akiya-61",
+      "status": "listed",
+      "town": "鹿野町今市",
+      "geo": [
+        35.466598,
+        134.052315
+      ],
+      "at": [
+        -312.84,
+        62.8
+      ],
+      "url": "https://www.city.tottori.lg.jp/page/29076.html",
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    },
+    {
+      "id": "akiya-鳥取市佐01",
+      "status": "uji",
+      "town": "佐治町津無",
+      "geo": [
+        35.351588,
+        134.147678
+      ],
+      "at": [
+        -139.98,
+        318.01
+      ],
+      "url": "https://tottori-iju.jp/ie/result/37/",
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    },
+    {
+      "id": "akiya-鳥取市佐08",
+      "status": "uji",
+      "town": "佐治町加瀬木",
+      "geo": [
+        35.32547,
+        134.122561
+      ],
+      "at": [
+        -185.51,
+        375.97
+      ],
+      "url": "https://tottori-iju.jp/ie/result/40/",
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    },
+    {
+      "id": "akiya-鳥取市鹿12",
+      "status": "uji",
+      "town": "鹿野町中園",
+      "geo": [
+        35.485738,
+        134.051555
+      ],
+      "at": [
+        -314.22,
+        20.33
+      ],
+      "url": "https://tottori-iju.jp/ie/result/41/",
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    },
+    {
+      "id": "akiya-鳥取市佐09",
+      "status": "uji",
+      "town": "佐治町つく谷",
+      "geo": [
+        35.336217,
+        134.086256
+      ],
+      "at": [
+        -251.31,
+        352.12
+      ],
+      "url": "https://tottori-iju.jp/ie/result/56/",
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    },
+    {
+      "id": "akiya-鳥取市佐13",
+      "status": "uji",
+      "town": "佐治町葛谷",
+      "geo": [
+        35.346473,
+        134.169101
+      ],
+      "at": [
+        -101.14,
+        329.36
+      ],
+      "url": "https://tottori-iju.jp/ie/result/120/",
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    },
+    {
+      "id": "akiya-鳥取市青43",
+      "status": "uji",
+      "town": "青谷町楠根",
+      "geo": [
+        35.458181,
+        133.962516
+      ],
+      "at": [
+        -475.61,
+        81.48
+      ],
+      "url": "https://tottori-iju.jp/ie/result/150/",
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    },
+    {
+      "id": "akiya-65",
+      "status": "closed",
+      "town": "服部",
+      "geo": [
+        35.477445,
+        134.204083
+      ],
+      "at": [
+        -37.73,
+        38.73
+      ],
+      "url": null,
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    },
+    {
+      "id": "akiya-62",
+      "status": "closed",
+      "town": "青谷町蔵内",
+      "geo": [
+        35.480459,
+        134.023629
+      ],
+      "at": [
+        -364.84,
+        32.04
+      ],
+      "url": null,
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    },
+    {
+      "id": "akiya-53",
+      "status": "closed",
+      "town": "中町",
+      "geo": [
+        35.498481,
+        134.239694
+      ],
+      "at": [
+        26.82,
+        -7.95
+      ],
+      "url": null,
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    },
+    {
+      "id": "akiya-60",
+      "status": "closed",
+      "town": "気高町山宮",
+      "geo": [
+        35.479806,
+        134.036312
+      ],
+      "at": [
+        -341.85,
+        33.49
+      ],
+      "url": null,
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    },
+    {
+      "id": "akiya-58",
+      "status": "closed",
+      "town": "美和",
+      "geo": [
+        35.456312,
+        134.231486
+      ],
+      "at": [
+        11.94,
+        85.63
+      ],
+      "url": null,
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    },
+    {
+      "id": "akiya-57",
+      "status": "closed",
+      "town": "国府町新通り一丁目",
+      "geo": [
+        35.482885,
+        134.251377
+      ],
+      "at": [
+        47.99,
+        26.66
+      ],
+      "url": null,
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    },
+    {
+      "id": "akiya-55",
+      "status": "closed",
+      "town": "気高町下坂本",
+      "geo": [
+        35.504473,
+        134.072435
+      ],
+      "at": [
+        -276.37,
+        -21.24
+      ],
+      "url": null,
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    },
+    {
+      "id": "akiya-56",
+      "status": "closed",
+      "town": "元町",
+      "geo": [
+        35.499971,
+        134.228378
+      ],
+      "at": [
+        6.3,
+        -11.25
+      ],
+      "url": null,
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ],
+      "real": {
+        "place": "eki",
+        "at": [
+          192.0,
+          -315.9
+        ]
+      }
+    },
+    {
+      "id": "akiya-59",
+      "status": "closed",
+      "town": "河原町佐貫",
+      "geo": [
+        35.370522,
+        134.198549
+      ],
+      "at": [
+        -47.77,
+        275.99
+      ],
+      "url": null,
+      "sources": [
+        "akiya_bank_list",
+        "isj_oaza"
+      ]
+    }
+  ]
 }

@@ -202,7 +202,10 @@ export type Prop = { place: string; kind: string; at: Vec2; face: number; scale?
 export type Mark = { id: string; place: string; at: Vec2; text: string; sources: string[]; /** 実在の町の円より外にあり、市の地図の上に置く */ city?: boolean };
 
 /** 鳥取市の未活用施設。近くを通ると手帳に入り、案を出すときに「使う場所」として選べる。scripts/build_facilities.py が作る */
-export type Facility = Mark & { name: string };
+export type Facility = Mark & { name: string; /** 空き家バンクの物件のときだけ。登録中・移住向け・成約済み */ akiya?: AkiyaStatus; url?: string | null };
+export type AkiyaStatus = "listed" | "uji" | "closed";
+/** 鳥取市 空き家情報バンクの物件（scripts/build_akiya.py）。at は町名の代表点で、家の位置ではない。real は実在の町の中での位置 */
+export type Akiya = { id: string; status: AkiyaStatus; town: string; geo: Vec2; at: Vec2; url: string | null; sources: string[]; real?: { place: string; at: Vec2 } };
 
 export type World = {
   /** 国勢調査 令和2年の鳥取市全体。oldShare は年齢の分かる人のうち 65 歳以上の割合 */
@@ -213,6 +216,7 @@ export type World = {
   spots: Spot[];
   marks: Mark[];
   facilities: Facility[];
+  akiya?: Akiya[];
   npcs: Npc[];
   sources: Record<string, { name: string; url: string; date: string; note: string }>;
   /** 案を出す先。担当の窓口は問い合わせ先で、提案を受けて回答すると書いてあるのはここだけ */
@@ -269,6 +273,20 @@ export function cityAt(places: Place[], at: Vec2): Vec2 {
   return [place.at[0] + (at[0] - o[0]) * k, place.at[1] + (at[1] - o[1]) * k];
 }
 
+const AKIYA_TEXT: Record<AkiyaStatus, (town: string) => string> = {
+  listed: (t) => `空き家バンクに登録中の物件が${t}にある（市の一覧の 2026年10月16日 の時点）。印は町名の代表点で、家の位置ではない`,
+  uji: (t) => `移住向けに紹介中の空き家が${t}にある（市の一覧の 2026年10月16日 の時点）。印は町名の代表点で、家の位置ではない`,
+  closed: (t) => `空き家バンクで${t}の物件が成約した（同じ一覧の時点）。印は町名の代表点で、家の位置ではない`,
+};
+
+/** 空き家バンクの物件を、近づくと手帳に入る札にする。実在の町の中にあれば町の中に、なければ市の地図の上に置く */
+function akiyaFacility(world: World, a: Akiya): Facility {
+  const near = world.places.reduce((b, p) => (Math.hypot(p.at[0] - a.at[0], p.at[1] - a.at[1]) < Math.hypot(b.at[0] - a.at[0], b.at[1] - a.at[1]) ? p : b));
+  const o = a.real ? pocketOrigin(a.real.place) : null;
+  const at: Vec2 = a.real && o ? [o[0] + a.real.at[0], o[1] + a.real.at[1]] : a.at;
+  return { id: a.id, place: a.real?.place ?? near.id, at, name: `空き家バンク ${a.town}`, text: AKIYA_TEXT[a.status](a.town), sources: a.sources, akiya: a.status, url: a.url };
+}
+
 export function placeWorld(world: World): Placed {
   const at = new Map(world.places.map((p) => [p.id, pocketOrigin(p.id) ?? p.at]));
   const city = new Map(world.places.map((p) => [p.id, p.at]));
@@ -284,7 +302,7 @@ export function placeWorld(world: World): Placed {
     props: world.props.map((p) => ({ ...p, at: shift(p.place, p.at) })),
     spots: world.spots.map((s) => ({ ...s, at: shift(s.place, s.at) })),
     marks: world.marks.map((m) => ({ ...m, at: shift(m.place, m.at, m.city) })),
-    facilities: world.facilities.map((f) => ({ ...f, at: shift(f.place, f.at, f.city) })),
+    facilities: [...world.facilities.map((f) => ({ ...f, at: shift(f.place, f.at, f.city) })), ...(world.akiya ?? []).map((a) => akiyaFacility(world, a))],
     npcs: world.npcs.map((n) => ({ ...n, at: shift(n.place, n.at) })),
     stops: world.places.filter((p) => p.hub && p.stop).map((p) => ({ place: p, at: shift(p.id, p.stop!) })),
   };
@@ -376,7 +394,7 @@ export const busMinutes = (km: number) => Math.round((km / BUS_KMH) * 60);
 export const clockText = (minutes: number) => `${Math.floor(minutes / 60)}:${String(Math.floor(minutes % 60)).padStart(2, "0")}`;
 
 /** 歩いて見つけたこと。text の数字は source の出典に戻れる。spot は依頼の場所で見つけたときの依頼 id */
-export type Find = { id: string; text: string; source: string; spot?: string; place?: string };
+export type Find = { id: string; text: string; source: string; spot?: string; place?: string; url?: string };
 
 /** 緯度経度 2 点の直線距離 km。地球を半径 6371 km の球として計算する */
 export function straightKm([lat1, lon1]: Vec2, [lat2, lon2]: Vec2): number {
@@ -406,5 +424,5 @@ export function markFind(mark: Mark, sources: World["sources"]): Find {
 }
 
 export function facilityFind(f: Facility, sources: World["sources"]): Find {
-  return { ...markFind(f, sources), id: `fac:${f.id}` };
+  return { ...markFind(f, sources), id: `fac:${f.id}`, ...(f.url ? { url: f.url } : {}) };
 }
