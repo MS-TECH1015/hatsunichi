@@ -642,7 +642,7 @@ export function Town({ world }: Props) {
             <br />
             道とバス: 鳥取県オープンデータポータル 鳥取県バス情報（日本交通・日ノ丸自動車 GTFS-JP）を加工 ・ 家の数: 鳥取市公式ウェブサイト「町別世帯数、年齢（5歳階級）別人口」を加工
             <br />
-            町の「?」: 政府統計の総合窓口(e-Stat)「国勢調査」（総務省）と国土数値情報（医療機関・学校）（国土交通省）を加工。緑の札: 鳥取市「未活用施設」（鳥取県オープンデータポータル）を加工。橙の札: 鳥取市 空き家情報バンクを加工。橙の円と地域の空き家の数: 鳥取市空家等対策計画（第2期）の令和5年度の地域ごとの数を加工。駅・雲山・湖山・河原の建物と道: 3D都市モデル（Project PLATEAU）鳥取市（2020年度）を加工して作成。福部・気高・国府・用瀬・砂丘の建物と道、町と町のあいだの建物: 国土地理院最適化ベクトルタイルを加工して作成、建物の高さは種類からの推定。URL とライセンスは<a href="https://github.com/MS-TECH1015/hatsunichi/blob/master/data/SOURCES.md" target="_blank" rel="noreferrer">出典の一覧</a>、使ったライブラリと書体のライセンスは<a href={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/licenses/README.txt`} target="_blank" rel="noreferrer">licenses</a>
+            町の「?」: 政府統計の総合窓口(e-Stat)「国勢調査」（総務省）と国土数値情報（医療機関・学校）（国土交通省）を加工。緑の札: 鳥取市「未活用施設」（鳥取県オープンデータポータル）を加工。橙の札: 鳥取市 空き家情報バンクを加工。橙の円と地域の空き家の数: 鳥取市空家等対策計画（第2期）の令和5年度の地域ごとの数を加工。駅・雲山・湖山・河原の建物と道: 3D都市モデル（Project PLATEAU）鳥取市（2020年度）を加工して作成。福部・気高・国府・用瀬・砂丘の建物と道: 国土地理院最適化ベクトルタイルを加工して作成、建物の高さは種類からの推定。町と町のあいだの建物: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>（ODbL 1.0）を加工、OSM に無い所は国土地理院最適化ベクトルタイルを加工して作成。URL とライセンスは<a href="https://github.com/MS-TECH1015/hatsunichi/blob/master/data/SOURCES.md" target="_blank" rel="noreferrer">出典の一覧</a>、使ったライブラリと書体のライセンスは<a href={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/licenses/README.txt`} target="_blank" rel="noreferrer">licenses</a>
           </p>
         </div>
       )}
@@ -737,7 +737,7 @@ export function Town({ world }: Props) {
       {started && (
         <div className={bigMap ? "minimap big" : "minimap"}>
           <canvas ref={mapRef} onClick={() => setBigMap(!bigMap)} aria-label="鳥取市の地図" />
-          <small>PLATEAU・国土地理院・国土数値情報・位置参照情報・e-Stat・鳥取市 を加工</small>
+          <small>PLATEAU・国土地理院・© OpenStreetMap contributors・国土数値情報・位置参照情報・e-Stat・鳥取市 を加工</small>
         </div>
       )}
 
