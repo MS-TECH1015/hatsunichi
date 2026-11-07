@@ -271,3 +271,12 @@ it("解く課題の数字と出す先の件数には出典があり、文に数�
   }
   expect(w.sources[w.submit.listed.source]).toBeDefined();
 });
+
+it("地域ごとの空き家は市の調査の合計 4,207 件と合い、どれも市の地図の地名の札に付く", () => {
+  const areas = w.akiyaArea ?? [];
+  expect(areas.reduce((n, a) => n + a.count, 0)).toBe(4207);
+  for (const a of areas) {
+    expect(city.labels.some((l) => l.name === a.label), a.label).toBe(true);
+    expect(w.sources[a.source], a.source).toBeDefined();
+  }
+});

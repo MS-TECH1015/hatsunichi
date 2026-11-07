@@ -2180,6 +2180,12 @@
       "url": "https://nlftp.mlit.go.jp/isj/",
       "date": "2026-11-03",
       "note": "町名から代表点の緯度経度を引いた。位置参照情報ダウンロードサービス利用約款に沿って出典を書く"
+    },
+    "tottori_akiya_plan2": {
+      "name": "鳥取市空家等対策計画（第2期）本編",
+      "url": "https://www.city.tottori.lg.jp/uploaded/attachment/26931.pdf",
+      "date": "2026-11-07",
+      "note": "16ページ 表5 地域別の空家等の増減の令和5年度の空家数・世帯数・空家率。空家率の母数は令和5年8月末の総世帯数。15ページ 表4 の空家率は一部が表5と違うので、本文の文と合う表5を使った。地域ごとの数だけで、建物の位置は使わない。鳥取市のコンテンツは PDL1.0。SHA256 0d480919e60f280deead693d722993e5ec47208702b8cfcf86f03a1594dc84e0。数字を抜き出して加工"
     }
   },
   "problem": [
@@ -3249,6 +3255,80 @@
         "akiya_bank_list",
         "isj_oaza"
       ]
+    }
+  ],
+  "akiyaArea": [
+    {
+      "label": "鳥取駅",
+      "area": "旧市",
+      "count": 2593,
+      "households": 65802,
+      "rate": 3.9,
+      "source": "tottori_akiya_plan2"
+    },
+    {
+      "label": "国府",
+      "area": "国府町",
+      "count": 206,
+      "households": 3419,
+      "rate": 6.0,
+      "source": "tottori_akiya_plan2"
+    },
+    {
+      "label": "福部",
+      "area": "福部町",
+      "count": 89,
+      "households": 1047,
+      "rate": 8.5,
+      "source": "tottori_akiya_plan2"
+    },
+    {
+      "label": "河原",
+      "area": "河原町",
+      "count": 253,
+      "households": 2502,
+      "rate": 10.1,
+      "source": "tottori_akiya_plan2"
+    },
+    {
+      "label": "用瀬",
+      "area": "用瀬町",
+      "count": 165,
+      "households": 1297,
+      "rate": 12.7,
+      "source": "tottori_akiya_plan2"
+    },
+    {
+      "label": "佐治",
+      "area": "佐治町",
+      "count": 200,
+      "households": 732,
+      "rate": 27.3,
+      "source": "tottori_akiya_plan2"
+    },
+    {
+      "label": "気高",
+      "area": "気高町",
+      "count": 299,
+      "households": 3342,
+      "rate": 8.9,
+      "source": "tottori_akiya_plan2"
+    },
+    {
+      "label": "鹿野",
+      "area": "鹿野町",
+      "count": 117,
+      "households": 1439,
+      "rate": 8.1,
+      "source": "tottori_akiya_plan2"
+    },
+    {
+      "label": "青谷",
+      "area": "青谷町",
+      "count": 285,
+      "households": 2332,
+      "rate": 12.2,
+      "source": "tottori_akiya_plan2"
     }
   ]
 }

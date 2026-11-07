@@ -586,6 +586,23 @@ export class TownScene {
       sprite.renderOrder = 5;
       this.labels.push(sprite);
     }
+    this.buildAkiyaAreas();
+  }
+
+  /** 地名の札の下に、市の調査で数えたその地域の空き家の件数を出す。家ごとの位置は出さない */
+  private buildAkiyaAreas() {
+    for (const a of this.world.akiyaArea ?? []) {
+      const l = this.city.labels.find((x) => x.name === a.label);
+      if (!l) continue;
+      const text = `${a.area === "旧市" ? "旧市の" : ""}空き家 ${a.count.toLocaleString()} 件・世帯の ${a.rate.toFixed(1)}%`;
+      const style = { fill: "#e0782c", color: "#fffaf0", width: [...text].reduce((w, c) => w + (c.charCodeAt(0) < 128 ? 38 : 64), 80) };
+      const sprite = this.textSprite(text, style);
+      sprite.position.set(l.at[0], Math.max(this.groundY(l.at), 0) + 6.5, l.at[1]);
+      sprite.scale.set(style.width / 30, 128 / 30, 1);
+      sprite.material.depthTest = true;
+      sprite.renderOrder = 5;
+      this.labels.push(sprite);
+    }
   }
 
   /** 駅と雲山のあいだを行き来するバス。乗るときは別の1台が走る */
@@ -995,6 +1012,42 @@ export class TownScene {
   }
 
   /** 右上の地図。市の形・道・川の下絵に、依頼の場所・バス停・主人公を重ねる。1 秒に 10 回まで */
+  /** 市の調査の空き家を地域ごとに、件数に面積が比例する円で描く。円の場所は地名の札で、家の位置ではない */
+  private drawAkiyaAreas(g: CanvasRenderingContext2D, px: (at: Vec2) => Vec2, dpr: number, layer: "circle" | "text") {
+    const areas = this.world.akiyaArea ?? [];
+    g.font = `800 ${12 * dpr}px 'Zen Maru Gothic', sans-serif`;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    for (const a of areas) {
+      const l = this.city.labels.find((x) => x.name === a.label);
+      if (!l) continue;
+      const [x, y] = px(l.at);
+      if (layer === "circle") {
+        g.fillStyle = "rgba(224, 120, 44, 0.4)";
+        g.strokeStyle = "#e0782c";
+        g.lineWidth = 2 * dpr;
+        g.beginPath();
+        g.arc(x, y, Math.sqrt(a.count) * 1.2 * dpr, 0, Math.PI * 2);
+        g.fill();
+        g.stroke();
+        continue;
+      }
+      g.lineWidth = 3 * dpr;
+      g.strokeStyle = "#fffaf0";
+      g.fillStyle = INK;
+      g.strokeText(`${a.count.toLocaleString()}`, x, y);
+      g.fillText(`${a.count.toLocaleString()}`, x, y);
+    }
+    if (layer === "circle" || !areas.length) return;
+    const note = "オレンジの円: 市の調査の空き家の数（令和5年度、地域ごと）";
+    g.textAlign = "left";
+    g.lineWidth = 3 * dpr;
+    g.strokeStyle = "#fffaf0";
+    g.fillStyle = INK;
+    g.strokeText(note, 10 * dpr, 14 * dpr);
+    g.fillText(note, 10 * dpr, 14 * dpr);
+  }
+
   private drawMap(now: number) {
     if (!this.map || !this.map.image.complete || Math.floor(now / 100) === Math.floor((now - 16) / 100)) return;
     const { canvas, image } = this.map;
@@ -1011,13 +1064,12 @@ export class TownScene {
     const scale = Math.min(cw / image.width, ch / image.height);
     const ox = (cw - image.width * scale) / 2;
     const oz = (ch - image.height * scale) / 2;
-    const px = (v: Vec2): Vec2 => {
-      const at = cityAt(this.world.places, v);
-      return [ox + ((at[0] - x0) / cell) * scale, oz + ((at[1] - z0) / cell) * scale];
-    };
+    const cityPx = (at: Vec2): Vec2 => [ox + ((at[0] - x0) / cell) * scale, oz + ((at[1] - z0) / cell) * scale];
+    const px = (v: Vec2): Vec2 => cityPx(cityAt(this.world.places, v));
     g.clearRect(0, 0, cw, ch);
     g.imageSmoothingEnabled = true;
     g.drawImage(image, ox, oz, image.width * scale, image.height * scale);
+    this.drawAkiyaAreas(g, cityPx, dpr, "circle");
     g.lineWidth = 2 * dpr;
     g.strokeStyle = INK;
     for (const s of this.world.stops) {
@@ -1050,6 +1102,7 @@ export class TownScene {
       g.fill();
       g.stroke();
     }
+    this.drawAkiyaAreas(g, cityPx, dpr, "text");
     const [x, y] = px(this.ride ? [this.rideBus!.position.x, this.rideBus!.position.z] : this.playerPos);
     const a = this.heading;
     const r = 7 * dpr;

@@ -225,6 +225,8 @@ export type AkiyaStatus = "listed" | "uji" | "closed";
 /** 鳥取市 空き家情報バンクの物件（scripts/build_akiya.py）。at は町名の代表点で、家の位置ではない。real は実在の町の中での位置 */
 export type Akiya = { id: string; status: AkiyaStatus; town: string; geo: Vec2; at: Vec2; url: string | null; sources: string[]; real?: { place: string; at: Vec2 } };
 
+export type AkiyaArea = { label: string; area: string; count: number; households: number; rate: number; source: string };
+
 export type World = {
   /** 国勢調査 令和2年の鳥取市全体。oldShare は年齢の分かる人のうち 65 歳以上の割合 */
   cityAge: { people: number; oldShare: number };
@@ -235,6 +237,8 @@ export type World = {
   marks: Mark[];
   facilities: Facility[];
   akiya?: Akiya[];
+  /** 市の調査の空き家を地域ごとに数えたもの（令和5年度）。label は市の地図の地名の札。建物の位置は持たない */
+  akiyaArea?: AkiyaArea[];
   npcs: Npc[];
   sources: Record<string, { name: string; url: string; date: string; note: string }>;
   /** 案を出す先。担当の窓口は問い合わせ先で、提案を受けて回答すると書いてあるのはここだけ */
