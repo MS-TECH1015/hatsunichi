@@ -3,7 +3,10 @@
 仕様: https://maps.gsi.go.jp/development/demtile.html （x = 2^16R + 2^8G + B、u = 0.01m、無効値は (128,0,0)）
 一覧と出典: https://maps.gsi.go.jp/development/ichiran.html
 範囲は国土数値情報 N03 の鳥取市の外枠。ズーム 11 で 1 画素およそ 60m。
+引数 --towns で、9 つの町の中心から 1 km の範囲をズーム 14（1 画素およそ 8m、元は 10m 格子）で取る。町の中の起伏に使う。
 """
+import json
+import sys
 import hashlib
 import math
 import pathlib
@@ -25,17 +28,31 @@ def tile(lon, lat, z):
     return x, y
 
 
+def wanted():
+    if "--towns" not in sys.argv:
+        x0, y0 = tile(BBOX[0], BBOX[3], Z)
+        x1, y1 = tile(BBOX[2], BBOX[1], Z)
+        return [(Z, x, y) for y in range(y0, y1 + 1) for x in range(x0, x1 + 1)]
+    places = json.loads((RAW.parent / "world.json").read_text(encoding="utf-8"))["places"]
+    out = set()
+    for p in places:
+        lat, lon = p["geo"]
+        d = 0.011  # 約 1 km
+        x0, y0 = tile(lon - d * 1.25, lat + d, 14)
+        x1, y1 = tile(lon + d * 1.25, lat - d, 14)
+        out |= {(14, x, y) for y in range(y0, y1 + 1) for x in range(x0, x1 + 1)}
+    return sorted(out)
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    x0, y0 = tile(BBOX[0], BBOX[3], Z)
-    x1, y1 = tile(BBOX[2], BBOX[1], Z)
-    for y in range(y0, y1 + 1):
-        for x in range(x0, x1 + 1):
-            path = OUT / f"{Z}_{x}_{y}.png"
+    for z, x, y in wanted():
+        if True:
+            path = OUT / f"{z}_{x}_{y}.png"
             if path.exists():
                 print("skip", path.name)
                 continue
-            url = URL.format(z=Z, x=x, y=y)
+            url = URL.format(z=z, x=x, y=y)
             req = urllib.request.Request(url, headers={"User-Agent": "hatsunichi/0.1 (one-time fetch; Built with Claude Japan 2026)"})
             data = urllib.request.urlopen(req, timeout=30).read()
             path.write_bytes(data)
