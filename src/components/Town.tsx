@@ -642,7 +642,7 @@ export function Town({ world }: Props) {
             <br />
             道とバス: 鳥取県オープンデータポータル 鳥取県バス情報（日本交通・日ノ丸自動車 GTFS-JP）を加工 ・ 家の数: 鳥取市公式ウェブサイト「町別世帯数、年齢（5歳階級）別人口」を加工
             <br />
-            町の「?」: 政府統計の総合窓口(e-Stat)「国勢調査」（総務省）と国土数値情報（医療機関・学校）（国土交通省）を加工。緑の札: 鳥取市「未活用施設」（鳥取県オープンデータポータル）を加工。URL とライセンスは<a href="https://github.com/MS-TECH1015/hatsunichi/blob/master/data/SOURCES.md" target="_blank" rel="noreferrer">出典の一覧</a>、使ったライブラリと書体のライセンスは<a href={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/licenses/README.txt`} target="_blank" rel="noreferrer">licenses</a>
+            町の「?」: 政府統計の総合窓口(e-Stat)「国勢調査」（総務省）と国土数値情報（医療機関・学校）（国土交通省）を加工。緑の札: 鳥取市「未活用施設」（鳥取県オープンデータポータル）を加工。橙の札: 鳥取市 空き家情報バンクを加工。駅・雲山・湖山・河原の建物と道: 3D都市モデル（Project PLATEAU）鳥取市（2020年度）を加工して作成。URL とライセンスは<a href="https://github.com/MS-TECH1015/hatsunichi/blob/master/data/SOURCES.md" target="_blank" rel="noreferrer">出典の一覧</a>、使ったライブラリと書体のライセンスは<a href={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/licenses/README.txt`} target="_blank" rel="noreferrer">licenses</a>
           </p>
         </div>
       )}
@@ -737,7 +737,7 @@ export function Town({ world }: Props) {
       {started && (
         <div className={bigMap ? "minimap big" : "minimap"}>
           <canvas ref={mapRef} onClick={() => setBigMap(!bigMap)} aria-label="鳥取市の地図" />
-          <small>国土地理院・国土数値情報・位置参照情報・e-Stat・鳥取市 を加工</small>
+          <small>PLATEAU・国土地理院・国土数値情報・位置参照情報・e-Stat・鳥取市 を加工</small>
         </div>
       )}
 
