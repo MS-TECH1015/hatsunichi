@@ -64,8 +64,9 @@ def in_real_town(world, geo, taken):
         place = next(p for p in world["places"] if p["id"] == pid)
         data = json.loads((ROOT / f"public/city/towns/{pid}.json").read_text(encoding="utf-8"))
         m = data["m_per_unit"]
-        x = (geo[1] - place["geo"][1]) * 111320 * math.cos(math.radians(place["geo"][0])) / m
-        z = -(geo[0] - place["geo"][0]) * 110950 / m
+        lat0, lon0 = place.get("center") or place["geo"]
+        x = (geo[1] - lon0) * 111320 * math.cos(math.radians(lat0)) / m
+        z = -(geo[0] - lat0) * 110950 / m
         if math.hypot(x, z) > data["radius"] - 15:
             continue
         town = Town(data)

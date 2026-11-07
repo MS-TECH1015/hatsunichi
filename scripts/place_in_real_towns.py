@@ -1,7 +1,9 @@
 """実在の町（src/lib/world.ts の REAL_TOWNS）の中の物を、実在の地面の上へ置き直す。1 回だけ流す。
 
 data/world.json の町の中の座標は、もとは市の地図と同じ 1 単位 50 m だった。実在の町では 1 単位 1.5 m（町の原点は places[].geo）。
-- 町丁の印（marks）と未活用施設（facilities）は、市の地図の座標から実在の位置へ直す。町の円（600 m）より外のものは
+引数: 町の id（無ければ REAL のすべて）。すでに置き直した町を 2 回流さない。
+- 町丁の印（marks）と未活用施設（facilities）は、市の地図の座標（町名の代表点 geo_at から測った位置）から実在の位置へ直す。
+  実在の町の中心は places[].origin（build_real_towns.py が書く）。町の円（600 m）より外のものは
   "city": true を付けて市の地図の上に残す
 - バス停は原点（GTFS の停留所か、位置参照情報の点）にいちばん近い道の上
 - 依頼の場所（spots）と住民（npcs）は作り話の配置なので、もとの並びを 3 倍に広げてから近くの道の上へ寄せる。
@@ -10,10 +12,11 @@ data/world.json の町の中の座標は、もとは市の地図と同じ 1 単�
 import json
 import math
 import pathlib
+import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 WORLD = ROOT / "data" / "world.json"
-REAL = ["eki", "kumoyama", "koyama", "kawahara"]
+REAL = ["eki", "kumoyama", "koyama", "kawahara", "fukube", "ketaka", "kokufu", "mochigase", "sakyu"]
 CITY_M = 50
 SPREAD = 3  # 作り話の配置を広げる倍率
 CELL = 20
@@ -81,7 +84,7 @@ def inside(ring, x, z):
 def main():
     world = json.loads(WORLD.read_text(encoding="utf-8"))
     k = CITY_M / json.loads((ROOT / "public/city/towns/eki.json").read_text(encoding="utf-8"))["m_per_unit"]
-    for pid in REAL:
+    for pid in sys.argv[1:] or REAL:
         town = Town(json.loads((ROOT / f"public/city/towns/{pid}.json").read_text(encoding="utf-8")))
         place = next(p for p in world["places"] if p["id"] == pid)
         taken = []
@@ -100,7 +103,7 @@ def main():
             for m in world[key]:
                 if m["place"] != pid:
                     continue
-                real = [m["at"][0] * k, m["at"][1] * k]
+                real = [(m["at"][0] + place["geo_at"][0] - place["origin"][0]) * k, (m["at"][1] + place["geo_at"][1] - place["origin"][1]) * k]
                 if math.hypot(*real) > town.r - 10:
                     m["city"] = True
                     continue

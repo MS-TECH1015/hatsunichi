@@ -178,7 +178,11 @@ def _value(b):
 
 def read_mvt(path, z, x, y):
     """MVT 1 枚を [(層の名前, 属性, [輪（緯度経度の列）])] で返す。面だけ"""
-    tile = archive().read(path)
+    return decode_mvt(archive().read(path), z, x, y)
+
+
+def decode_mvt(tile, z, x, y, kinds=(3,)):
+    """MVT のバイト列を [(層の名前, 属性, [輪か線（緯度経度の列）])] で返す。kinds は形の種類（2 線、3 面）"""
     out = []
     for f, _, layer in _fields(tile):
         if f != 3:
@@ -204,7 +208,7 @@ def read_mvt(path, z, x, y):
                     gtype = fv
                 elif ff == 4:
                     geom = _packed(fv)
-            if gtype != 3:
+            if gtype not in kinds:
                 continue
             props = {keys[tags[i]]: values[tags[i + 1]] for i in range(0, len(tags), 2)}
             rings, ring, cx, cy, i = [], [], 0, 0, 0
@@ -228,6 +232,8 @@ def read_mvt(path, z, x, y):
                     lon = (x + cx / extent) / n * 360 - 180
                     lat = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * (y + cy / extent) / n))))
                     ring.append((lat, lon))
+            if ring and gtype == 2:
+                rings.append(ring)
             out.append((name, props, rings))
     return out
 

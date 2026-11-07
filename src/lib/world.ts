@@ -72,7 +72,23 @@ export type Heard = { gap?: string; title: string; received: string; updated: st
 
 /** 物語を置く町。at は build_city.py が緯度経度から求めた位置。stop はバスに乗れる標識の位置（場所の中の座標） */
 /** past はその町のむかし。公的な資料の事実を短く引いたもので、地元を探す画面で今の数字と並べる */
-export type Place = { id: string; name: string; geo: Vec2; at: Vec2; hub?: boolean; stop?: Vec2; geo_source: string; past?: PastFact[] };
+export type Place = {
+  id: string;
+  name: string;
+  geo: Vec2;
+  at: Vec2;
+  hub?: boolean;
+  stop?: Vec2;
+  geo_source: string;
+  past?: PastFact[];
+  /** 実在の地図の中心の緯度経度。無ければ geo */
+  center?: Vec2;
+  center_source?: string;
+  /** 実在の地図の中心を市の地図の座標で（scripts/build_real_towns.py） */
+  origin?: Vec2;
+  /** 町名の代表点 geo を市の地図の座標で。市の地図に残した印はここから測る */
+  geo_at?: Vec2;
+};
 
 /** むかしの札に添える絵。写真は権利の確かめが要るので、作者が描いた絵だけを使う */
 export const PAST_ICONS = ["doki", "kofun", "wan", "shiro", "yakusho", "fuda", "hina", "sakyu"] as const;
@@ -246,9 +262,9 @@ export const PROP_RADIUS: Record<string, number> = { house: 2.4, house_b: 2.4, s
 /** 路線バスの平均の速さ [推定: 停車を含めて時速 25 km と置いた] */
 export const BUS_KMH = 25;
 
-/** PLATEAU の建物がある町。町の中は実在の建物・道の形（public/city/towns/<町>.json）で、
- * 市の地図から離れた所に 1 単位 1.5 m で置く。バスで着くとそこへ移る。ほかの町は市の地図の上の模型のまま */
-export const REAL_TOWNS = ["eki", "kumoyama", "koyama", "kawahara"];
+/** 実在の建物・道の形で組んだ町（public/city/towns/<町>.json）。はじめの 4 町は PLATEAU、あとの 5 町は国土地理院の最適化ベクトルタイル。
+ * 市の地図から離れた所に 1 単位 1.5 m で置く。バスで着くとそこへ移る */
+export const REAL_TOWNS = ["eki", "kumoyama", "koyama", "kawahara", "fukube", "ketaka", "kokufu", "mochigase", "sakyu"];
 export const REAL_M_PER_UNIT = 1.5;
 const POCKET_SIZE = 3000;
 
@@ -273,7 +289,13 @@ export function cityAt(places: Place[], at: Vec2): Vec2 {
   if (!id || !place) return at;
   const o = pocketOrigin(id)!;
   const k = REAL_M_PER_UNIT / M_PER_UNIT;
-  return [place.at[0] + (at[0] - o[0]) * k, place.at[1] + (at[1] - o[1]) * k];
+  const c = realCenter(place);
+  return [c[0] + (at[0] - o[0]) * k, c[1] + (at[1] - o[1]) * k];
+}
+
+/** 実在の町の中心の、市の地図の上の位置 */
+export function realCenter(place: Place): Vec2 {
+  return place.origin ?? place.at;
 }
 
 const AKIYA_TEXT: Record<AkiyaStatus, (town: string) => string> = {
@@ -292,7 +314,7 @@ function akiyaFacility(world: World, a: Akiya): Facility {
 
 export function placeWorld(world: World): Placed {
   const at = new Map(world.places.map((p) => [p.id, pocketOrigin(p.id) ?? p.at]));
-  const city = new Map(world.places.map((p) => [p.id, p.at]));
+  const city = new Map(world.places.map((p) => [p.id, p.geo_at ?? p.at]));
   // city が付いた物は、実在の町の円より外にあるので市の地図の上に置く
   const shift = (place: string, v: Vec2, onCity = false): Vec2 => {
     const base = (onCity ? city : at).get(place);

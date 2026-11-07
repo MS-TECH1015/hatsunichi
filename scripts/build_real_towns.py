@@ -1,6 +1,7 @@
 """9 つの町の中を、実在の建物・道・川・鉄道の形と位置で組む。LLM は使わない。
 
-入力: PLATEAU 鳥取市 2020（scripts/plateau.py）。OSM（data/raw/osm/<町>.json）があれば、PLATEAU の無い所を OSM で補う。
+入力: PLATEAU 鳥取市 2020（scripts/plateau.py）。PLATEAU の建物がほとんど無い町（GSI_TOWNS）は、建物・道路・水面・鉄道を
+国土地理院の最適化ベクトルタイル（scripts/fetch_gsi_vt.py が落とした data/raw/gsi_vt）から組む。土地利用は PLATEAU のある所だけ。
 出力: public/city/towns/<町>.json。座標は町の中（data/world.json の places[].geo が原点、+x 東、+z 南）、
 1 単位 = M_PER_UNIT m。人と飾りの模型はこの縮尺で人の背が 2.8 m ほどになり、建物より少し大きく見える。
 """
@@ -22,6 +23,13 @@ R_BLDG = 600  # 建物を置く半径（m）
 GROUND_EXTRA = 160  # 地面を町の円の外へのばす幅（単位）。src/components/town/realTown.ts の OUTSIDE と同じ
 GROUND_CELL = 8  # 地面の高さの格子の間隔（単位）
 DEM = ROOT / "data" / "raw" / "dem"
+GSI_VT = ROOT / "data" / "raw" / "gsi_vt"
+# PLATEAU 2020 の建物が 0〜34 しかない町。地理院のベクトルタイルで組む
+GSI_TOWNS = {"fukube", "ketaka", "kokufu", "mochigase", "sakyu", "aoya"}
+# 地理院の建物は高さを持たない。種類から置いた推定（m）: 普通建物、堅ろう建物、普通無壁舎、堅ろう無壁舎
+GSI_HEIGHT = {3101: 6.0, 3102: 10.0, 3111: 3.5, 3112: 4.5}
+# 道路の幅の区分（vt_rnkwidth）を、区分の中ほどの幅（m）に置き換える
+GSI_ROAD_W = {"3m未満": 2.5, "3m-5.5m未満": 4.5, "5.5m-13m未満": 8.0, "13m-19.5m未満": 15.0, "19.5m以上": 20.0}
 
 
 class Frame:
@@ -207,6 +215,76 @@ def plateau_rail(frame, r_units):
     return out
 
 
+def gsi_parts(frame, r_units):
+    """地理院のベクトルタイル（ズーム 16）から、建物・道路の面・水面・鉄道の線。タイルの縁で重なる分は、重心が自分のタイルにあるものだけ残す"""
+    buildings, roads, water, rail = [], [], [], []
+    for f in sorted(GSI_VT.glob("16_*.pbf")):
+        z, x, y = map(int, f.stem.split("_"))
+        n = 2 ** z
+        west, east = x / n * 360 - 180, (x + 1) / n * 360 - 180
+        north = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * y / n))))
+        south = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * (y + 1) / n))))
+        cx, cz = frame.to_local((north + south) / 2, (west + east) / 2)
+        if math.hypot(cx, cz) > r_units + 400:
+            continue
+        own = lambda pts: south <= sum(p[0] for p in pts) / len(pts) < north and west <= sum(p[1] for p in pts) / len(pts) < east
+        for name, props, parts in plateau.decode_mvt(f.read_bytes(), z, x, y, kinds=(2, 3)):
+            if name == "BldA":
+                for ring in parts:
+                    if not own(ring):
+                        continue
+                    pts = [frame.to_local(lat, lon) for lat, lon in ring]
+                    if math.hypot(sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts)) > r_units:
+                        continue
+                    if len(pts) > 3 and math.dist(pts[0], pts[-1]) < 1e-6:
+                        pts = pts[:-1]
+                    if len(pts) < 3 or abs(area(pts)) * M_PER_UNIT ** 2 < 6:
+                        continue
+                    if area(pts) < 0:
+                        pts = pts[::-1]
+                    h = GSI_HEIGHT.get(props.get("vt_code"), 6.0)
+                    h += (int(abs(pts[0][0]) * 7 + abs(pts[0][1]) * 13) % 3) * 0.8 if h == 6.0 else 0  # 同じ高さが並ばないよう少しずらす
+                    buildings.append({"h": round(h, 1), "ring": [[round(a, 2), round(b, 2)] for a, b in pts], "src": "gsi"})
+            elif name == "WA":
+                for ring in parts:
+                    c = clip([frame.to_local(lat, lon) for lat, lon in ring], r_units)
+                    if len(c) >= 3 and abs(area(c)) > 0.5:
+                        water.append({"k": "water", "ring": [[round(a, 2), round(b, 2)] for a, b in c]})
+            elif name == "RdCL":
+                w = GSI_ROAD_W.get(props.get("vt_rnkwidth"), 3.0) / M_PER_UNIT
+                for line in parts:
+                    roads += road_quads([frame.to_local(lat, lon) for lat, lon in line], w, r_units)
+            elif name == "RailCL":
+                for line in parts:
+                    pts = [[round(a, 2), round(b, 2)] for a, b in (frame.to_local(lat, lon) for lat, lon in line) if math.hypot(a, b) <= r_units]
+                    if len(pts) > 1:
+                        rail.append(pts)
+    return buildings, roads, water, rail
+
+
+def road_quads(line, w, r_units):
+    """道路の中心線を、幅 w（単位）の四角の並びにする。曲がり角のすき間は、角に置いた八角形でふさぐ"""
+    out = []
+    for a, b in zip(line, line[1:]):
+        d = math.dist(a, b)
+        if d < 1e-6 or (math.hypot(*a) > r_units and math.hypot(*b) > r_units):
+            continue
+        nx, nz = -(b[1] - a[1]) / d * w / 2, (b[0] - a[0]) / d * w / 2
+        quad = [(a[0] + nx, a[1] + nz), (b[0] + nx, b[1] + nz), (b[0] - nx, b[1] - nz), (a[0] - nx, a[1] - nz)]
+        out.append(quad)
+    for p in line[1:-1]:
+        if math.hypot(*p) <= r_units:
+            out.append([(p[0] + w / 2 * math.cos(math.pi * i / 4), p[1] + w / 2 * math.sin(math.pi * i / 4)) for i in range(8)])
+    rings = []
+    for q in out:
+        c = clip(q, r_units)
+        if len(c) >= 3:
+            if area(c) < 0:
+                c = c[::-1]
+            rings.append({"k": "road", "ring": [[round(a, 2), round(b, 2)] for a, b in c]})
+    return rings
+
+
 def dem_height(lat, lon, cache={}):
     """国土地理院 dem_png z14 の標高（m）。海や取れていない所は 0"""
     z = 14
@@ -263,18 +341,39 @@ def preview(pid, town, path):
     img.save(path)
 
 
+def write_origins(world):
+    """市の地図の座標で、実在の町の中心（center、無ければ geo）を places[].origin に、町名の代表点 geo を geo_at に書く。
+    画面の cityAt と、市の地図に残した物の置き場所が使う"""
+    o = json.loads((ROOT / "public" / "city" / "city.json").read_text(encoding="utf-8"))["origin"]
+    kx = 111320 * math.cos(math.radians(o["lat"])) / o["m_per_unit"]
+    kz = 110950 / o["m_per_unit"]
+    unit = lambda lat, lon: [round((lon - o["lon"]) * kx, 2), round(-(lat - o["lat"]) * kz, 2)]
+    for p in world["places"]:
+        p["origin"] = unit(*(p.get("center") or p["geo"]))
+        p["geo_at"] = unit(*p["geo"])
+    with open(ROOT / "data" / "world.json", "w", encoding="utf-8", newline="") as f:
+        f.write(json.dumps(world, ensure_ascii=False, indent=2) + "\n")
+
+
 def main():
     world = json.loads((ROOT / "data" / "world.json").read_text(encoding="utf-8"))
     OUT.mkdir(parents=True, exist_ok=True)
     only = set(sys.argv[1:])
+    write_origins(world)
     for p in world["places"]:
         if only and p["id"] not in only:
             continue
-        frame = Frame(*p["geo"])
+        frame = Frame(*(p.get("center") or p["geo"]))
         r_units = R_BLDG / M_PER_UNIT
-        buildings = plateau_buildings(frame, r_units)
-        roads, land = plateau_areas(frame, r_units)
-        town = {"m_per_unit": M_PER_UNIT, "radius": round(r_units, 1), "ground": ground(frame, r_units), "buildings": buildings, "roads": roads, "land": land, "rail": plateau_rail(frame, r_units)}
+        if p["id"] in GSI_TOWNS:
+            buildings, roads, water, rail = gsi_parts(frame, r_units)
+            _, land = plateau_areas(frame, r_units)
+            land = [a for a in land if a["k"] not in ("road", "water")] + water
+        else:
+            buildings = plateau_buildings(frame, r_units)
+            roads, land = plateau_areas(frame, r_units)
+            rail = plateau_rail(frame, r_units)
+        town = {"m_per_unit": M_PER_UNIT, "radius": round(r_units, 1), "ground": ground(frame, r_units), "buildings": buildings, "roads": roads, "land": land, "rail": rail}
         (OUT / f"{p['id']}.json").write_text(json.dumps(town, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print(p["id"], "buildings", len(buildings), "roads", len(roads), "land", len(land), "rail", len(town["rail"]), "bytes", (OUT / f"{p['id']}.json").stat().st_size)
         preview(p["id"], town, ROOT / "data" / "build" / f"town_{p['id']}.png")

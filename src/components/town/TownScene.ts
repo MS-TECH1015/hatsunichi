@@ -22,6 +22,7 @@ import {
   targetAt,
   PROP_RADIUS,
   REAL_TOWNS,
+  realCenter,
   type Ground,
   type Facility,
   type Mark,
@@ -388,8 +389,9 @@ export class TownScene {
       const place = this.world.places.find((p) => p.id === id)!;
       const town = this.reals.get(id)!;
       const k = M_PER_UNIT / REAL_M_PER_UNIT;
-      const dx = this.playerPos[0] - place.at[0];
-      const dz = this.playerPos[1] - place.at[1];
+      const c = realCenter(place);
+      const dx = this.playerPos[0] - c[0];
+      const dz = this.playerPos[1] - c[1];
       if (Math.hypot(dx, dz) * k > town.radius - 30) continue;
       const inside: Vec2 = [town.origin[0] + dx * k, town.origin[1] + dz * k];
       if (town.walkable(inside)) this.playerPos = inside;
@@ -416,7 +418,8 @@ export class TownScene {
     for (const [id, town] of this.reals) {
       const place = this.world.places.find((p) => p.id === id)!;
       const mini = town.miniature(REAL_M_PER_UNIT / M_PER_UNIT);
-      mini.position.set(place.at[0], heightAt(this.ground, place.at[0], place.at[1]), place.at[1]);
+      const c = realCenter(place);
+      mini.position.set(c[0], heightAt(this.ground, c[0], c[1]), c[1]);
       this.scene.add(mini);
     }
     this.scene.add(this.towns.group);
