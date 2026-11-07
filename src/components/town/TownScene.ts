@@ -70,6 +70,8 @@ const RIDE_SECONDS = 7; // バスに乗っている長さ。遠くても近く�
 const CHUNK = 80; // 木と家を区切る大きさ。画面の外の区画は描かない
 const NO_OUTLINE = { visible: false };
 const ROOF_COLORS = [0x9e3826, 0x4d5770, 0x3f6b96, 0x74503a];
+/** 実在の建物を分ける区画の幅（単位） */
+const BUILDING_CHUNK = 40;
 const PALE = new THREE.Color(0xeee8d6);
 const FOG_PLAY: [number, number] = [110, 340];
 const FOG_TITLE: [number, number] = [900, 2600];
@@ -84,6 +86,8 @@ export class TownScene {
   private fog = new THREE.Fog(0xd8eef2, ...FOG_TITLE);
   private sun = new THREE.DirectionalLight(0xfff4e0, 2.2);
   private gradient = toonGradient();
+  /** 実在の建物。1 棟 6 個で x・z（m）、向き（1/1000 rad）、幅・奥行き・高さ（0.1 m）。scripts/build_city_buildings.py */
+  private buildings = new Int16Array(0);
   private toonCache = new Map<string, THREE.Material>();
   private models = new Map<string, THREE.Group>();
   private player = new THREE.Group();
@@ -118,6 +122,7 @@ export class TownScene {
   private paused = true;
   private playing = false;
   private flyIn = 1;
+  private mapDrawn = -Infinity;
   private flyFrom = new THREE.Vector3();
   private last = performance.now();
   private raf = 0;
@@ -155,7 +160,7 @@ export class TownScene {
     this.buildTowns();
     this.buildPlaces();
     this.buildForest();
-    this.buildHouses();
+    this.buildBuildings();
     this.buildScatter();
     this.buildLabels();
     this.buildBus();
@@ -306,6 +311,8 @@ export class TownScene {
       fetch(withBase("/city/height.bin")).then((r) => r.arrayBuffer()),
       fetch(withBase("/city/mask.bin")).then((r) => r.arrayBuffer()),
     ]);
+    const res = await fetch(withBase("/city/buildings.bin"));
+    this.buildings = res.ok ? new Int16Array(await res.arrayBuffer()) : new Int16Array(0);
     this.city = city;
     this.ground = { ...city.grid, height: new Int16Array(height), mask: new Uint8Array(mask) };
     const { x0, z0, cell, w, h } = city.grid;
@@ -501,18 +508,45 @@ export class TownScene {
     for (const [kind, list] of Object.entries(items)) this.instanced(kind, list, false);
   }
 
-  /** 町丁目ごとの人口に比例した数の家。実在の建物の位置ではない */
-  private buildHouses() {
+  /**
+   * 実在の建物を実寸の箱で置く（国土地理院の最適化ベクトルタイル）。高さは建物の種類からの推定。
+   * 実在の町の円の中は町の模型が描くので置かない。区画ごとの InstancedMesh にして、画面の外は描かない
+   */
+  private buildBuildings() {
+    const b = this.buildings;
+    const towns = [...this.reals.entries()].map(([id, t]) => ({ at: realCenter(this.world.places.find((p) => p.id === id)!), r: (t.radius * REAL_M_PER_UNIT) / M_PER_UNIT }));
     const roofs = ROOF_COLORS.map((c) => new THREE.Color(c));
-    const items: Item[] = this.city.houses.map(([x, z, face, roof]) => ({
-      x,
-      z,
-      scale: 1,
-      rot: (face * Math.PI) / 2,
-      tint: (name) => (name === "roof" ? roofs[roof] : null),
-    }));
-    this.instanced("house_lo", items, true, { roof: 0xffffff });
-    for (const it of items) this.obstacles.push({ at: [it.x, it.z], radius: 1.3 });
+    const solid = new THREE.Color(0xcfc8b8);
+    const chunks = new Map<string, number[]>();
+    for (let i = 0; i < b.length; i += 6) {
+      const x = b[i] / M_PER_UNIT;
+      const z = b[i + 1] / M_PER_UNIT;
+      if (towns.some((t) => Math.hypot(x - t.at[0], z - t.at[1]) < t.r)) continue;
+      const key = `${Math.floor(x / BUILDING_CHUNK)},${Math.floor(z / BUILDING_CHUNK)}`;
+      const list = chunks.get(key) ?? [];
+      list.push(i);
+      chunks.set(key, list);
+    }
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    geometry.translate(0, 0.5, 0);
+    const material = new THREE.MeshToonMaterial({ color: 0xffffff, gradientMap: this.gradient });
+    material.userData.outlineParameters = NO_OUTLINE;
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    for (const list of chunks.values()) {
+      const mesh = new THREE.InstancedMesh(geometry, material, list.length);
+      list.forEach((i, k) => {
+        const at: Vec2 = [b[i] / M_PER_UNIT, b[i + 1] / M_PER_UNIT];
+        q.setFromAxisAngle(up, -b[i + 2] / 1000);
+        m.compose(new THREE.Vector3(at[0], this.groundY(at) - 0.05, at[1]), q, new THREE.Vector3(b[i + 3] / 10 / M_PER_UNIT, b[i + 5] / 10 / M_PER_UNIT + 0.05, b[i + 4] / 10 / M_PER_UNIT));
+        mesh.setMatrixAt(k, m);
+        mesh.setColorAt(k, b[i + 5] >= 100 ? solid : roofs[(b[i] + b[i + 1]) & 3]);
+      });
+      mesh.computeBoundingSphere();
+      mesh.receiveShadow = true; // 市の縮尺では影がほぼ見えないので落とさない。10 万棟の影の描き直しを省く
+      this.scene.add(mesh);
+    }
   }
 
   private materialColor(kind: string, name: string): THREE.Color | null {
@@ -1049,7 +1083,8 @@ export class TownScene {
   }
 
   private drawMap(now: number) {
-    if (!this.map || !this.map.image.complete || Math.floor(now / 100) === Math.floor((now - 16) / 100)) return;
+    if (!this.map || !this.map.image.complete || now - this.mapDrawn < 100) return;
+    this.mapDrawn = now;
     const { canvas, image } = this.map;
     const dpr = Math.min(window.devicePixelRatio, 2);
     const cw = Math.round(canvas.clientWidth * dpr);
