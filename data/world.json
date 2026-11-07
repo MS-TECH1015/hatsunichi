@@ -486,7 +486,8 @@
         "updated": "2026-08-12",
         "url": "https://www.city.tottori.lg.jp/shiseiteian/shiseiteian/47036.html",
         "answer": "市が整えたバス停で、まわりの草はできるだけ早く刈り、見えにくくなった白線は直すことを検討する。答えたのは市の交通政策課"
-      }
+      },
+      "placed": true
     },
     {
       "id": "empty1",
@@ -575,7 +576,8 @@
         "updated": "2026-10-26",
         "url": "https://www.city.tottori.lg.jp/shiseiteian/shiseiteian/51228.html",
         "answer": "近所の人の相談を受けて現地を確かめ、空家特措法にもとづいて持ち主を調べている。相続人とみられる人が国の内外に多く、特定に時間がかかっている"
-      }
+      },
+      "placed": true
     },
     {
       "id": "shop1",
@@ -657,7 +659,8 @@
           "週に2〜3日できる",
           "店番は難しい"
         ]
-      }
+      },
+      "placed": true
     },
     {
       "id": "field1",
@@ -744,7 +747,8 @@
           "週に1回通える",
           "通うのは難しい"
         ]
-      }
+      },
+      "placed": true
     },
     {
       "id": "cave",
@@ -826,7 +830,8 @@
           "2〜3日手伝える",
           "手伝うのは難しい"
         ]
-      }
+      },
+      "placed": true
     },
     {
       "id": "workshop",
@@ -912,7 +917,8 @@
           "県外に出るつもり",
           "まだ決めていない"
         ]
-      }
+      },
+      "placed": true
     },
     {
       "id": "kiosk",
@@ -994,7 +1000,8 @@
           "2〜3日入れる",
           "入るのは難しい"
         ]
-      }
+      },
+      "placed": true
     },
     {
       "id": "care1",
@@ -1076,7 +1083,8 @@
           "週に4時間ほど",
           "手伝うのは難しい"
         ]
-      }
+      },
+      "placed": true
     },
     {
       "id": "fire1",
@@ -1166,7 +1174,8 @@
         "updated": "2026-05-21",
         "url": "https://www.city.tottori.lg.jp/shiseiteian/shiseiteian/42044.html",
         "answer": "消防の水の施設は市の基準に沿って置いている。その地区は今ある消火栓で基準を満たしているので、新しい防火水槽は難しい"
-      }
+      },
+      "placed": true
     }
   ],
   "npcs": [
@@ -1186,7 +1195,8 @@
         "遠くの町へは、バスで。",
         "答えは、ぼくも知らない。"
       ],
-      "place": "eki"
+      "place": "eki",
+      "placed": true
     },
     {
       "id": "hina",
@@ -1214,7 +1224,8 @@
       ],
       "place": "kumoyama",
       "view": "朝の便がないと遅刻",
-      "src": "gtfs_nihonkotsu"
+      "src": "gtfs_nihonkotsu",
+      "placed": true
     },
     {
       "id": "kiyoshi",
@@ -1242,7 +1253,8 @@
       ],
       "place": "kumoyama",
       "view": "病院の行き帰りに要る",
-      "src": "tottori_feeder"
+      "src": "tottori_feeder",
+      "placed": true
     },
     {
       "id": "tabuchi",
@@ -1270,7 +1282,8 @@
       ],
       "place": "eki",
       "view": "配達の客が気がかり",
-      "src": "tottori_akitenpo"
+      "src": "tottori_akitenpo",
+      "placed": true
     },
     {
       "id": "kishimoto",
@@ -1298,7 +1311,8 @@
       ],
       "place": "fukube",
       "view": "来年は畝を減らす",
-      "src": "tottori_plan_fukube"
+      "src": "tottori_plan_fukube",
+      "placed": true
     },
     {
       "id": "yamane",
@@ -1326,7 +1340,8 @@
       ],
       "place": "ketaka",
       "view": "見方は言葉にならない",
-      "src": "maff_nikko_ginger"
+      "src": "maff_nikko_ginger",
+      "placed": true
     },
     {
       "id": "kotani",
@@ -1354,7 +1369,8 @@
       ],
       "place": "koyama",
       "view": "人も後継ぎもいない",
-      "src": "tottori_shokei_r7"
+      "src": "tottori_shokei_r7",
+      "placed": true
     },
     {
       "id": "student",
@@ -1380,7 +1396,8 @@
         0.16
       ],
       "place": "eki",
-      "src": "tottori_akitenpo"
+      "src": "tottori_akitenpo",
+      "placed": true
     },
     {
       "id": "mio",
@@ -1408,7 +1425,8 @@
       ],
       "place": "sakyu",
       "view": "平日は空いてた",
-      "src": "tottori_kanko_r6"
+      "src": "tottori_kanko_r6",
+      "placed": true
     },
     {
       "id": "kobayashi",
@@ -1436,7 +1454,8 @@
         "全国で約 904 万人。25.6%。"
       ],
       "view": "重い物が買えない",
-      "src": "maff_food_access"
+      "src": "maff_food_access",
+      "placed": true
     },
     {
       "id": "okada",
@@ -1464,7 +1483,8 @@
         "埋まる通りも、あるんだね。"
       ],
       "view": "空きが多くて怖い",
-      "src": "tottori_akitenpo"
+      "src": "tottori_akitenpo",
+      "placed": true
     },
     {
       "id": "morita",
@@ -1492,7 +1512,8 @@
         "83,834 人から 74,340 人。"
       ],
       "view": "運転手がいない",
-      "src": "mlit_driver"
+      "src": "mlit_driver",
+      "placed": true
     },
     {
       "id": "fujii",
@@ -1520,7 +1541,8 @@
         "6 年で 2,009 人。"
       ],
       "view": "地元の会社を知らない",
-      "src": "tottori_jinko_vision"
+      "src": "tottori_jinko_vision",
+      "placed": true
     },
     {
       "id": "matsumoto",
@@ -1548,7 +1570,8 @@
         "後継ぎがおらん。61.6%。"
       ],
       "view": "他人に継がすのは怖い",
-      "src": "tottori_shokei_r7"
+      "src": "tottori_shokei_r7",
+      "placed": true
     },
     {
       "id": "otani",
@@ -1576,7 +1599,8 @@
         "118 件は倒れるおそれが大きい。"
       ],
       "view": "庭の木が道に出てる",
-      "src": "tottori_akiya_guide"
+      "src": "tottori_akiya_guide",
+      "placed": true
     },
     {
       "id": "sakamoto",
@@ -1603,7 +1627,8 @@
         "用瀬の高齢化率は 42.9%。"
       ],
       "view": "片付ける時間がない",
-      "src": "mochigase_plan"
+      "src": "mochigase_plan",
+      "placed": true
     },
     {
       "id": "takahashi",
@@ -1631,7 +1656,8 @@
         "20 年で 26.2% 減った。"
       ],
       "view": "借りられる家がない",
-      "src": "mochigase_plan"
+      "src": "mochigase_plan",
+      "placed": true
     },
     {
       "id": "inoue",
@@ -1659,7 +1685,8 @@
         "畑は 112ha から 109ha。"
       ],
       "view": "広い畑しか借りない",
-      "src": "tottori_east_agri"
+      "src": "tottori_east_agri",
+      "placed": true
     },
     {
       "id": "nakamura",
@@ -1687,7 +1714,8 @@
         "前の調査の 218ha から減らん。"
       ],
       "view": "草を刈る人がいない",
-      "src": "tottori_agri_committee"
+      "src": "tottori_agri_committee",
+      "placed": true
     },
     {
       "id": "hasegawa",
@@ -1715,7 +1743,8 @@
         "手放したい 126ha より多い。"
       ],
       "view": "生姜は手間が合わない",
-      "src": "tottori_plan_ketaka"
+      "src": "tottori_plan_ketaka",
+      "placed": true
     },
     {
       "id": "nishimura",
@@ -1743,7 +1772,8 @@
         "15,399 千円に増えた。"
       ],
       "view": "荒れた畑に獣が来る",
-      "src": "tottori_choju"
+      "src": "tottori_choju",
+      "placed": true
     },
     {
       "id": "hamada",
@@ -1771,7 +1801,8 @@
         "1 月は 552 千人。夏は約 2.8 倍。"
       ],
       "view": "冬は昼まで客が来ない",
-      "src": "tottori_kanko_r6"
+      "src": "tottori_kanko_r6",
+      "placed": true
     },
     {
       "id": "ueda",
@@ -1799,7 +1830,8 @@
         "泊まる人は、2 割ちょっと。"
       ],
       "view": "冬は泊まる人が減る",
-      "src": "tottori_kanko_r6"
+      "src": "tottori_kanko_r6",
+      "placed": true
     },
     {
       "id": "nishimura",
@@ -1827,7 +1859,8 @@
         "65歳以上が 52%。"
       ],
       "view": "来てくれる人が少ない",
-      "src": "census_small"
+      "src": "census_small",
+      "placed": true
     },
     {
       "id": "maeda",
@@ -1855,7 +1888,8 @@
         "このままだと 9,791 人。"
       ],
       "view": "回る家が多すぎる",
-      "src": "mhlw_kaigo_r6"
+      "src": "mhlw_kaigo_r6",
+      "placed": true
     },
     {
       "id": "nakajima",
@@ -1883,7 +1917,8 @@
         "このままだと 10,393 人。"
       ],
       "view": "行ってみたいが遠い",
-      "src": "mhlw_kaigo_r6"
+      "src": "mhlw_kaigo_r6",
+      "placed": true
     },
     {
       "id": "yamane",
@@ -1911,7 +1946,8 @@
         "定員 1,354 人の 93.2%。"
       ],
       "view": "人が足りない",
-      "src": "pref_shoubou_r4"
+      "src": "pref_shoubou_r4",
+      "placed": true
     },
     {
       "id": "kishimoto",
@@ -1939,7 +1975,8 @@
         "5年で 32 人減った。"
       ],
       "view": "近くに頼れる人がほしい",
-      "src": "census_small"
+      "src": "census_small",
+      "placed": true
     },
     {
       "id": "taniguchi",
@@ -1967,7 +2004,8 @@
         "団員の平均は 44.9 歳。"
       ],
       "view": "試したいが続くか不安",
-      "src": "pref_shoubou_r4"
+      "src": "pref_shoubou_r4",
+      "placed": true
     }
   ],
   "sources": {
@@ -2230,7 +2268,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "312010720",
@@ -2243,7 +2282,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "31201086001",
@@ -2256,7 +2296,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "312011300",
@@ -2269,7 +2310,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "312011310",
@@ -2282,7 +2324,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "312011260",
@@ -2295,7 +2338,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "31201127001",
@@ -2308,7 +2352,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "312011390",
@@ -2321,7 +2366,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "312011400",
@@ -2334,7 +2380,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "312012610",
@@ -2361,7 +2408,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "31201225005",
@@ -2388,7 +2436,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "31201237003",
@@ -2415,7 +2464,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "31201325002",
@@ -2484,7 +2534,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "312014050",
@@ -2497,7 +2548,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "31201406001",
@@ -2510,7 +2562,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "312014090",
@@ -2579,7 +2632,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "31201341008",
@@ -2592,7 +2646,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "312013530",
@@ -2633,7 +2688,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "31201312002",
@@ -2646,7 +2702,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "31201316001",
@@ -2729,7 +2786,8 @@
       "sources": [
         "census_small",
         "ksj_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "31201378005",
@@ -2814,7 +2872,8 @@
       "text": "旧用瀬保育園。鳥取市の未活用施設。用途は校舎・園舎、延床 744.2 ㎡、1981 年に建った。今も使われていないかは未確認",
       "sources": [
         "odp_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "fac8",
@@ -2841,7 +2900,8 @@
       "text": "浜村温泉館（増築棟外1棟含）。鳥取市の未活用施設。用途は浴場・風呂場外、延床 2031.76 ㎡、1982 年に建った。今も使われていないかは未確認",
       "sources": [
         "odp_facilities"
-      ]
+      ],
+      "placed": true
     },
     {
       "id": "fac30",
@@ -2868,7 +2928,8 @@
       "text": "旧福部町体育館・旧福部町武道館・旧福部町コミュニティセンター（楽焼室含）。鳥取市の未活用施設。用途は体育館・公民館、延床は順に 1116 ㎡、681.5 ㎡、1536.27 ㎡、1973 年に建った。緊急避難所の指定あり。今も使われていないかは未確認",
       "sources": [
         "odp_facilities"
-      ]
+      ],
+      "placed": true
     }
   ],
   "business": {
