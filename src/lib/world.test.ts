@@ -17,11 +17,12 @@ const ground: Ground = {
 };
 
 describe("world", () => {
-  it("場所の中の座標は、場所の位置を足して市全体の座標になる。実在の町は離れた所の原点を足す", () => {
+  it("町の中の座標は、実在の町の離れた原点を足す。市の地図に残した印は町名の代表点から測る", () => {
     const fukube = w.places.find((p) => p.id === "fukube")!;
-    const field = w.spots.find((s) => s.place === "fukube")!;
-    const local = (world as unknown as World).spots.find((s) => s.id === field.id)!.at;
-    expect(field.at).toEqual([fukube.at[0] + local[0], fukube.at[1] + local[1]]);
+    const raw = (world as unknown as World).marks.find((m) => m.place === "fukube" && m.city)!;
+    const mark = w.marks.find((m) => m.id === raw.id)!;
+    expect(mark.at).toEqual([fukube.geo_at![0] + raw.at[0], fukube.geo_at![1] + raw.at[1]]);
+    expect(cityAt(w.places, pocketOrigin("fukube")!)).toEqual(fukube.origin);
     const shop = w.spots.find((s) => s.id === "shop1")!;
     const shopLocal = (world as unknown as World).spots.find((s) => s.id === "shop1")!.at;
     const o = pocketOrigin("eki")!;
