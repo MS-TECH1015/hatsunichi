@@ -1,11 +1,11 @@
-// PreToolUse (Write|Edit): data/ 配下の JSON に、source_id の無い数値を書かせない。
+// PreToolUse (Write|Edit): data/town.json に、source_id の無い数値を書かせない。world.json の数字は文の中にあるので src/lib/world.test.ts が見張る。
 // 判定本体は scripts/check-sources.mjs と同じ関数。拒むときは exit 2 で理由を stderr に出す。
 import { readFileSync } from "node:fs";
 import { findUnsourcedNumbers } from "../../scripts/check-sources.mjs";
 
 const input = JSON.parse(readFileSync(0, "utf8"));
 const file = String(input.tool_input?.file_path ?? "").replaceAll("\\", "/");
-if (!/\/data\/[^/]+\.json$/.test(file)) process.exit(0);
+if (!/\/data\/town\.json$/.test(file)) process.exit(0);
 
 let next;
 if (input.tool_name === "Write") {

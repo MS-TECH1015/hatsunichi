@@ -10,7 +10,7 @@ const SKIP_KEYS = new Set(["lat", "lon", "centroid", "stop_sequence", "persons"]
 export function findUnsourcedNumbers(json) {
   const known = new Set((json.meta?.sources ?? []).map((s) => s.source_id));
   const problems = [];
-  walk(json, "", null);
+  walk(json, "", undefined);
   return problems;
 
   function walk(node, path, inherited) {
