@@ -88,7 +88,9 @@ SHA256 は取得時の `data/raw/fetch.log` から写した。
 | www.pref.tottori.lg.jp | /dde.aspx などの一部だけ禁止。取った 3 件は当たらない | https://www.pref.tottori.lg.jp/9314.htm 。文章や写真は著作物で、私的使用の複製や引用など法律で認められた場合を除き、無断で複製・転用できない。許諾は各ページの担当課へ |
 | www.e-stat.go.jp | /core/ /profiles/ や登録の道だけ禁止。取った /gis/ は当たらない | https://www.e-stat.go.jp/terms-of-use 。政府標準利用規約 第2.0版で CC BY 4.0 と互換、商用も可。数値データと簡単な表は著作権の対象でなく自由に使える。出典と加工の旨を書き、国が作ったように見せない。ゲームの表示は census_small の名前と注記で満たしている。生成 AI での利用は語で探して見当たらず、未確認。SHA256 0efa0be58bb58a5d55580875cf78b1030d554d6e1ca573f6711c371087d59d15 |
 | www.mhlw.go.jp | /cgi-bin/ /images/ など一部だけ禁止。取った /content/ は当たらない | https://www.mhlw.go.jp/chosakuken/index.html 。権利表記の無いものは公共データ利用規約 第1.0版（PDL1.0）。出典にページの URL と利用日を書き、加工したらその旨を書く。これに合わせ、ゲームの出典名に「を加工」を足した。日付は出典の横に出ている。生成 AI での利用は語で探して見当たらず、未確認。SHA256 094afd93700b959f3d8d99ae1b7dbf5f8f4d4bf5a70c525f6f9c06f72d0b7265 |
-| www.city.tottori.lg.jp、odp-pref-tottori.tori-info.co.jp、nlftp.mlit.go.jp、cyberjapandata.gsi.go.jp | 置いていない（404） | 未読。オープンデータは各データの頁に CC BY などの条件がある |
+| www.city.tottori.lg.jp | 置いていない（404） | https://www.city.tottori.lg.jp/site/userguide/30271.html 。鳥取市のコンテンツは PDL1.0。出典と加工の旨を書く（2026-11-07 に読んだ）。空き家の物件ページは 1 件 1 回、3 秒あけて取った |
+| cyberjapandata.gsi.go.jp | 置いていない（404） | 国土地理院コンテンツ利用規約 https://www.gsi.go.jp/kikakuchousei/kikakuchousei40182.html 。出典と、加工したことを別に書く。国土地理院が作ったように見せない。大量取得やサーバー負荷についての決まりは無い。地理院タイル一覧 https://maps.gsi.go.jp/development/ichiran.html にも無い（どちらも 2026-11-07 に読んだ）。市全体の最適化ベクトルタイルは 2,000 枚近いので、1 枚 1 回、5 秒あけて取る。始めは 1.5 秒で 466 枚まで取り、毎秒 1 回程度で業務妨害に問われた例に近いと見て、安全側に広げた |
+| odp-pref-tottori.tori-info.co.jp、nlftp.mlit.go.jp | 置いていない（404） | 未読。オープンデータは各データの頁に CC BY などの条件がある |
 
 県と文化庁のページから引いたのは、指定の年や出来事などの事実だけで、文と表は写していない。
 
