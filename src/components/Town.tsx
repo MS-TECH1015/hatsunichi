@@ -181,7 +181,7 @@ export function Town({ world }: Props) {
   // 閉じた直後の Space で同じ相手をまた開かないように
   const closedAt = useRef(0);
   const { start_hour, end_hour } = world.meta.clock;
-  const near = useMemo(() => nearestSpot(pos, placed.spots, new Set(answers.map((a) => a.spot.id))), [pos, placed, answers]);
+  const near = useMemo(() => nearestSpot(pos, placed.spots, new Set(answers.map((a) => a.spot.id)), placed.places), [pos, placed, answers]);
   const rabbit = world.npcs.find((n) => n.kind === "rabbit");
   const guide = rabbit?.name ?? "白兎";
 

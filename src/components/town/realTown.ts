@@ -38,7 +38,9 @@ const WALLS = [0xf1e6cf, 0xe4e2dc, 0xeadbc0, 0xf6f2ea, 0xe8dccb];
 const TALL_WALLS = [0xdcd9d2, 0xcfd3d8, 0xe4dfd4, 0xd6cfc4];
 const HOUSE_MAX_H = 12; // これより低い m の、四角に近い小さな建物は切妻の屋根をのせる
 const HOUSE_MAX_AREA = 320; // m²
-const GRID = 24; // ぶつかり判定の区画の大きさ（単位）
+const GRID = 24;
+const SQUASH_FROM = 10; // これより高い m の建物は、上の部分を縮めて描く。駅前のビルで道が谷底にならないように。足もとの形と位置は変えない
+const SQUASH = 0.4; // ぶつかり判定の区画の大きさ（単位）
 
 type Poly = { ring: Vec2[]; minX: number; maxX: number; minZ: number; maxZ: number };
 
@@ -297,7 +299,8 @@ export class RealTown {
       const poly = bounds(ring);
       this.blocks.add(poly);
       const base = Math.min(...ring.map(([x, z]) => this.heightLocal(x, z))) - 0.4;
-      const top = Math.max(...ring.map(([x, z]) => this.heightLocal(x, z))) + bl.h / m;
+      const shown = bl.h <= SQUASH_FROM ? bl.h : SQUASH_FROM + (bl.h - SQUASH_FROM) * SQUASH;
+      const top = Math.max(...ring.map(([x, z]) => this.heightLocal(x, z))) + shown / m;
       const areaM2 = Math.abs(signedArea(ring)) * m * m;
       const rect = minRect(ring);
       const house = bl.h <= HOUSE_MAX_H && areaM2 <= HOUSE_MAX_AREA && Math.abs(signedArea(ring)) / rect.area > 0.8;

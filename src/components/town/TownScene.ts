@@ -7,15 +7,21 @@ import { OutlineEffect } from "three/examples/jsm/effects/OutlineEffect.js";
 import { withBase } from "@/lib/base";
 import {
   busMinutes,
+  cityAt,
   heightAt,
   nearestMark,
   nearestTarget,
   placeWorld,
+  pocketAt,
+  pocketOrigin,
+  M_PER_UNIT,
+  REAL_M_PER_UNIT,
   pushOut,
   routeBetween,
   stepWithin,
   targetAt,
   PROP_RADIUS,
+  REAL_TOWNS,
   type Ground,
   type Facility,
   type Mark,
@@ -29,6 +35,7 @@ import {
 import { Scatter } from "./scatter";
 import { cityLooks, clock } from "./surfaces";
 import { Towns, type TownData } from "./townMesh";
+import { RealTown, type RealTownData } from "./realTown";
 
 /** place はいま入っている町の名前。町の外とバスの中では null */
 export type SceneState = { minutes: number; target: Target | null; place: string | null; mark: Mark | null; facility: Facility | null; pos: Vec2; riding: boolean };
@@ -53,7 +60,9 @@ const RUN_SPEED = 17; // Shift を押すか、同じ向きに歩き続けると�
 const RUN_AFTER = 1.2;
 const CAMERA_OFFSET = new THREE.Vector3(0, 19, 16);
 const RIDE_OFFSET = new THREE.Vector3(0, 52, 44);
+const REAL_OFFSET = new THREE.Vector3(0, 64, 56); // 実在の町は建物が高いので、真上に近い所から見下ろす
 const PEOPLE_SCALE = 1.35; // 人は建物より大きめにして、表情と動きを見せる
+const REAL_PEOPLE = 1.8; // 実在の町ではカメラが遠いので、人をさらに大きくする（駒として見せる）
 const LOOK_RANGE = 6; // 住民がこちらを向く距離
 const BUS_SPEED = 9;
 const RIDE_SECONDS = 7; // バスに乗っている長さ。遠くても近くてもこの秒数で着く
@@ -114,6 +123,7 @@ export class TownScene {
   private lastTarget: Target | null = null;
   private world: Placed;
   private towns: Towns | null = null;
+  private reals = new Map<string, RealTown>();
   private scatter: Scatter | null = null;
   private flow: THREE.Texture | null = null;
   private placeName: string | null = null;
@@ -140,7 +150,7 @@ export class TownScene {
   async start() {
     this.addLights();
     await this.loadCity();
-    await Promise.all([this.loadModels(), this.loadTerrain()]);
+    await Promise.all([this.loadModels(), this.loadTerrain(), this.loadRealTowns()]);
     this.buildTowns();
     this.buildPlaces();
     this.buildForest();
@@ -159,6 +169,7 @@ export class TownScene {
     window.removeEventListener("resize", this.resize);
     window.removeEventListener("keydown", this.onKey);
     window.removeEventListener("keyup", this.onKey);
+    for (const t of this.reals.values()) t.dispose();
     this.renderer.dispose();
   }
 
@@ -352,7 +363,48 @@ export class TownScene {
   }
 
   /** 足もとの高さ。町の中では歩道や舗装の厚みを足す */
+  /** 実在の町（PLATEAU の建物・道・土地利用）。4 町で 3 MB ほど。描くのはカメラのいる町だけ */
+  private async loadRealTowns() {
+    const ids = REAL_TOWNS.filter((id) => this.world.places.some((p) => p.id === id));
+    await Promise.all(
+      ids.map(async (id) => {
+        const data = (await fetch(withBase(`/city/towns/${id}.json`)).then((r) => r.json())) as RealTownData;
+        const town = new RealTown(id, pocketOrigin(id)!, data, this.gradient);
+        town.group.visible = false;
+        this.reals.set(id, town);
+        this.scene.add(town.group);
+      }),
+    );
+  }
+
+  /** 実在の町の円の端から出たら市の地図へ、市の地図で町の真ん中へ近づいたら実在の町へ移る */
+  private crossTownEdge(real: RealTown | null, next: Vec2) {
+    if (real) {
+      if (Math.hypot(next[0] - real.origin[0], next[1] - real.origin[1]) < real.radius - 5) return;
+      this.playerPos = cityAt(this.world.places, next);
+      return;
+    }
+    for (const id of this.reals.keys()) {
+      const place = this.world.places.find((p) => p.id === id)!;
+      const town = this.reals.get(id)!;
+      const k = M_PER_UNIT / REAL_M_PER_UNIT;
+      const dx = this.playerPos[0] - place.at[0];
+      const dz = this.playerPos[1] - place.at[1];
+      if (Math.hypot(dx, dz) * k > town.radius - 30) continue;
+      const inside: Vec2 = [town.origin[0] + dx * k, town.origin[1] + dz * k];
+      if (town.walkable(inside)) this.playerPos = inside;
+      return;
+    }
+  }
+
+  private realAt(at: Vec2): RealTown | null {
+    const id = pocketAt(at);
+    return id ? (this.reals.get(id) ?? null) : null;
+  }
+
   private groundY(at: Vec2) {
+    const real = this.realAt(at);
+    if (real) return real.heightAt(at);
     return heightAt(this.ground, at[0], at[1]) + (this.towns?.liftAt(at[0], at[1]) ?? 0);
   }
 
@@ -389,6 +441,11 @@ export class TownScene {
       if (r) this.obstacles.push({ at: p.at, radius: r * (p.scale ?? 1) });
     }
     for (const s of this.world.spots) {
+      // 実在の町では、困りごとの場所を実在の家に見せないよう、模型を置かずに印だけを道の上に出す
+      if (pocketAt(s.at) && s.kind !== "stop") {
+        this.markers.push(this.addMarker(s.id, s.at, this.groundY(s.at) + 4));
+        continue;
+      }
       const o = this.place(s.kind, s.at, s.face);
       this.obstacles.push({ at: s.at, radius: s.radius });
       const top = new THREE.Box3().setFromObject(o).max.y;
@@ -397,12 +454,15 @@ export class TownScene {
     for (const m of this.world.marks) this.signs.push(this.addMarkSign(m));
     for (const f of this.world.facilities) this.signs.push(this.addFacilitySign(f));
     for (const n of this.world.npcs) {
-      const o = this.place(n.kind, n.at, n.face, PEOPLE_SCALE);
+      const big = pocketAt(n.at) ? REAL_PEOPLE : 1;
+      const o = this.place(n.kind, n.at, n.face, PEOPLE_SCALE * big);
       if (n.body) this.tint(o, "person_body", n.body);
       if (n.hair) this.tint(o, "person_hair", n.hair);
       this.obstacles.push({ at: n.at, radius: 0.8 });
       this.walkers.push({ obj: o, npc: n, phase: n.at[0] + n.at[1] });
-      this.bubbles.set(n.id, this.addBubble(n.at, this.groundY(n.at) + (n.kind === "rabbit" ? 2.6 : 2.8)));
+      const bubble = this.addBubble(n.at, this.groundY(n.at) + (n.kind === "rabbit" ? 2.6 : 2.8) * big);
+      bubble.scale.multiplyScalar(big * 1.4);
+      this.bubbles.set(n.id, bubble);
     }
   }
 
@@ -692,7 +752,7 @@ export class TownScene {
 
   private buildPlayer() {
     this.player.add(this.models.get("player")!.clone());
-    this.player.scale.setScalar(PEOPLE_SCALE);
+    this.player.scale.setScalar(PEOPLE_SCALE * (pocketAt(this.playerPos) ? REAL_PEOPLE : 1));
     this.scene.add(this.player);
     this.player.position.set(this.playerPos[0], this.groundY(this.playerPos), this.playerPos[1]);
   }
@@ -739,6 +799,7 @@ export class TownScene {
 
     if (this.ride) this.driveRide(dt);
     else if (this.playing && !this.paused) this.walk(dt, now);
+    this.player.scale.setScalar(PEOPLE_SCALE * (pocketAt(this.playerPos) ? REAL_PEOPLE : 1));
     this.animateTown(dt, now);
     this.moveCamera(dt, now);
     this.effect.render(this.scene, this.camera);
@@ -761,7 +822,10 @@ export class TownScene {
     const running = this.keys.has("shift") || this.runFor > RUN_AFTER;
     const speed = running ? RUN_SPEED : WALK_SPEED;
     const next: Vec2 = [this.playerPos[0] + dx * speed * dt, this.playerPos[1] + dz * speed * dt];
-    this.playerPos = stepWithin(this.ground, this.playerPos, pushOut(next, this.obstacles));
+    const pushed = pushOut(next, this.obstacles);
+    const real = this.realAt(this.playerPos);
+    this.playerPos = real ? real.step(this.playerPos, pushed) : stepWithin(this.ground, this.playerPos, pushed);
+    this.crossTownEdge(real, pushed);
     this.heading = turnToward(this.heading, Math.atan2(dx, dz), dt * 12);
     this.player.rotation.y = this.heading;
     const step = Math.sin(now / (running ? 55 : 75));
@@ -857,20 +921,28 @@ export class TownScene {
     }
     const riding = this.ride !== null;
     const focus = riding ? this.rideBus!.position : this.player.position;
-    const follow = focus.clone().add(riding ? RIDE_OFFSET : CAMERA_OFFSET);
+    const follow = focus.clone().add(riding ? RIDE_OFFSET : pocketAt([focus.x, focus.z]) ? REAL_OFFSET : CAMERA_OFFSET);
     this.keepAboveGround(follow, focus);
+    let look = focus;
     if (this.flyIn < 1) {
       this.flyIn = Math.min(1, this.flyIn + dt / 2.2);
       const e = 1 - Math.pow(1 - this.flyIn, 3);
-      this.camera.position.lerpVectors(this.flyFrom, follow, e);
+      // 実在の町は市の地図から離れた所にある。降りてくるあいだは市の地図の上の同じ場所へ向かい、降りきったら町へ切り替える
+      const pos = this.flyIn < 1 && pocketAt([focus.x, focus.z]) ? cityAt(this.world.places, [focus.x, focus.z]) : null;
+      if (pos) look = new THREE.Vector3(pos[0], heightAt(this.ground, pos[0], pos[1]), pos[1]);
+      this.camera.position.lerpVectors(this.flyFrom, pos ? look.clone().add(CAMERA_OFFSET) : follow, e);
       this.fog.near = FOG_TITLE[0] + (FOG_PLAY[0] - FOG_TITLE[0]) * e;
       this.fog.far = FOG_TITLE[1] + (FOG_PLAY[1] - FOG_TITLE[1]) * e;
+    } else if (this.camera.position.distanceTo(follow) > 300) {
+      this.camera.position.copy(follow); // 町とバスの道のあいだは、なめらかにせず切り替える
     } else {
       this.camera.position.lerp(follow, Math.min(1, dt * (riding ? 3 : 6)));
     }
-    this.camera.lookAt(focus.x, focus.y + 1, focus.z);
-    this.sun.position.set(focus.x + 30, focus.y + 50, focus.z + 20);
-    this.sun.target.position.set(focus.x, focus.y, focus.z);
+    this.camera.lookAt(look.x, look.y + 1, look.z);
+    this.sun.position.set(look.x + 30, look.y + 50, look.z + 20);
+    this.sun.target.position.set(look.x, look.y, look.z);
+    const shown = pocketAt([this.camera.position.x, this.camera.position.z]);
+    for (const [id, t] of this.reals) t.group.visible = shown === id;
   }
 
   /** 山がカメラと主人公のあいだに入らないよう、カメラを持ち上げる */
@@ -878,7 +950,7 @@ export class TownScene {
     for (const t of [0.25, 0.5, 0.75, 1]) {
       const x = focus.x + (cam.x - focus.x) * t;
       const z = focus.z + (cam.z - focus.z) * t;
-      const need = heightAt(this.ground, x, z) + 2.5;
+      const need = this.groundY([x, z]) + 2.5;
       cam.y = Math.max(cam.y, focus.y + (need - focus.y) / t);
     }
   }
@@ -886,7 +958,8 @@ export class TownScene {
   private report(now: number, dt: number) {
     const target = this.paused || this.ride ? this.lastTarget : nearestTarget(this.playerPos, this.world);
     this.showRing(target, now);
-    const place = this.ride ? null : (this.towns?.placeAt(this.playerPos[0], this.playerPos[1]) ?? null);
+    const pocket = pocketAt(this.playerPos);
+    const place = this.ride ? null : pocket ? (this.world.places.find((p) => p.id === pocket)?.name ?? null) : (this.towns?.placeAt(this.playerPos[0], this.playerPos[1]) ?? null);
     const mark = this.ride ? null : nearestMark(this.playerPos, this.world.marks);
     const facility = this.ride ? null : nearestMark(this.playerPos, this.world.facilities);
     const id = (t: Target | null) => (!t ? null : t.type === "spot" ? t.spot.id : t.type === "npc" ? t.npc.id : `bus:${t.place.id}`);
@@ -925,7 +998,10 @@ export class TownScene {
     const scale = Math.min(cw / image.width, ch / image.height);
     const ox = (cw - image.width * scale) / 2;
     const oz = (ch - image.height * scale) / 2;
-    const px = (at: Vec2): Vec2 => [ox + ((at[0] - x0) / cell) * scale, oz + ((at[1] - z0) / cell) * scale];
+    const px = (v: Vec2): Vec2 => {
+      const at = cityAt(this.world.places, v);
+      return [ox + ((at[0] - x0) / cell) * scale, oz + ((at[1] - z0) / cell) * scale];
+    };
     g.clearRect(0, 0, cw, ch);
     g.imageSmoothingEnabled = true;
     g.drawImage(image, ox, oz, image.width * scale, image.height * scale);

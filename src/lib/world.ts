@@ -91,12 +91,14 @@ export function worldStats(world: World) {
 }
 
 /** 主人公の位置からいちばん近い依頼の場所。done に入っている場所は除く。画面の案内に使う */
-export function nearestSpot(pos: Vec2, spots: Spot[], done: Set<string>): { spot: Spot; dx: number; dz: number; meters: number } | null {
+export function nearestSpot(pos: Vec2, spots: Spot[], done: Set<string>, places: Place[] = []): { spot: Spot; dx: number; dz: number; meters: number } | null {
   let best: { spot: Spot; dx: number; dz: number; meters: number } | null = null;
+  const from = cityAt(places, pos);
   for (const spot of spots) {
     if (done.has(spot.id)) continue;
-    const dx = spot.at[0] - pos[0];
-    const dz = spot.at[1] - pos[1];
+    const to = cityAt(places, spot.at);
+    const dx = to[0] - from[0];
+    const dz = to[1] - from[1];
     const meters = Math.hypot(dx, dz) * M_PER_UNIT;
     if (!best || meters < best.meters) best = { spot, dx, dz, meters };
   }
@@ -197,7 +199,7 @@ export type Npc = {
 export type Prop = { place: string; kind: string; at: Vec2; face: number; scale?: number };
 
 /** 町丁の印。近くを歩くと、人口と近い病院・小学校までの距離が手帳に残る。at は場所の中の座標。scripts/build_marks.py が作る */
-export type Mark = { id: string; place: string; at: Vec2; text: string; sources: string[] };
+export type Mark = { id: string; place: string; at: Vec2; text: string; sources: string[]; /** 実在の町の円より外にあり、市の地図の上に置く */ city?: boolean };
 
 /** 鳥取市の未活用施設。近くを通ると手帳に入り、案を出すときに「使う場所」として選べる。scripts/build_facilities.py が作る */
 export type Facility = Mark & { name: string };
@@ -237,10 +239,42 @@ export const PROP_RADIUS: Record<string, number> = { house: 2.4, house_b: 2.4, s
 /** 路線バスの平均の速さ [推定: 停車を含めて時速 25 km と置いた] */
 export const BUS_KMH = 25;
 
+/** PLATEAU の建物がある町。町の中は実在の建物・道の形（public/city/towns/<町>.json）で、
+ * 市の地図から離れた所に 1 単位 1.5 m で置く。バスで着くとそこへ移る。ほかの町は市の地図の上の模型のまま */
+export const REAL_TOWNS = ["eki", "kumoyama", "koyama", "kawahara"];
+export const REAL_M_PER_UNIT = 1.5;
+const POCKET_SIZE = 3000;
+
+/** 実在の町を置く所の原点。市の地図（中心から 500 単位ほど）からは霧で見えない */
+export function pocketOrigin(id: string): Vec2 | null {
+  const i = REAL_TOWNS.indexOf(id);
+  return i < 0 ? null : [6000 + i * POCKET_SIZE, 6000];
+}
+
+/** その座標がどの実在の町の中か。市の地図の上なら null */
+export function pocketAt(at: Vec2): string | null {
+  return REAL_TOWNS.find((id) => {
+    const o = pocketOrigin(id)!;
+    return Math.abs(at[0] - o[0]) < POCKET_SIZE / 2 && Math.abs(at[1] - o[1]) < POCKET_SIZE / 2;
+  }) ?? null;
+}
+
+/** 市の地図の座標へ直す。実在の町の中なら、その町の市の地図の位置へ縮める */
+export function cityAt(places: Place[], at: Vec2): Vec2 {
+  const id = pocketAt(at);
+  const place = id ? places.find((p) => p.id === id) : undefined;
+  if (!id || !place) return at;
+  const o = pocketOrigin(id)!;
+  const k = REAL_M_PER_UNIT / M_PER_UNIT;
+  return [place.at[0] + (at[0] - o[0]) * k, place.at[1] + (at[1] - o[1]) * k];
+}
+
 export function placeWorld(world: World): Placed {
-  const at = new Map(world.places.map((p) => [p.id, p.at]));
-  const shift = (place: string, v: Vec2): Vec2 => {
-    const base = at.get(place);
+  const at = new Map(world.places.map((p) => [p.id, pocketOrigin(p.id) ?? p.at]));
+  const city = new Map(world.places.map((p) => [p.id, p.at]));
+  // city が付いた物は、実在の町の円より外にあるので市の地図の上に置く
+  const shift = (place: string, v: Vec2, onCity = false): Vec2 => {
+    const base = (onCity ? city : at).get(place);
     if (!base) throw new Error(`場所が無い: ${place}`);
     return [base[0] + v[0], base[1] + v[1]];
   };
@@ -249,8 +283,8 @@ export function placeWorld(world: World): Placed {
     start: shift(world.meta.start.place, world.meta.start.at),
     props: world.props.map((p) => ({ ...p, at: shift(p.place, p.at) })),
     spots: world.spots.map((s) => ({ ...s, at: shift(s.place, s.at) })),
-    marks: world.marks.map((m) => ({ ...m, at: shift(m.place, m.at) })),
-    facilities: world.facilities.map((f) => ({ ...f, at: shift(f.place, f.at) })),
+    marks: world.marks.map((m) => ({ ...m, at: shift(m.place, m.at, m.city) })),
+    facilities: world.facilities.map((f) => ({ ...f, at: shift(f.place, f.at, f.city) })),
     npcs: world.npcs.map((n) => ({ ...n, at: shift(n.place, n.at) })),
     stops: world.places.filter((p) => p.hub && p.stop).map((p) => ({ place: p, at: shift(p.id, p.stop!) })),
   };
