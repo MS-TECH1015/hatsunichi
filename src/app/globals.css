@@ -360,3 +360,8 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .guide-chip svg { width: 20px; height: 20px; flex: none; }
 .guide-chip small { font-size: 11px; color: #8a7f70; font-weight: 700; }
 .title-problem { margin: 0 0 8px; max-width: 560px; padding: 6px 14px; border-radius: 10px; background: rgba(43, 38, 32, 0.78); color: #fffaf0; font-size: 13px; font-weight: 700; line-height: 1.6; }
+.near-me { text-align: left; margin-bottom: 8px; }
+.near-input { width: 100%; padding: 8px 10px; border: 2px solid var(--ink); border-radius: 8px; font: inherit; font-weight: 700; background: #fff; }
+.near-me .home-note { margin-top: 6px; }
+.near-me .link-more { margin-left: 8px; }
+.near-akiya a { margin-left: 8px; font-size: 12px; }

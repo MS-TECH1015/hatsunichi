@@ -6,7 +6,9 @@ import { CALCS, defaults, type Calc } from "@/lib/calcs";
 import { clockText, facilityFind, markFind, rideFind, spotFind, targetAt, unsourcedNumbers, type Fact, type Facility, type Find, type Mark, type Note, type Option, type Place, type Spot, type Target, type World } from "@/lib/world";
 import { withBase } from "@/lib/base";
 import { PastIcon } from "./PastIcon";
-import { changeText, checksOf, nearestSpot, placeStats, placeWorld, worldStats, type Vec2 } from "@/lib/world";
+import { NearMePanel, loadMe, type Me } from "./NearMe";
+import { nearLine } from "@/lib/near";
+import { changeText, checksOf, cityAt, nearestSpot, placeStats, placeWorld, worldStats, type Vec2 } from "@/lib/world";
 import { OWN_MAX, WHY_MAX, answerFromRequest, sheetOf, type SheetRequest, type SheetUse } from "@/lib/sheet";
 import recordedNotes from "../../data/notes-recorded.json";
 import recordedReplies from "../../data/replies-recorded.json";
@@ -177,6 +179,9 @@ export function Town({ world }: Props) {
   const firstAt = useRef<number | null>(null);
   /** 地元を探す画面。list は町の一覧、Place はその町のむかしといま */
   const [home, setHome] = useState<Place | "list" | null>(null);
+  /** 自分の家の町名。このブラウザの中だけ。1 枚の写しに「近さ」の行を足す */
+  const [me, setMe] = useState<Me | null>(null);
+  useEffect(() => setMe(loadMe()), []);
   const goTo = useRef<Place | null>(null);
   // 閉じた直後の Space で同じ相手をまた開かないように
   const closedAt = useRef(0);
@@ -529,6 +534,13 @@ export function Town({ world }: Props) {
     if (got) setRehearsed((prev) => ({ ...prev, [a.spot.id]: got }));
   }
 
+  /** 1 枚の写しにだけ「近さ」を足す。確認役へ送る requestOf には入れない */
+  function withNear(a: Answer) {
+    if (!me) return a;
+    const at = placed.facilities.find((f) => f.id === a.place?.id)?.at ?? placed.spots.find((s) => s.id === a.spot.id)?.at;
+    return { ...a, near: nearLine(me, at ? cityAt(placed.places, at) : null) };
+  }
+
   const firstMinutes = () => Math.max(1, Math.round(((firstAt.current ?? startedAt.current) - startedAt.current) / 60000));
 
   /** 市に出す本文。1 枚の行から練習用の行（確認役の問い・出す先）を外し、自分が手伝えることと、聞かれそうなことに自分で書いた答えだけを足す。
@@ -536,7 +548,7 @@ export function Town({ world }: Props) {
   function cityText() {
     return answers
       .map((a) => {
-        const lines = sheetOf({ ...a, review: undefined }, world, "city")
+        const lines = sheetOf({ ...withNear(a), review: undefined }, world, "city")
           .split("\n")
           .filter((l) => !/^(確認役の問い|出す先): /.test(l));
         const reply = rehearsed[a.spot.id] ?? rehearsalOf(a) ?? checksReply(a);
@@ -554,7 +566,7 @@ export function Town({ world }: Props) {
   function copyAnswers() {
     const body = answers
       .map((a) => {
-        const sheet = sheetOf({ ...a, review: a.review && { question: a.review.question, model: a.review.model, date: a.review.recorded } }, world, use);
+        const sheet = sheetOf({ ...withNear(a), review: a.review && { question: a.review.question, model: a.review.model, date: a.review.recorded } }, world, use);
         const reply = use === "city" ? (rehearsed[a.spot.id] ?? rehearsalOf(a) ?? checksReply(a)) : undefined;
         if (!reply) return sheet;
         const mine = prepared[a.spot.id] ?? [];
@@ -628,7 +640,7 @@ export function Town({ world }: Props) {
         </div>
       )}
 
-      {!started && home && <HomeView home={home} world={world} ready={ready} onPick={setHome} onBegin={beginAt} onClose={() => setHome(null)} />}
+      {!started && home && <HomeView home={home} world={world} placed={placed} me={me} onMe={setMe} ready={ready} onPick={setHome} onBegin={beginAt} onClose={() => setHome(null)} />}
 
       {!started && showSent && (
         <div className="end">
@@ -886,7 +898,7 @@ export function Town({ world }: Props) {
                 answers={answers}
                 rehearsed={rehearsed}
                 prepared={prepared}
-                sheetText={(a) => sheetOf({ ...a, review: a.review && { question: a.review.question, model: a.review.model, date: a.review.recorded } }, world, use)}
+                sheetText={(a) => sheetOf({ ...withNear(a), review: a.review && { question: a.review.question, model: a.review.model, date: a.review.recorded } }, world, use)}
                 onPrepare={(id, i, text) => setPrepared((prev) => ({ ...prev, [id]: Object.assign([...(prev[id] ?? [])], { [i]: text }) }))}
                 onAsk={rehearse}
               />}
@@ -960,7 +972,7 @@ export function Town({ world }: Props) {
 
 /** 自分の地元を探す。町のむかしと今の数字を並べ、その町から歩くか、人に見せる。
  * 見せるリンクに入れるのは町の id だけ */
-function HomeView({ home, world, ready, onPick, onBegin, onClose }: { home: Place | "list"; world: World; ready: boolean; onPick: (h: Place | "list") => void; onBegin: (p: Place) => void; onClose: () => void }) {
+function HomeView({ home, world, placed, me, onMe, ready, onPick, onBegin, onClose }: { home: Place | "list"; world: World; placed: ReturnType<typeof placeWorld>; me: Me | null; onMe: (me: Me | null) => void; ready: boolean; onPick: (h: Place | "list") => void; onBegin: (p: Place) => void; onClose: () => void }) {
   const [shared, setShared] = useState(false);
   const [moreNow, setMoreNow] = useState(false);
   if (home === "list")
@@ -968,6 +980,8 @@ function HomeView({ home, world, ready, onPick, onBegin, onClose }: { home: Plac
       <div className="end">
         <div className="end-card home-card">
           <h2>自分の地元を探す</h2>
+          <NearMePanel me={me} placed={placed} onMe={onMe} onBegin={onBegin} />
+          <h3>町から選ぶ</h3>
           <p className="home-note">いま歩けるのは鳥取市の {world.places.length} つの町。ほかの市町村はまだない</p>
           <div className="home-list">
             {world.places.map((p) => (

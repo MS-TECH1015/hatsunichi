@@ -6,7 +6,7 @@ import type { Facility, Fact, Spot, World } from "./world.ts";
 
 export const PROPOSAL = { name: "鳥取市 公共施設マネジメント民間提案制度", url: "https://www.city.tottori.lg.jp/page/48913.html" };
 
-export type SheetAnswer = { spot: Spot; option: string; own?: boolean; concern?: string; fact: Fact; calc?: string; why?: string; self?: string; place?: Facility; review?: SheetReview };
+export type SheetAnswer = { spot: Spot; option: string; own?: boolean; concern?: string; fact: Fact; calc?: string; why?: string; self?: string; near?: string; place?: Facility; review?: SheetReview };
 
 /** 確認役（Claude）が 1 枚に付けた問い。記録なら date が入る。受け手に、学生がどこまで確かめたかを見せる */
 export type SheetReview = { question: string; model: string; date?: string };
@@ -30,6 +30,7 @@ export function sheetOf(a: SheetAnswer, world: World, use: SheetUse = "city"): s
     a.calc && a.why && `前提の置き方: ${a.why}`,
     placeLine(a, world),
     a.self && `自分は: ${a.self}`,
+    a.near && `近さ: ${a.near}`,
     a.place && `使う場所: ${a.place.name}、${town}。鳥取市の未活用施設。今も使われていないかは未確認 出典: ${world.sources[a.place.sources[0]]?.name ?? ""}`,
     a.place && `参考: 市の施設の使い方は ${PROPOSAL.name} で民間から募っている。この施設の案を市が募っているわけではない ${PROPOSAL.url}`,
     `まだ確かめていないこと: ${checksOf(a.spot, a.option).join(" / ")}`,
