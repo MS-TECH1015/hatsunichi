@@ -7,6 +7,9 @@ import { clockText, facilityFind, markFind, rideFind, spotFind, targetAt, unsour
 import { withBase } from "@/lib/base";
 import { PastIcon } from "./PastIcon";
 import { NearMePanel, loadMe, type Me } from "./NearMe";
+import { LodgingHomes } from "./LodgingHomes";
+import { countMade, madeTotal } from "@/lib/made";
+import { shareSheetImage } from "@/lib/sheetImage";
 import { nearLine } from "@/lib/near";
 import { changeText, checksOf, cityAt, nearestSpot, placeStats, placeWorld, worldStats, type Vec2 } from "@/lib/world";
 import { OWN_MAX, WHY_MAX, answerFromRequest, sheetOf, type SheetRequest, type SheetUse } from "@/lib/sheet";
@@ -133,6 +136,10 @@ export function Town({ world }: Props) {
   const [riding, setRiding] = useState(false);
   const [panel, setPanel] = useState<Panel>(null);
   const [answers, setAnswers] = useState<Answer[]>([]);
+  const [made, setMade] = useState<number | null>(null);
+  useEffect(() => {
+    void madeTotal().then(setMade);
+  }, []);
   const [talked, setTalked] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
   const [copiedCity, setCopiedCity] = useState(false);
@@ -432,6 +439,7 @@ export function Town({ world }: Props) {
     const { option: o, own } = panel.pending;
     const concern = panel.from?.concern;
     if (firstAt.current === null) firstAt.current = performance.now();
+    if (!answers.some((a) => a.spot.id === spot.id)) countMade();
     play("choose");
     setAnswers((prev) => [...prev.filter((x) => x.spot.id !== spot.id), { spot, option: o.text, label: o.label, note: o.note, own, concern, fact, calc: calc?.text, knobs: calc?.knobs, why: calc?.why, place }]);
     sceneRef.current?.markAnswered(spot.id);
@@ -609,6 +617,7 @@ export function Town({ world }: Props) {
           </ul>
           <p className="title-stats">
             数字は公的な資料 {stats.sources} 件から。1 枚は Claude が出典と照らす
+            {made !== null && made > 0 && `。これまでに作られた 1 枚は ${made.toLocaleString()} 枚`}
           </p>
           <button className="btn-game big" disabled={!ready} onClick={quickStart}>
             {ready ? "歩かずに案を出す" : "よみこみ中…"}
@@ -636,6 +645,7 @@ export function Town({ world }: Props) {
             {REVIEW_URL
               ? "困りごとから探す・確認役に見せる・予行を頼むときだけ、その一行か、1 枚の番号と自分で書いた文を、作者の中継（Cloudflare）を通して Anthropic の Claude へ送る。中継は回数を数えるために IP を 1 時間、同じ問いに同じ答えを返すために Claude の答えを 14 日置く。名前・住所・病名は書かない。ほかはどこにも送らない。"
               : "選んだ案や答えはどこにも送らない。自分の鍵で確認役に見せると、その 1 枚だけ Anthropic へ送る。"}
+            {REVIEW_URL && "1 枚ができると、作られた枚数を数えるために、中身を付けずに「1 枚できた」だけを中継へ送る。"}
             人に渡すのは「書き写す」で写して自分で貼ったときだけ。Claude の文は間違えることがある。事実は出典で確かめてから使う
             <br />
             地形: 国土地理院 標高タイル（<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noreferrer">地理院タイル</a>）を加工 ・ 市の境: 国土数値情報（行政区域データ）（国土交通省）を加工 ・ 町の代表点: 大字・町丁目位置参照情報 19.0b（国土交通省）をもとに作成
@@ -967,6 +977,26 @@ export function Town({ world }: Props) {
               {answers.length > 0 && use === "city" && (
                 <button className="btn-game ghost" onClick={markSent} disabled={marked}>
                   {marked ? "記録した" : "出したら記録"}
+                </button>
+              )}
+              {answers.length > 0 && (
+                <button
+                  className="btn-game ghost"
+                  onClick={() =>
+                    void shareSheetImage(
+                      answers.map((a) => ({
+                        title: a.spot.title,
+                        place: world.places.find((p) => p.id === a.spot.place)?.name ?? "",
+                        option: a.option,
+                        fact: a.fact.text,
+                        source: world.sources[a.fact.source]?.name ?? "",
+                        window: a.spot.window.name,
+                      })),
+                      `${location.origin}${location.pathname}`,
+                    )
+                  }
+                >
+                  画像で残す
                 </button>
               )}
               <button className="btn-game" onClick={() => location.reload()}>
@@ -1780,6 +1810,8 @@ function Detail({ spot, answer, voices, world, onClose }: { spot: Spot; answer?:
         </>
       )}
 
+      {spot.id === "lodging" && <LodgingHomes windowName={spot.window.name} windowUrl={spot.window.url} />}
+
       <h3>届け先</h3>
       <p>
         案を出すなら{" "}
@@ -1811,7 +1843,7 @@ type RecordedRoutes = { model: string; date: string; summary?: { cases: number; 
 const ROUTES = recordedRoutes as RecordedRoutes;
 type Routed = Route & { recorded?: string };
 
-/** 困りごとから探す。自分の一行を書くと、案内役が 9 つの依頼から近いものと根拠の候補を選ぶ。
+/** 困りごとから探す。自分の一行を書くと、案内役が 10 の依頼から近いものと根拠の候補を選ぶ。
  * 例は測定のときの記録を見せる。自分の一行は、鍵があれば Claude に、無ければ言葉の一致で選ぶ。どちらかを画面に書く */
 function ConcernFinder({ world, onOwn }: { world: World; onOwn: (s: Spot, line: string, suggest?: number) => void }) {
   const [text, setText] = useState("");
@@ -1879,7 +1911,7 @@ function ConcernFinder({ world, onOwn }: { world: World; onOwn: (s: Spot, line: 
             </>
           ) : (
             <p>
-              <b>9 つの依頼に近いものが無かった。</b>このアプリには根拠の数字が無いので、1 枚にはできない。困りごとそのものは、
+              <b>10 の依頼に近いものが無かった。</b>このアプリには根拠の数字が無いので、1 枚にはできない。困りごとそのものは、
               <a href={world.submit.url} target="_blank" rel="noreferrer">
                 {world.submit.name}
               </a>
@@ -1893,7 +1925,7 @@ function ConcernFinder({ world, onOwn }: { world: World; onOwn: (s: Spot, line: 
                 ? "中継の Claude に届かなかったので、言葉の一致で選んだ。"
                 : "鍵が無いので、Claude ではなく言葉の一致で選んだ。"
               : `${result.route.model} が選んだ${result.route.recorded ? `。${result.route.recorded} の記録` : ""}。`}
-            選べるのは 9 つの依頼の id と根拠の番号だけで、数字は書かせていない
+            選べるのは 10 の依頼の id と根拠の番号だけで、数字は書かせていない
           </small>
           {spot && (
             <button className="btn-game small" onClick={() => onOwn(spot, result.line, result.route.fact ?? undefined)}>

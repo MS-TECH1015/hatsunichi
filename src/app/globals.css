@@ -372,3 +372,9 @@ html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Se
 .title-big span { display: block; margin-top: 2px; font-size: 12px; font-weight: 800; color: var(--ink); }
 @media (max-width: 480px) { .title-big b { font-size: 24px; } .title-big span { font-size: 11px; } }
 .calc-chosen { margin: 0 0 6px; padding: 4px 8px; border-left: 4px solid var(--accent); background: #fff3e6; font-size: 13px; font-weight: 800; }
+.lodging-homes { list-style: none; padding: 0; margin: 0 0 6px; display: grid; gap: 6px; }
+.lodging-homes li { display: grid; gap: 2px; border: 2px dashed var(--muted); border-radius: 12px; padding: 8px 10px; }
+.lodging-homes li.ok { border: 3px solid var(--ink); background: var(--paper); }
+.lodging-links { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.lodging-inquiry { display: grid; gap: 6px; margin-top: 8px; }
+.lodging-inquiry textarea { width: 100%; font: 14px/1.5 var(--font-maru), sans-serif; border: 2px solid var(--ink); border-radius: 10px; padding: 8px; resize: vertical; }

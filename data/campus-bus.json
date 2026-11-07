@@ -1,0 +1,91 @@
+{
+  "date": "2026-11-07",
+  "source": "gtfs_campus",
+  "homes": [
+    {
+      "id": "akiya-67",
+      "town": "福部町高江",
+      "url": "https://www.city.tottori.lg.jp/page/50534.html",
+      "stop": "福部町総合支所前",
+      "m": 291,
+      "campus": {
+        "鳥大": {
+          "trips": 0,
+          "fastest": null
+        },
+        "環境大学前": {
+          "trips": 0,
+          "fastest": null
+        }
+      }
+    },
+    {
+      "id": "akiya-66",
+      "town": "伏野",
+      "url": "https://www.city.tottori.lg.jp/page/48163.html",
+      "stop": "伏野",
+      "m": 47,
+      "campus": {
+        "鳥大": {
+          "trips": 0,
+          "fastest": null
+        },
+        "環境大学前": {
+          "trips": 0,
+          "fastest": null
+        }
+      }
+    },
+    {
+      "id": "akiya-64",
+      "town": "湯所町二丁目",
+      "url": "https://www.city.tottori.lg.jp/page/5840.html",
+      "stop": "相生町",
+      "m": 287,
+      "campus": {
+        "鳥大": {
+          "trips": 5,
+          "fastest": 15
+        },
+        "環境大学前": {
+          "trips": 0,
+          "fastest": null
+        }
+      }
+    },
+    {
+      "id": "akiya-63",
+      "town": "立川町五丁目",
+      "url": "https://www.city.tottori.lg.jp/page/20090.html",
+      "stop": "立川五丁目",
+      "m": 56,
+      "campus": {
+        "鳥大": {
+          "trips": 2,
+          "fastest": 27
+        },
+        "環境大学前": {
+          "trips": 0,
+          "fastest": null
+        }
+      }
+    },
+    {
+      "id": "akiya-61",
+      "town": "鹿野町今市",
+      "url": "https://www.city.tottori.lg.jp/page/29076.html",
+      "stop": "湯花団地前",
+      "m": 184,
+      "campus": {
+        "鳥大": {
+          "trips": 0,
+          "fastest": null
+        },
+        "環境大学前": {
+          "trips": 0,
+          "fastest": null
+        }
+      }
+    }
+  ]
+}

@@ -3,6 +3,7 @@
 //   POST /sheet     決めた 1 枚に付箋を付ける
 //   POST /rehearse  市の担当者役の問い（返事の予行）
 //   POST /route     困りごとの一行から近い依頼を選ぶ。受け取るのは { text } だけで、OWN_MAX 字まで
+//   GET・POST /made 作られた 1 枚の合計を返す・1 足す。中身は受け取らない。同じ IP は 1 時間に 20 回まで数える
 // 守り: 日本からだけ（Anthropic の対応地域の規定に合わせる）。Origin は ALLOWED_ORIGIN だけ。本文 4KB まで。同じ IP は 1 時間に PER_HOUR 回まで（既定 10、置いた先は 30。人前で何度も見せる日に足りるように）。1 日の合計は DAILY_MAX 回まで。
 // プロンプトはこちらで組む。受け取った番号と一行をそのまま Claude に渡す口は作らない。モデルと出力の長さも src/lib/review.ts で決めてある。
 // 回数は KV（HITS）に置く。鍵は wrangler secret put ANTHROPIC_API_KEY で入れ、コードにもリポジトリにも置かない。
@@ -22,7 +23,7 @@ const DEFAULT_DAILY = 100;
 const CACHE_TTL = 14 * 86400;
 const w = world as unknown as World;
 
-const cors = (origin: string) => ({ "access-control-allow-origin": origin, "access-control-allow-headers": "content-type", "access-control-allow-methods": "POST, OPTIONS", vary: "Origin" });
+const cors = (origin: string) => ({ "access-control-allow-origin": origin, "access-control-allow-headers": "content-type", "access-control-allow-methods": "GET, POST, OPTIONS", vary: "Origin" });
 const json = (status: number, body: unknown, origin: string) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...cors(origin) } });
 
@@ -36,6 +37,7 @@ export default {
     // 204 は本文を持てない。本文を付けると Workers が例外を投げ、ブラウザの事前確認が通らない
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors(origin) });
     const path = new URL(req.url).pathname;
+    if (path === "/made") return made(req, env, origin);
     if (req.method !== "POST" || !["/sheet", "/rehearse", "/route"].includes(path)) return json(404, { error: "POST /sheet・/rehearse・/route だけ" }, origin);
     if (Number(req.headers.get("content-length") ?? "0") > BODY_MAX) return json(413, { error: "本文が大きい" }, origin);
 
@@ -70,6 +72,22 @@ ${asked.key}`)}`;
     return json(200, body, origin);
   },
 };
+
+/** 作られた 1 枚の数。数えるのは合計だけで、1 枚の中身・町・書いた一行は受け取らない。
+ * 同じ IP から 1 時間に MADE_PER_HOUR 回より多くは数えず、数を水増ししにくくする。KV は同時の書き込みで 1 回落とすことがあるので、数はおおよそ */
+const MADE_PER_HOUR = 20;
+const MADE_KEY = "made:total";
+async function made(req: Request, env: Env, origin: string): Promise<Response> {
+  if (req.method === "GET") return json(200, { total: await hits(env.HITS, MADE_KEY) }, origin);
+  if (req.method !== "POST") return json(404, { error: "GET か POST /made だけ" }, origin);
+  const country = (req as Request & { cf?: { country?: string } }).cf?.country;
+  if (country && country !== "JP") return json(403, { error: "日本からだけ数える" }, origin);
+  const ipKey = `made-ip:${req.headers.get("cf-connecting-ip") ?? "unknown"}:${Math.floor(Date.now() / 3600_000)}`;
+  const [byIp, total] = await Promise.all([hits(env.HITS, ipKey), hits(env.HITS, MADE_KEY)]);
+  if (byIp >= MADE_PER_HOUR) return json(200, { total }, origin);
+  await Promise.all([env.HITS.put(ipKey, String(byIp + 1), { expirationTtl: 3600 }), env.HITS.put(MADE_KEY, String(total + 1))]);
+  return json(200, { total: total + 1 }, origin);
+}
 
 type Opts = { apiKey: string; model?: string };
 type Asked = { key: string; run: (opts: Opts) => Promise<unknown> };

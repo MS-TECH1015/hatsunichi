@@ -7,7 +7,7 @@
 - 「乗り換えなし」は、同じ便がその停留所に止まったあとで大学のバス停に止まること
 - 物件からは、名前でまとめた停留所の平均の位置のうち、まっすぐいちばん近いものを使う
 - 鉄道（JR）は入れていない。湖山には鉄道の駅もあるので、鉄道で通える家はこの数より多い
-結果は画面に出さず、印字だけする。数字は data/world.json の依頼 lodging の facts に手で写す
+出力: data/campus-bus.json。依頼 lodging の 1 枚に、物件ごとの最寄りの停留所と便の数を出すのに使う。facts の数字は手で写す
 """
 import csv
 import io
@@ -74,10 +74,14 @@ def main():
     world = json.loads((ROOT / "data" / "world.json").read_text(encoding="utf-8"))
     listed = [a for a in world["akiya"] if a["status"] == "listed"]
     print("空き家情報バンクの登録中の物件", len(listed))
+    homes = []
     for a in listed:
         stop, d = nearest(centers, *a["geo"])
-        rides = direct["鳥大"].get(stop, [])
-        print(f"  {a['town']}: 最寄り {stop}（{d:.0f} m）、鳥大へ平日 {len(rides)} 本、最短 {min(rides, default='-')} 分")
+        to = {c: direct[c].get(stop, []) for c in CAMPUS}
+        homes.append({"id": a["id"], "town": a["town"], "url": a["url"], "stop": stop, "m": round(d), "campus": {c: {"trips": len(r), "fastest": min(r, default=None)} for c, r in to.items()}})
+        print(f"  {a['town']}: 最寄り {stop}（{d:.0f} m）、鳥大へ平日 {len(to['鳥大'])} 本、最短 {min(to['鳥大'], default='-')} 分")
+    out = {"date": "2026-11-07", "source": "gtfs_campus", "homes": homes}
+    (ROOT / "data" / "campus-bus.json").write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

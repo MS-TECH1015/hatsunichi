@@ -28,6 +28,14 @@ describe("確認役の中継", () => {
     expect(res.status).toBe(204);
     expect(res.headers.get("access-control-allow-origin")).toBe(ORIGIN);
   });
+  it("作られた 1 枚は合計だけ数え、同じ IP は 1 時間に 20 回で止める", async () => {
+    const env = envOf();
+    for (let i = 0; i < 25; i++) await worker.fetch(post("/made", {}), env);
+    await worker.fetch(post("/made", {}, ORIGIN, "203.0.113.2"), env);
+    const res = await worker.fetch(new Request("https://relay.example/made", { headers: { origin: ORIGIN } }), env);
+    expect(((await res.json()) as { total: number }).total).toBe(21);
+    expect((await worker.fetch(post("/made", {}, "https://evil.example"), env)).status).toBe(403);
+  });
   it("日本の外からは断る", async () => {
     const req = Object.assign(post("/route", { text: "バスが減った" }), { cf: { country: "US" } });
     expect((await worker.fetch(req, envOf())).status).toBe(403);
