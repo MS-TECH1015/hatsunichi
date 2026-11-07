@@ -19,6 +19,9 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "public" / "city" / "towns"
 M_PER_UNIT = 1.5
 R_BLDG = 600  # 建物を置く半径（m）
+GROUND_EXTRA = 160  # 地面を町の円の外へのばす幅（単位）。src/components/town/realTown.ts の OUTSIDE と同じ
+GROUND_CELL = 8  # 地面の高さの格子の間隔（単位）
+DEM = ROOT / "data" / "raw" / "dem"
 
 
 class Frame:
@@ -204,6 +207,43 @@ def plateau_rail(frame, r_units):
     return out
 
 
+def dem_height(lat, lon, cache={}):
+    """国土地理院 dem_png z14 の標高（m）。海や取れていない所は 0"""
+    z = 14
+    n = 2 ** z
+    fx = (lon + 180) / 360 * n
+    fy = (1 - math.asinh(math.tan(math.radians(lat))) / math.pi) / 2 * n
+    tx, ty = int(fx), int(fy)
+    key = (tx, ty)
+    if key not in cache:
+        path = DEM / f"{z}_{tx}_{ty}.png"
+        cache[key] = np.asarray(Image.open(path).convert("RGB"), dtype=np.int64) if path.exists() else None
+    img = cache[key]
+    if img is None:
+        return 0.0
+    r, g, b = img[min(int((fy - ty) * 256), 255), min(int((fx - tx) * 256), 255)]
+    v = (r << 16) + (g << 8) + b
+    if v == 2 ** 23:
+        return 0.0
+    return (v - 2 ** 24 if v > 2 ** 23 else v) * 0.01
+
+
+def ground(frame, r_units):
+    """町の中心を 0 にした地面の高さ（m）の格子"""
+    half = r_units + GROUND_EXTRA
+    count = int(2 * half / GROUND_CELL) + 1
+    half = (count - 1) * GROUND_CELL / 2
+    base = dem_height(frame.lat, frame.lon)
+    h = []
+    for r in range(count):
+        z = -half + r * GROUND_CELL
+        lat = frame.lat - z / frame.kz
+        for q in range(count):
+            x = -half + q * GROUND_CELL
+            h.append(round(dem_height(lat, frame.lon + x / frame.kx) - base, 1))
+    return {"cell": GROUND_CELL, "n": count, "h": h, "base_m": round(base, 1)}
+
+
 def preview(pid, town, path):
     s = 1.0
     r = R_BLDG / M_PER_UNIT
@@ -234,7 +274,7 @@ def main():
         r_units = R_BLDG / M_PER_UNIT
         buildings = plateau_buildings(frame, r_units)
         roads, land = plateau_areas(frame, r_units)
-        town = {"m_per_unit": M_PER_UNIT, "radius": round(r_units, 1), "buildings": buildings, "roads": roads, "land": land, "rail": plateau_rail(frame, r_units)}
+        town = {"m_per_unit": M_PER_UNIT, "radius": round(r_units, 1), "ground": ground(frame, r_units), "buildings": buildings, "roads": roads, "land": land, "rail": plateau_rail(frame, r_units)}
         (OUT / f"{p['id']}.json").write_text(json.dumps(town, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print(p["id"], "buildings", len(buildings), "roads", len(roads), "land", len(land), "rail", len(town["rail"]), "bytes", (OUT / f"{p['id']}.json").stat().st_size)
         preview(p["id"], town, ROOT / "data" / "build" / f"town_{p['id']}.png")

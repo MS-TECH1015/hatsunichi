@@ -49,12 +49,24 @@ def main():
     for z, x, y in wanted():
         if True:
             path = OUT / f"{z}_{x}_{y}.png"
-            if path.exists():
+            none = path.with_suffix(".none")
+            if path.exists() or none.exists():
                 print("skip", path.name)
                 continue
             url = URL.format(z=z, x=x, y=y)
             req = urllib.request.Request(url, headers={"User-Agent": "hatsunichi/0.1 (one-time fetch; Built with Claude Japan 2026)"})
-            data = urllib.request.urlopen(req, timeout=30).read()
+            try:
+                data = urllib.request.urlopen(req, timeout=30).read()
+            except urllib.error.HTTPError as e:
+                if e.code != 404:
+                    raise
+                # 海の上など標高の無いタイルは 404。印を残して二度と取りに行かない
+                none.write_text("404\n")
+                with open(RAW / "fetch.log", "a", encoding="utf-8") as log:
+                    log.write(f"{date.today()} 404 {url}\n")
+                print("none", path.name)
+                time.sleep(1.5)
+                continue
             path.write_bytes(data)
             with open(RAW / "fetch.log", "a", encoding="utf-8") as log:
                 log.write(f"{date.today()} {hashlib.sha256(data).hexdigest()} {url}\n")
